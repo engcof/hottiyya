@@ -1,9 +1,12 @@
+import os
+import bcrypt
+import sqlite3
 from fastapi import FastAPI, Request, Form, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
-import sqlite3, bcrypt
+
 
 # --------------------------
 # إعداد FastAPI
@@ -13,7 +16,7 @@ templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.add_middleware(SessionMiddleware, secret_key="SUPER_SECRET_KEY_1234567890")
 
-DB_PATH = "database/family_tree.db"
+DB_PATH = os.path.join(os.path.expanduser("~"), "database", "family_tree.db")
 
 # --------------------------
 # دوال مساعدة
