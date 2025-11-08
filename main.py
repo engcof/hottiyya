@@ -71,7 +71,7 @@ def no_cache(response):
 def home(request: Request):
     username = request.session.get("username")
     role = request.session.get("role")
-    response = templates.TemplateResponse("home.html", {"request": request, "username": username, "role": role})
+    response = templates.TemplateResponse("index.html", {"request": request, "username": username, "role": role})
     return no_cache(response)
 
 @app.get("/login", response_class=HTMLResponse)
