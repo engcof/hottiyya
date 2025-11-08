@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صفحة الإدارة</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/admin_style.css">
+</head>
+<body class="p-4">
+    <h2>مرحبًا، {{ username }} | إدارة المستخدمين</h2>
+    <a href="/logout" class="btn btn-danger mb-3">تسجيل الخروج</a>
+
+    <h4>إضافة مستخدم جديد</h4>
+    <form method="post" action="#" class="mb-4">
+        <div class="mb-2">
+            <input type="text" name="username" placeholder="اسم المستخدم" class="form-control" required>
+        </div>
+        <div class="mb-2">
+            <input type="password" name="password" placeholder="كلمة المرور" class="form-control" required>
+        </div>
+        <button type="submit" class="btn btn-success">إضافة</button>
+    </form>
+
+    <h4>المستخدمون الحاليون</h4>
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>اسم المستخدم</th>
+                <th>الدور</th>
+                <th>إجراءات</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.username }}</td>
+                <td>{{ u.role }}</td>
+                <td>
+                    {% if u.username != 'admin' %}
+                    <form method="post" action="#" style="display:inline">
+                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                        <button type="submit" class="btn btn-sm btn-danger">حذف</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script src="/static/js/main.js" defer></script>
+</body>
+</html>
+   
+   

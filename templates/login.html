@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول</title>
+    <link rel="stylesheet" href="/static/css/login.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/main.js" defer></script>
+   
+</head>
+<body>
+    <h1>تسجيل الدخول</h1>
+    {% if message %}
+        <p style="color:red;">{{ message }}</p>
+    {% endif %}
+    <form action="/login" method="post">
+        <label>اسم المستخدم:</label><br>
+        <input type="text" name="username" required><br><br>
+        <label>كلمة المرور:</label><br>
+        <input type="password" name="password" required><br><br>
+        <button type="submit">تسجيل الدخول</button>
+    </form>
+    <a href="/">العودة للرئيسية</a>
+</body>
+</html>
+
+    <!-- منع التخزين المؤقت -->
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+
+
+
+
+   
+
+

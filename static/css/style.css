@@ -1,0 +1,260 @@
+/* --------------------------------------------
+   القواعد العامة
+-------------------------------------------- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: "Arial", sans-serif;
+    direction: rtl;
+}
+
+body {
+    background-color: #f5f5f5;
+    color: #333;
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --------------------------------------------
+   الرأسية (Header)
+-------------------------------------------- */
+header {
+    background-color: #007bff;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+header a {
+    color: white;
+    margin: 0 10px;
+    text-decoration: none;
+}
+
+header a:hover {
+    text-decoration: underline;
+}
+
+/* --------------------------------------------
+   المحتوى الرئيسي
+-------------------------------------------- */
+main {
+    flex: 1;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+/* ================================
+   1. الشبكة (Grid)
+=============================== */
+
+/* الحاوية (Container) */
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* الصفوف (Rows) */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -15px;
+    margin-left: -15px;
+}
+
+/* الأعمدة (Columns) */
+.col, .col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+    padding-right: 15px;
+    padding-left: 15px;
+    flex-basis: 100%;
+}
+
+/* تخصيص الأعمدة حسب الحجم */
+.col-1 { flex-basis: 8.33%; }
+.col-2 { flex-basis: 16.66%; }
+.col-3 { flex-basis: 25%; }
+.col-4 { flex-basis: 33.33%; }
+.col-5 { flex-basis: 41.66%; }
+.col-6 { flex-basis: 50%; }
+.col-7 { flex-basis: 58.33%; }
+.col-8 { flex-basis: 66.66%; }
+.col-9 { flex-basis: 75%; }
+.col-10 { flex-basis: 83.33%; }
+.col-11 { flex-basis: 91.66%; }
+.col-12 { flex-basis: 100%; }
+
+/* ================================
+   2. الأزرار (Buttons)
+=============================== */
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.5;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    background-color: #0d6efd;
+    color: white;
+    transition: background-color 0.2s ease;
+}
+
+.btn:hover {
+    background-color: #0b5ed7;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+/* ================================
+   3. الفورمات (Forms)
+=============================== */
+
+form {
+    margin-bottom: 15px;
+}
+
+/* الحقول النصية */
+.input-group {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.input-group input, .input-group select, .input-group textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    line-height: 1.5;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+    outline: none;
+    border-color: #0d6efd;
+}
+
+/* ================================
+   4. الجداول (Tables)
+=============================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+}
+
+th {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+td {
+    background-color: #fff;
+}
+
+/* ================================
+   5. التنسيقات المتجاوبة (Responsive Design)
+=============================== */
+
+/* الشاشات الصغيرة */
+@media (max-width: 768px) {
+    .col-1 { flex-basis: 100%; }
+    .col-2 { flex-basis: 50%; }
+    .col-3 { flex-basis: 50%; }
+    .col-4 { flex-basis: 50%; }
+    .col-5 { flex-basis: 50%; }
+    .col-6 { flex-basis: 50%; }
+    .col-7 { flex-basis: 100%; }
+    .col-8 { flex-basis: 100%; }
+    .col-9 { flex-basis: 100%; }
+    .col-10 { flex-basis: 100%; }
+    .col-11 { flex-basis: 100%; }
+    .col-12 { flex-basis: 100%; }
+}
+
+/* الشاشات المتوسطة */
+@media (max-width: 1024px) {
+    .container {
+        width: 95%;
+    }
+}
+
+/* ================================
+   6. تحذيرات ورسائل التنبيه (Alerts)
+=============================== */
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+    color: #856404;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+ /* تصميم الرسالة المنبثقة */
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    z-index: 1000;
+}
+.toast.show {
+    opacity: 1;
+}
+.toast.error { background-color: #e74c3c; }
+.toast.success { background-color: #2ecc71; }
