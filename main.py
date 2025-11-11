@@ -1,4 +1,5 @@
 import os
+import logging
 import bcrypt
 import sqlite3
 import secrets  # لحماية إضافية مع CSRF
@@ -14,10 +15,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
-DB_PATH = os.getenv("DB_PATH")
+DB_PATH = os.getenv("DB_PATH", "/home/engcof/database/family_tree.db")
 
 if not SECRET_KEY or not DB_PATH:
     raise RuntimeError("❌ SECRET_KEY or DB_PATH not set in .env file")
+logging.basicConfig(level=logging.DEBUG)
 
 # =========================================
 #           إعداد FastAPI
@@ -49,6 +51,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 #              دوال مساعدة
 # =========================================
 def get_db():
+    logging.debug(f"Attempting to connect to database at {DB_PATH}")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
