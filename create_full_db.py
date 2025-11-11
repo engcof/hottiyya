@@ -6,6 +6,7 @@ import bcrypt
 # 1️⃣ تجهيز قاعدة البيانات
 # --------------------------------------
 os.makedirs("database", exist_ok=True)
+DB_PATH = os.path.join(os.path.expanduser("~"), "database", "family_tree.db")
 db_path = "database/family_tree.db"
 
 if os.path.exists(db_path):
@@ -16,6 +17,8 @@ if os.path.exists(db_path):
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 cursor.execute("PRAGMA foreign_keys = ON;")
+
+
 
 
 # --------------------------------------
@@ -135,7 +138,8 @@ try:
     CREATE TABLE IF NOT EXISTS permissions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT UNIQUE NOT NULL,
-        description TEXT
+        description TEXT,
+        category TEXT DEFAULT 'عام'          
     );
     """)
 
@@ -156,30 +160,31 @@ try:
     # --------------------------------------
     permissions_list = [
         # شجرة العائلة
-        ("add_member", "إضافة عضو جديد في شجرة العائلة"),
-        ("edit_member", "تعديل بيانات الأعضاء"),
-        ("delete_member", "حذف الأعضاء من الشجرة"),
+        ("add_member", "إضافة عضو جديد في شجرة العائلة", 'الشجرة'),
+        ("edit_member", "تعديل بيانات الأعضاء", 'الشجرة'),
+        ("delete_member", "حذف الأعضاء من الشجرة", 'الشجرة'),
 
         # المقالات
-        ("add_article", "إضافة مقال جديد"),
-        ("edit_article", "تعديل المقالات"),
-        ("delete_article", "حذف المقالات"),
+        ("add_article", "إضافة مقال جديد", 'المقالات'),
+        ("edit_article", "تعديل المقالات", 'المقالات'),
+        ("delete_article", "حذف المقالات", 'المقالات'),
 
         # الأخبار
-        ("add_news", "إضافة خبر جديد"),
-        ("edit_news", "تعديل الأخبار"),
-        ("delete_news", "حذف الأخبار"),
+        ("add_news", "إضافة خبر جديد", 'الأخبار'),
+        ("edit_news", "تعديل الأخبار", 'الأخبار'),
+        ("delete_news", "حذف الأخبار", 'الأخبار'),
 
         # التعليقات
-        ("add_comment", "إضافة تعليق"),
-        ("delete_comment", "حذف تعليق"),
+        ("add_comment", "إضافة تعليق", 'عام'),
+        ("delete_comment", "حذف تعليق", 'عام'),
 
         # السجل
-        ("view_logs", "عرض سجل النشاطات"),
+        ("view_logs", "عرض سجل النشاطات", 'عام'),
     ]
 
-    for name, desc in permissions_list:
-        cursor.execute("INSERT OR IGNORE INTO permissions (name, description) VALUES (?, ?)", (name, desc))
+    for name, desc, categ in permissions_list:
+        cursor.execute("INSERT OR IGNORE INTO permissions (name, description, category) VALUES (?, ?, ?)",
+                        (name, desc, categ))
 
 
     # --------------------------------------

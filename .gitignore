@@ -4,3 +4,5 @@
 # تجاهل ملفات PyCache
 __pycache__/
 *.pyc
+
+.env

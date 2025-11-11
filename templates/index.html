@@ -1,30 +1,24 @@
-<!DOCTYPE html>
-<html lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>الرئيسية</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-    <script src="/static/js/main.js" defer></script>
-</head>
-<body>
-    <header>
-        <h1>مرحبا بكم في شجرة العائلة</h1>
-        {% if username %}
-            <p>مرحبًا {{ username }} ({{ role }})</p>
-            <a href="/logout">تسجيل الخروج</a>
-            {% if role == "admin" %}
-                <a href="/admin">لوحة الإدارة</a>
+<!-- index.html -->
+{% extends "base.html" %}
+
+{% block title %}الصفحة الرئيسية{% endblock %}
+
+{% block content %}
+  
+    <!-- Container -->
+    <section class="hero-section">
+        <div class="section-content">
+            <div class="hero-subtitle">بسم الله الرحمن الرحيم</div>
+            <h1>الحـــــوطية</h1>
+            {% if user %}
+            <p>مرحباً {{ user }}!</p>
+            <p><a href="/logout" >تسجيل الخروج</a></p>
+            {% else %}
+            <p><a href="/login">تسجيل الدخول</a></p>
             {% endif %}
-        {% else %}
-            <a href="/login">تسجيل الدخول</a>
-        {% endif %}
-    </header>
+        </div>
+    </section>
+{% endblock %}
 
-    <main>
-        <h2>الأخبار والمقالات</h2>
-        <!-- هنا يمكن عرض المقالات والأخبار -->
-    </main>
-</body>
-</html>
 
+    

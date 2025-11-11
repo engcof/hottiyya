@@ -1,0 +1,75 @@
+<!-- base.html -->
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
+    <!-- إضافة ملفات CSS مشتركة هنا -->
+    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+   
+    <title>{% block title %}العائلة{% endblock %}</title>
+</head>
+<body>
+    <!-- Epic Neural Background -->
+    <div class="neural-background"></div>
+    
+     <!-- Header -->
+    <header class="glass">
+        <nav>
+            <a href="/" class="logo">
+                الحـوطية
+            </a>
+            <ul class="nav-links"> 
+                <li><a href="/">الرئيسية</a></li>
+                <li><a href="#">اتصل بنا</a></li>
+                <li><a href="#">عننا</a></li>
+                <li><a href="#">المساعدة</a></li> 
+                {% if user == "admin" or user == "engcof"%}
+                    <li><a href="/admin">الإدارة</a></li> 
+                {% endif %}
+            </ul>
+            </ul>
+            <div class="mobile-menu-toggle">
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+                <div class="hamburger-line"></div>
+            </div>
+        </nav>
+        <div class="mobile-nav">
+            <a href="/">الرئيسية</a>
+            <a href="#">اتصل بنا</a>
+            <a href="#">عننا</a>
+            <a href="#">المساعدة</a>
+            {% if user == "admin" %}
+                    <li><a href="/admin">الإدارة</a></li> 
+            {% endif %}
+        </div>
+    </header>  
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+     <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+                <a href="#">Documentation</a>
+                <!-- Add external links -->
+    			      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+            </div>
+            <div class="footer-copyright">
+                <p>&copy; 2025 Glass Interface.. جميع الحقوق محفوظة.</p>
+            </div>
+            <div class="footer-design">
+                <a href="#">Quantum Framework</a>
+            </div>
+        </div>
+    </footer>      
+   
+    <!-- إضافة ملفات JavaScript مشتركة هنا -->
+    <!-- <script src="{{ url_for('static', path='') }}"></script>-->
+</body>
+</html>
