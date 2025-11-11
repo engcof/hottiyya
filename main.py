@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import FastAPI, Request, Depends, HTTPException, Form
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -33,7 +34,13 @@ app.add_middleware(
     session_cookie="session",
     max_age=int(timedelta(hours=1).total_seconds())
 )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # يجب تحديد المجالات المسموح بها في الإنتاج
+    allow_methods=["*"],
+    allow_headers=["*"],
 
+)
 # إعداد مسار ملفات Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
