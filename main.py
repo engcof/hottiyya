@@ -14,6 +14,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import FastAPI, Request, Depends, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
+# main.py
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -26,9 +27,6 @@ DB_PASSWORD = os.getenv("DB_PASSWORD")
 if not SECRET_KEY:
     raise RuntimeError("❌ SECRET_KEY or DB_PATH not set in .env file")
 
-
-logging.basicConfig(level=logging.DEBUG)
-
 # إعداد الـ logger في بداية الملف
 logging.basicConfig(
     level=logging.INFO,
@@ -38,6 +36,7 @@ logging.basicConfig(
         logging.StreamHandler()              # يطبع في الـ console
     ]
 )
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)  # اسم الـ logger هو اسم الملف
 
 # =========================================
@@ -69,8 +68,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # =========================================
 #              دوال مساعدة
 # =========================================
+# context manager للاتصال
 @contextmanager
-def get_db():
+def get_db_context():
     conn = None
     try:
         conn = psycopg2.connect(
@@ -78,17 +78,23 @@ def get_db():
             dbname=os.getenv("DB_NAME"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
+            port="5432",
             sslmode="require" if os.getenv("DB_HOST") != "localhost" else "prefer"
         )
         yield conn
     except Exception as e:
         if conn:
             conn.rollback()
-        logger.error(f"خطأ في الاتصال: {e}")
+        logger.error(f"خطأ في الاتصال بقاعدة البيانات: {e}")
         raise
     finally:
-        if conn:
+        if conn and not conn.closed:
             conn.close()
+
+# Dependency لـ FastAPI
+def get_db():
+    with get_db_context() as conn:
+        yield conn
 
 def get_db_dep():
     conn = get_db()
@@ -116,13 +122,13 @@ def hash_password(password: str) -> str:
     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     return hashed.decode('utf-8')
 
-def get_user(condition: str, param: tuple):
-    conn = get_db()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)  # استخدم RealDictCursor للحصول على النتائج كقواميس
-    cursor.execute(f"SELECT * FROM users WHERE {condition}", param)
-    user = cursor.fetchone()
-    conn.close()
-    return user
+def get_user(condition: str, param: tuple, db=Depends(get_db)):
+    cursor = db.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute(f"SELECT * FROM users WHERE {condition}", param)
+        return cursor.fetchone()
+    finally:
+        cursor.close()
 
 # دالة لتوليد رمز CSRF
 def generate_csrf_token():
@@ -170,8 +176,14 @@ async def login(request: Request):
     set_cache_headers(response)
     return response
 
+
 @app.post("/login")
-async def login_post(request: Request, username: str = Form(...), password: str = Form(...), csrf_token: str = Form(...)):
+async def login_post(
+    request: Request, 
+    username: str = Form(...), 
+    password: str = Form(...), 
+    csrf_token: str = Form(...),
+    db=Depends(get_db)):
     # التحقق من CSRF token
     try:
         verify_csrf_token(request, csrf_token)
@@ -179,7 +191,7 @@ async def login_post(request: Request, username: str = Form(...), password: str 
         raise e
 
     # جلب بيانات المستخدم من قاعدة البيانات
-    user_data = get_user("username = %s", (username,))
+    user_data = get_user("username = %s", (username,), db)
 
     # التحقق من كلمة المرور
     if user_data:
