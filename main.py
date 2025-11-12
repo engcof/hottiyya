@@ -18,8 +18,11 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, "database", "family_tree.db")
 
-if not SECRET_KEY or not DB_PATH:
+if not SECRET_KEY:
     raise RuntimeError("❌ SECRET_KEY or DB_PATH not set in .env file")
+
+if not DB_PATH:
+    raise RuntimeError("❌ DB_PATH not set in environment variables")
 logging.basicConfig(level=logging.DEBUG)
 
 # =========================================
@@ -46,7 +49,11 @@ app.add_middleware(
 )
 # إعداد مسار ملفات Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
+# التحقق من صلاحية الكتابة في المسار
+if not os.access(os.path.dirname(DB_PATH), os.W_OK):
+    raise PermissionError(f"لا يوجد صلاحية كتابة إلى المجلد: {os.path.dirname(DB_PATH)}")
+else:
+    logging.info(f"تم التحقق من صلاحيات الكتابة في {os.path.dirname(DB_PATH)}")
 
 # =========================================
 #              دوال مساعدة
