@@ -29,6 +29,17 @@ if not SECRET_KEY:
 
 logging.basicConfig(level=logging.DEBUG)
 
+# إعداد الـ logger في بداية الملف
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log"),      # يخزن في ملف
+        logging.StreamHandler()              # يطبع في الـ console
+    ]
+)
+logger = logging.getLogger(__name__)  # اسم الـ logger هو اسم الملف
+
 # =========================================
 #           إعداد FastAPI
 # =========================================
