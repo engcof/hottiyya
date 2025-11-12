@@ -1,11 +1,12 @@
 import os
 import logging
 import bcrypt
-import sqlite3
+import psycopg2
 import secrets  # لحماية إضافية مع CSRF
 from typing import Optional
 from dotenv import load_dotenv
 from datetime import timedelta
+from psycopg2.extras import RealDictCursor
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
@@ -15,14 +16,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "database", "family_tree.db")
+DB_HOST = os.getenv("DB_HOST")  # أو يمكنك تخصيص عنوان الـHost
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+
 
 if not SECRET_KEY:
     raise RuntimeError("❌ SECRET_KEY or DB_PATH not set in .env file")
 
-if not DB_PATH:
-    raise RuntimeError("❌ DB_PATH not set in environment variables")
+
 logging.basicConfig(level=logging.DEBUG)
 
 # =========================================
@@ -42,26 +45,27 @@ app.add_middleware(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # يجب تحديد المجالات المسموح بها في الإنتاج
+    allow_origins=["https://render.com"],  # يجب تحديد المجالات المسموح بها في الإنتاج
     allow_methods=["*"],
     allow_headers=["*"],
 
 )
 # إعداد مسار ملفات Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
-# التحقق من صلاحية الكتابة في المسار
-if not os.access(os.path.dirname(DB_PATH), os.W_OK):
-    raise PermissionError(f"لا يوجد صلاحية كتابة إلى المجلد: {os.path.dirname(DB_PATH)}")
-else:
-    logging.info(f"تم التحقق من صلاحيات الكتابة في {os.path.dirname(DB_PATH)}")
+
 
 # =========================================
 #              دوال مساعدة
 # =========================================
 def get_db():
-    logging.debug(f"Attempting to connect to database at {DB_PATH}")
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    logging.debug(f"Attempting to connect to database at {DB_HOST}/{DB_NAME}")
+    conn = psycopg2.connect(
+        host=DB_HOST,
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD
+    )
+    conn.autocommit = True  # أو يمكنك التحكم في ذلك في كل عملية استعلام إذا لزم الأمر
     return conn
 
 def get_db_dep():
@@ -92,13 +96,11 @@ def hash_password(password: str) -> str:
 
 def get_user(condition: str, param: tuple):
     conn = get_db()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)  # استخدم RealDictCursor للحصول على النتائج كقواميس
     cursor.execute(f"SELECT * FROM users WHERE {condition}", param)
     user = cursor.fetchone()
     conn.close()
     return user
-
 
 # دالة لتوليد رمز CSRF
 def generate_csrf_token():
@@ -155,7 +157,7 @@ async def login_post(request: Request, username: str = Form(...), password: str 
         raise e
 
     # جلب بيانات المستخدم من قاعدة البيانات
-    user_data = get_user("username = ?", (username,))
+    user_data = get_user("username = %s", (username,))
 
     # التحقق من كلمة المرور
     if user_data:
@@ -175,7 +177,6 @@ async def login_post(request: Request, username: str = Form(...), password: str 
         return response
     else:
         raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
-
 
 # 4. تسجيل الخروج
 @app.get("/logout")
@@ -206,7 +207,7 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
     offset = (page - 1) * users_per_page
 
     # جلب المستخدمين
-    cursor.execute("SELECT id, username, role FROM users LIMIT ? OFFSET ?", (users_per_page, offset))
+    cursor.execute("SELECT id, username, role FROM users LIMIT %s OFFSET %s", (users_per_page, offset))
     users = cursor.fetchall()
     
     # اسم المدير الأساسي
@@ -228,7 +229,7 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
             SELECT permissions.name
             FROM permissions
             JOIN user_permissions ON permissions.id = user_permissions.permission_id
-            WHERE user_permissions.user_id = ?
+            WHERE user_permissions.user_id = %s
         """, (u[0],))
         user_permissions[u[0]] = [p[0] for p in cursor.fetchall()]
 
@@ -261,11 +262,11 @@ async def add_user(request: Request, username: str = Form(...), password: str = 
     cursor = conn.cursor()
 
     # تحقق من وجود المستخدم
-    cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+    cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
     if cursor.fetchone():
         raise HTTPException(status_code=400, detail="المستخدم موجود بالفعل")
-
-    cursor.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)",
+    
+    cursor.execute("INSERT INTO users (username, password, role) VALUES (%s, %s, %s)", 
                    (username, hash_password(password), role))
     conn.commit()
     
@@ -279,7 +280,7 @@ async def delete_user(request: Request, user_id: int = Form(...), csrf_token: st
     conn = get_db()
     cursor = conn.cursor()
     
-    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
     conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
@@ -292,7 +293,7 @@ async def edit_user(request: Request, user_id: int = Form(...), username: str = 
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("UPDATE users SET username = ?, role = ? WHERE id = ?", (username, role, user_id))
+    cursor.execute("UPDATE users SET username = %s, role = %s WHERE id = %s", (username, role, user_id))
     conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
@@ -316,12 +317,12 @@ async def change_password(request: Request, user_id: int = Form(...), new_passwo
     cursor = conn.cursor()
     
     # التحقق من وجود المستخدم
-    cursor.execute("SELECT id FROM users WHERE id = ?", (user_id,))
+    cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
     if not cursor.fetchone():
         raise HTTPException(status_code=404, detail="المستخدم غير موجود")
 
     # تحديث كلمة المرور
-    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (hashed_password, user_id))
+    cursor.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, user_id))
     conn.commit()
 
     # إعادة توجيه إلى صفحة الإدارة بعد التحديث
@@ -335,7 +336,7 @@ async def give_permission(request: Request, user_id: int = Form(...), permission
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("INSERT OR IGNORE INTO user_permissions (user_id, permission_id) VALUES (?, ?)", (user_id, permission_id))
+    cursor.execute("INSERT OR IGNORE INTO user_permissions (user_id, permission_id) VALUES (%s, %s)", (user_id, permission_id))
     conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
@@ -348,7 +349,7 @@ async def remove_permission(request: Request, user_id: int = Form(...), permissi
     conn = get_db()
     cursor = conn.cursor()
 
-    cursor.execute("DELETE FROM user_permissions WHERE user_id = ? AND permission_id = ?", (user_id, permission_id))
+    cursor.execute("DELETE FROM user_permissions WHERE user_id = %s AND permission_id = %s", (user_id, permission_id))
     conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
