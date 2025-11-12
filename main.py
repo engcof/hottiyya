@@ -15,7 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
-DB_PATH = os.getenv("DB_PATH", "/home/engcof/database/family_tree.db")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, "database", "family_tree.db")
 
 if not SECRET_KEY or not DB_PATH:
     raise RuntimeError("❌ SECRET_KEY or DB_PATH not set in .env file")
