@@ -6,6 +6,7 @@ import secrets  # لحماية إضافية مع CSRF
 from typing import Optional
 from dotenv import load_dotenv
 from datetime import timedelta
+from contextlib import contextmanager
 from psycopg2.extras import RealDictCursor
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -57,16 +58,26 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # =========================================
 #              دوال مساعدة
 # =========================================
+@contextmanager
 def get_db():
-    logging.debug(f"Attempting to connect to database at {DB_HOST}/{DB_NAME}")
-    conn = psycopg2.connect(
-        host=DB_HOST,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASSWORD
-    )
-    conn.autocommit = True  # أو يمكنك التحكم في ذلك في كل عملية استعلام إذا لزم الأمر
-    return conn
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            dbname=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            sslmode="require" if os.getenv("DB_HOST") != "localhost" else "prefer"
+        )
+        yield conn
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        logger.error(f"خطأ في الاتصال: {e}")
+        raise
+    finally:
+        if conn:
+            conn.close()
 
 def get_db_dep():
     conn = get_db()

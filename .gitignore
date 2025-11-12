@@ -1,8 +1,5 @@
-# تجاهل قاعدة البيانات المحلية
-/database/family_tree.db
-
-# تجاهل ملفات PyCache
+.env
 __pycache__/
 *.pyc
-
-.env
+*.log
+.DS_Store
