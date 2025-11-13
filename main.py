@@ -250,17 +250,16 @@ async def login_post(
     request: Request, 
     username: str = Form(...), 
     password: str = Form(...), 
-    csrf_token: str = Form(...)
-    ):
+    csrf_token: str = Form(...),
+    db=Depends(get_db)):
     # التحقق من CSRF token
     try:
         verify_csrf_token(request, csrf_token)
     except HTTPException as e:
         raise e
     
-    with get_db_context() as conn:
     # جلب بيانات المستخدم من قاعدة البيانات
-        user_data = get_user("username = %s", (username,), conn)
+    user_data = get_user("username = %s", (username,), db)
 
     # التحقق من كلمة المرور
     if user_data:
