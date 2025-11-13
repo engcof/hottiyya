@@ -73,19 +73,30 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def get_db_context():
     conn = None
     try:
+        host = os.getenv("DB_HOST")
+        dbname = os.getenv("DB_NAME")
+        user = os.getenv("DB_USER")
+        password = os.getenv("DB_PASSWORD")
+
+        # تحقق من وجود القيم
+        if not all([host, dbname, user, password]):
+            raise ValueError("متغيرات قاعدة البيانات مفقودة! أضفها في Render Environment.")
+
+        logger.info(f"الاتصال بقاعدة البيانات: {user}@{host}/{dbname}")
+
         conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
+            host=host,
+            dbname=dbname,
+            user=user,
+            password=password,
             port="5432",
-            sslmode="require" if os.getenv("DB_HOST") != "localhost" else "prefer"
+            sslmode="require"  # إجبار SSL
         )
         yield conn
     except Exception as e:
+        logger.error(f"خطأ في الاتصال بقاعدة البيانات: {e}")
         if conn:
             conn.rollback()
-        logger.error(f"خطأ في الاتصال بقاعدة البيانات: {e}")
         raise
     finally:
         if conn and not conn.closed:

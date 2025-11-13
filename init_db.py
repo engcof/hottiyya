@@ -8,11 +8,17 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# جلب من البيئة (لا hardcoded)
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "family_tree")
-DB_USER = os.getenv("DB_USER", "engcof")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "")  # غيّر إلى قيمة آمنة في .env
+host = os.getenv("DB_HOST")
+dbname = os.getenv("DB_NAME")
+user = os.getenv("DB_USER")
+password = os.getenv("DB_PASSWORD")
+
+if not all([host, dbname, user, password]):
+    raise EnvironmentError("متغيرات قاعدة البيانات مفقودة!")
+
+logger.info(f"تهيئة قاعدة البيانات: {user}@{host}/{dbname}")
+
+
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -24,13 +30,13 @@ def init_database():
     try:
         logger.info("جاري الاتصال بقاعدة البيانات...")
         conn = psycopg2.connect(
-            host=DB_HOST,
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            port="5432",
-            sslmode="require" if DB_HOST != "localhost" else "prefer"  # SSL للإنتاج
-        )
+        host=host,
+        dbname=dbname,
+        user=user,
+        password=password,
+        port="5432",
+        sslmode="require"
+)
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cursor = conn.cursor()
 
