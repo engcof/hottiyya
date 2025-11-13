@@ -37,7 +37,6 @@ logging.basicConfig(
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)  # اسم الـ logger هو اسم الملف
 
-# دالة للتحقق من وجود جدول وإنشاؤه إذا لم يكن موجودًا
 def init_database():
     conn = None
     try:
@@ -52,186 +51,155 @@ def init_database():
         conn.autocommit = True
         cur = conn.cursor()
 
-        # تحقق من وجود جدول users
-        cur.execute("SELECT to_regclass('public.users');")
-        if cur.fetchone()[0] is not None:
-            logger.info("جدول users موجود بالفعل.")
-            cur.close()
-            conn.close()
-            return
+        # قائمة الجداول مع تعليمات الإنشاء
+        tables = [
+            ("users", """
+                CREATE TABLE users (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT UNIQUE NOT NULL,
+                    password TEXT NOT NULL,
+                    role TEXT CHECK(role IN ('admin', 'manager', 'user')) DEFAULT 'user'
+                );
+            """),
+            ("family_name", """
+                CREATE TABLE family_name (
+                    code TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    f_code TEXT,
+                    m_code TEXT,
+                    w_code TEXT,
+                    h_code TEXT,
+                    type TEXT CHECK(type IN ('ابن', 'ابنة', 'زوج', 'زوجة', 'ابن زوج', 'ابنة زوج', 'ابن زوجة', 'ابنة زوجة')),
+                    level INTEGER,
+                    FOREIGN KEY(f_code) REFERENCES family_name(code) ON DELETE SET NULL,
+                    FOREIGN KEY(m_code) REFERENCES family_name(code) ON DELETE SET NULL,
+                    FOREIGN KEY(w_code) REFERENCES family_name(code) ON DELETE SET NULL,
+                    FOREIGN KEY(h_code) REFERENCES family_name(code) ON DELETE SET NULL
+                );
+            """),
+            ("family_info", """
+                CREATE TABLE family_info (
+                    id SERIAL PRIMARY KEY,
+                    code_info TEXT,
+                    gender TEXT,
+                    d_o_b TEXT,
+                    d_o_d TEXT,
+                    email TEXT,
+                    phone TEXT,
+                    address TEXT,
+                    p_o_b TEXT,
+                    FOREIGN KEY(code_info) REFERENCES family_name(code)
+                );
+            """),
+            ("family_picture", """
+                CREATE TABLE family_picture (
+                    id SERIAL PRIMARY KEY,
+                    code_pic TEXT,
+                    pic_path TEXT,
+                    picture BYTEA,
+                    FOREIGN KEY(code_pic) REFERENCES family_name(code)
+                );
+            """),
+            ("articles", """
+                CREATE TABLE articles (
+                    id SERIAL PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    author TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """),
+            ("comments", """
+                CREATE TABLE comments (
+                    id SERIAL PRIMARY KEY,
+                    article_id INTEGER,
+                    username TEXT,
+                    content TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY(article_id) REFERENCES articles(id)
+                );
+            """),
+            ("logs", """
+                CREATE TABLE logs (
+                    id SERIAL PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    action TEXT NOT NULL,
+                    target TEXT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """),
+            ("news", """
+                CREATE TABLE news (
+                    id SERIAL PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    image_url TEXT,
+                    video_url TEXT,
+                    author TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """),
+            ("permissions", """
+                CREATE TABLE permissions (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    description TEXT,
+                    category TEXT DEFAULT 'عام'
+                );
+            """),
+            ("user_permissions", """
+                CREATE TABLE user_permissions (
+                    user_id INTEGER,
+                    permission_id INTEGER,
+                    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
+                    PRIMARY KEY (user_id, permission_id)
+                );
+            """),
+        ]
 
-        logger.info("إنشاء جدول users وإضافة المستخدم admin...")
+        # إنشاء الجداول إذا لم تكن موجودة
+        for table_name, create_sql in tables:
+            cur.execute(f"SELECT to_regclass('public.{table_name}');")
+            if cur.fetchone()[0] is None:
+                logger.info(f"إنشاء جدول {table_name}...")
+                cur.execute(create_sql)
+                conn.commit()
+            else:
+                logger.info(f"جدول {table_name} موجود بالفعل.")
 
-        # إنشاء جدول users
-        cur.execute("""
-            CREATE TABLE users (
-                id SERIAL PRIMARY KEY,
-                username TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                role TEXT CHECK(role IN ('admin', 'manager', 'user')) DEFAULT 'user'
-            );
-        """)
+        # إضافة مستخدم admin إذا لم يكن موجودًا
+        cur.execute("SELECT username FROM users WHERE username = 'admin'")
+        if not cur.fetchone():
+            hashed = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            cur.execute("""
+                INSERT INTO users (username, password, role) VALUES (%s, %s, %s)
+            """, ("admin", hashed, "admin"))
+            conn.commit()
+            logger.info("تم إضافة المستخدم admin")
 
-        # إضافة admin
-        hashed = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        cur.execute("""
-            INSERT INTO users (username, password, role) 
-            VALUES (%s, %s, %s) ON CONFLICT (username) DO NOTHING
-        """, ("admin", hashed, "admin"))
-
-        logger.info("تم إنشاء جدول users وإضافة admin بنجاح!")
-
-          # إنشاء الجداول
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS family_name (
-                code TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                f_code TEXT,
-                m_code TEXT,
-                w_code TEXT,
-                h_code TEXT,
-                type TEXT CHECK(type IN ('ابن', 'ابنة', 'زوج', 'زوجة', 'ابن زوج', 'ابنة زوج', 'ابن زوجة', 'ابنة زوجة')),
-                level INTEGER,
-                FOREIGN KEY(f_code) REFERENCES family_name(code) ON DELETE SET NULL,
-                FOREIGN KEY(m_code) REFERENCES family_name(code) ON DELETE SET NULL,
-                FOREIGN KEY(w_code) REFERENCES family_name(code) ON DELETE SET NULL,
-                FOREIGN KEY(h_code) REFERENCES family_name(code) ON DELETE SET NULL
-            );
-        ''')
-        conn.commit()
-        
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS family_info (
-                id SERIAL PRIMARY KEY,       
-                code_info TEXT,
-                gender TEXT,
-                d_o_b TEXT,
-                d_o_d TEXT,
-                email TEXT,
-                phone TEXT,
-                address TEXT,
-                p_o_b TEXT,
-                FOREIGN KEY(code_info) REFERENCES family_name(code)       
-            );
-        ''')
-        conn.commit()
-        
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS family_picture (
-                id SERIAL PRIMARY KEY,       
-                code_pic TEXT,
-                pic_path TEXT,
-                picture BYTEA,
-                FOREIGN KEY(code_pic) REFERENCES family_name(code)       
-            );
-        ''')
-        conn.commit()
-        
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS articles (
-                id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                author TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        ''')
-        conn.commit()
-        
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS comments (
-                id SERIAL PRIMARY KEY,
-                article_id INTEGER,
-                username TEXT,
-                content TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(article_id) REFERENCES articles(id)
-            );
-        ''')
-        conn.commit()
-        
-        cur.execute('''
-        CREATE TABLE IF NOT EXISTS logs (
-            id SERIAL PRIMARY KEY,
-            username TEXT NOT NULL,
-            action TEXT NOT NULL,
-            target TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        ''')
-        conn.commit()
-        
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS news (
-                id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                image_url TEXT,
-                video_url TEXT,
-                author TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-        ''')
-        conn.commit()
-
-        # جدول الصلاحيات
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS permissions (
-                id SERIAL PRIMARY KEY,
-                name TEXT UNIQUE NOT NULL,
-                description TEXT,
-                category TEXT DEFAULT 'عام'          
-            );
-            """)
-        conn.commit()
-        
-        # جدول ربط المستخدمين بالصلاحيات (many-to-many)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS user_permissions (
-                user_id INTEGER,
-                permission_id INTEGER,
-                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
-                PRIMARY KEY (user_id, permission_id)
-            );
-            """)
-        conn.commit()
-        
-       # --------------------------------------
-        # 4️⃣ إضافة الصلاحيات الأساسية
-        # --------------------------------------
+        # إضافة الصلاحيات الأساسية
         permissions_list = [
-            # شجرة العائلة
             ("add_member", "إضافة عضو جديد في شجرة العائلة", 'الشجرة'),
             ("edit_member", "تعديل بيانات الأعضاء", 'الشجرة'),
             ("delete_member", "حذف الأعضاء من الشجرة", 'الشجرة'),
-
-            # المقالات
             ("add_article", "إضافة مقال جديد", 'المقالات'),
             ("edit_article", "تعديل المقالات", 'المقالات'),
             ("delete_article", "حذف المقالات", 'المقالات'),
-
-            # الأخبار
             ("add_news", "إضافة خبر جديد", 'الأخبار'),
             ("edit_news", "تعديل الأخبار", 'الأخبار'),
             ("delete_news", "حذف الأخبار", 'الأخبار'),
-
-            # التعليقات
             ("add_comment", "إضافة تعليق", 'عام'),
             ("delete_comment", "حذف تعليق", 'عام'),
-
-            # السجل
             ("view_logs", "عرض سجل النشاطات", 'عام'),
         ]
 
-        # إدخال الصلاحيات مع تجاهل التكرار
         for name, desc, categ in permissions_list:
             cur.execute("""
                 INSERT INTO permissions (name, description, category)
                 VALUES (%s, %s, %s)
                 ON CONFLICT (name) DO NOTHING
             """, (name, desc, categ))
-
         conn.commit()
 
         cur.close()
@@ -241,7 +209,9 @@ def init_database():
         logger.error(f"فشل في تهيئة قاعدة البيانات: {e}")
         if conn:
             conn.close()
-        # لا نوقف التطبيق – فقط نسجل الخطأ
+
+# دالة للتحقق من وجود جدول وإنشاؤه إذا لم يكن موجودًا
+
 
 # استدعِ الدالة عند بدء التطبيق
 init_database()
