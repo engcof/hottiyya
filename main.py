@@ -416,18 +416,6 @@ async def session_test(request: Request):
     return {"session_user": user}
 
 
-@app.get("/init-db", include_in_schema=False)  # سري، لا يظهر في /docs
-async def init_database_endpoint():
-    try:
-        # استدعِ init_db.py
-        import subprocess
-        result = subprocess.run(["python", "init_db.py"], capture_output=True, text=True)
-        if result.returncode == 0:
-            return {"status": "success", "output": result.stdout}
-        else:
-            return {"status": "error", "output": result.stderr}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
 
 
