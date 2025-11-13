@@ -299,8 +299,9 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
     request.session["csrf_token"] = csrf_token
 
     # فتح قاعدة البيانات
-    conn = get_db()
-    cursor = conn.cursor()
+    # استخدم with للحصول على الاتصال الصحيح
+    with get_db_context() as conn:
+        cursor = conn.cursor()
 
     # تحديد عدد المستخدمين لكل صفحة
     users_per_page = 10
