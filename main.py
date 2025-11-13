@@ -14,7 +14,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import FastAPI, Request, Depends, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
-# main.py
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -22,7 +21,6 @@ DB_HOST = os.getenv("DB_HOST")  # أو يمكنك تخصيص عنوان الـHo
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
-
 
 if not SECRET_KEY:
     raise RuntimeError("❌ SECRET_KEY or DB_PATH not set in .env file")
@@ -82,6 +80,160 @@ def init_database():
         """, ("admin", hashed, "admin"))
 
         logger.info("تم إنشاء جدول users وإضافة admin بنجاح!")
+
+          # إنشاء الجداول
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS family_name (
+                code TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                f_code TEXT,
+                m_code TEXT,
+                w_code TEXT,
+                h_code TEXT,
+                type TEXT CHECK(type IN ('ابن', 'ابنة', 'زوج', 'زوجة', 'ابن زوج', 'ابنة زوج', 'ابن زوجة', 'ابنة زوجة')),
+                level INTEGER,
+                FOREIGN KEY(f_code) REFERENCES family_name(code) ON DELETE SET NULL,
+                FOREIGN KEY(m_code) REFERENCES family_name(code) ON DELETE SET NULL,
+                FOREIGN KEY(w_code) REFERENCES family_name(code) ON DELETE SET NULL,
+                FOREIGN KEY(h_code) REFERENCES family_name(code) ON DELETE SET NULL
+            );
+        ''')
+        conn.commit()
+        
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS family_info (
+                id SERIAL PRIMARY KEY,       
+                code_info TEXT,
+                gender TEXT,
+                d_o_b TEXT,
+                d_o_d TEXT,
+                email TEXT,
+                phone TEXT,
+                address TEXT,
+                p_o_b TEXT,
+                FOREIGN KEY(code_info) REFERENCES family_name(code)       
+            );
+        ''')
+        conn.commit()
+        
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS family_picture (
+                id SERIAL PRIMARY KEY,       
+                code_pic TEXT,
+                pic_path TEXT,
+                picture BYTEA,
+                FOREIGN KEY(code_pic) REFERENCES family_name(code)       
+            );
+        ''')
+        conn.commit()
+        
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS articles (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                author TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        conn.commit()
+        
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS comments (
+                id SERIAL PRIMARY KEY,
+                article_id INTEGER,
+                username TEXT,
+                content TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(article_id) REFERENCES articles(id)
+            );
+        ''')
+        conn.commit()
+        
+        cur.execute('''
+        CREATE TABLE IF NOT EXISTS logs (
+            id SERIAL PRIMARY KEY,
+            username TEXT NOT NULL,
+            action TEXT NOT NULL,
+            target TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        ''')
+        conn.commit()
+        
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS news (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                image_url TEXT,
+                video_url TEXT,
+                author TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        ''')
+        conn.commit()
+
+        # جدول الصلاحيات
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS permissions (
+                id SERIAL PRIMARY KEY,
+                name TEXT UNIQUE NOT NULL,
+                description TEXT,
+                category TEXT DEFAULT 'عام'          
+            );
+            """)
+        conn.commit()
+        
+        # جدول ربط المستخدمين بالصلاحيات (many-to-many)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS user_permissions (
+                user_id INTEGER,
+                permission_id INTEGER,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+                FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
+                PRIMARY KEY (user_id, permission_id)
+            );
+            """)
+        conn.commit()
+        
+       # --------------------------------------
+        # 4️⃣ إضافة الصلاحيات الأساسية
+        # --------------------------------------
+        permissions_list = [
+            # شجرة العائلة
+            ("add_member", "إضافة عضو جديد في شجرة العائلة", 'الشجرة'),
+            ("edit_member", "تعديل بيانات الأعضاء", 'الشجرة'),
+            ("delete_member", "حذف الأعضاء من الشجرة", 'الشجرة'),
+
+            # المقالات
+            ("add_article", "إضافة مقال جديد", 'المقالات'),
+            ("edit_article", "تعديل المقالات", 'المقالات'),
+            ("delete_article", "حذف المقالات", 'المقالات'),
+
+            # الأخبار
+            ("add_news", "إضافة خبر جديد", 'الأخبار'),
+            ("edit_news", "تعديل الأخبار", 'الأخبار'),
+            ("delete_news", "حذف الأخبار", 'الأخبار'),
+
+            # التعليقات
+            ("add_comment", "إضافة تعليق", 'عام'),
+            ("delete_comment", "حذف تعليق", 'عام'),
+
+            # السجل
+            ("view_logs", "عرض سجل النشاطات", 'عام'),
+        ]
+
+        # إدخال الصلاحيات مع تجاهل التكرار
+        for name, desc, categ in permissions_list:
+            cur.execute("""
+                INSERT INTO permissions (name, description, category)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (name) DO NOTHING
+            """, (name, desc, categ))
+
+        conn.commit()
+
         cur.close()
         conn.close()
 
@@ -109,6 +261,7 @@ app.add_middleware(
     session_cookie="session",
     max_age=int(timedelta(hours=1).total_seconds())
 )
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://render.com"],  # يجب تحديد المجالات المسموح بها في الإنتاج
@@ -116,9 +269,9 @@ app.add_middleware(
     allow_headers=["*"],
 
 )
+
 # إعداد مسار ملفات Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 
 # =========================================
 #              دوال مساعدة
@@ -188,15 +341,12 @@ def hash_password(password: str) -> str:
     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     return hashed.decode('utf-8')
 
-def get_user(condition: str, param: tuple, db=Depends(get_db)):
+def get_user(condition: str, param: tuple, db=None):
     with get_db_context() as conn:
-        cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
-    try:
-        cursor.execute(f"SELECT * FROM users WHERE {condition}", param)
-        return cursor.fetchone()
-    finally:
-        cursor.close()
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute(f"SELECT * FROM users WHERE {condition}", param)
+            user = cursor.fetchone()
+            return user
 
 # دالة لتوليد رمز CSRF
 def generate_csrf_token():
@@ -243,7 +393,6 @@ async def login(request: Request):
     response = templates.TemplateResponse("login.html", {"request": request, "csrf_token": csrf_token})
     set_cache_headers(response)
     return response
-
 
 @app.post("/login")
 async def login_post(
@@ -296,52 +445,40 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
     if not user or user.get("role") != "admin":
         return RedirectResponse("/", status_code=303)
     
-    # توليد CSRF token وتخزينه في الجلسة
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
-    # فتح قاعدة البيانات
-    # استخدم with للحصول على الاتصال الصحيح
     with get_db_context() as conn:
-        cursor = conn.cursor()
+        with conn.cursor() as cursor:
+            users_per_page = 10
+            offset = (page - 1) * users_per_page
 
-    # تحديد عدد المستخدمين لكل صفحة
-    users_per_page = 10
-    offset = (page - 1) * users_per_page
+            cursor.execute("SELECT id, username, role FROM users LIMIT %s OFFSET %s", (users_per_page, offset))
+            users = cursor.fetchall()
 
-    # جلب المستخدمين
-    cursor.execute("SELECT id, username, role FROM users LIMIT %s OFFSET %s", (users_per_page, offset))
-    users = cursor.fetchall()
-    
-    # اسم المدير الأساسي
-    MASTER_ADMIN_USERNAME = "admin"
+            MASTER_ADMIN_USERNAME = "admin"
+            if user["username"] != MASTER_ADMIN_USERNAME:
+                users = [u for u in users if u[1] != MASTER_ADMIN_USERNAME]
 
-    # إذا كان المدير هو المدير الاحتياطي، قم بإخفاء المدير الأساسي
-    if user["username"] != MASTER_ADMIN_USERNAME:
-        users = [u for u in users if u["username"] != MASTER_ADMIN_USERNAME]
+            # جلب الصلاحيات
+            cursor.execute("SELECT id, name, category FROM permissions")
+            permissions = cursor.fetchall()
 
+            # جلب صلاحيات كل مستخدم
+            user_permissions = {}
+            for u in users:
+                cursor.execute("""
+                    SELECT permissions.name
+                    FROM permissions
+                    JOIN user_permissions ON permissions.id = user_permissions.permission_id
+                    WHERE user_permissions.user_id = %s
+                """, (u[0],))
+                user_permissions[u[0]] = [p[0] for p in cursor.fetchall()]
 
-    # جلب جميع الصلاحيات
-    cursor.execute("SELECT id, name, category FROM permissions")
-    permissions = cursor.fetchall()
+            cursor.execute("SELECT COUNT(*) FROM users")
+            total_users = cursor.fetchone()[0]
+            total_pages = (total_users + users_per_page - 1) // users_per_page
 
-    # جلب صلاحيات كل مستخدم
-    user_permissions = {}
-    for u in users:
-        cursor.execute("""
-            SELECT permissions.name
-            FROM permissions
-            JOIN user_permissions ON permissions.id = user_permissions.permission_id
-            WHERE user_permissions.user_id = %s
-        """, (u[0],))
-        user_permissions[u[0]] = [p[0] for p in cursor.fetchall()]
-
-    # حساب عدد الصفحات
-    cursor.execute("SELECT COUNT(*) FROM users")
-    total_users = cursor.fetchone()[0]
-    total_pages = (total_users + users_per_page - 1) // users_per_page
-
-    # إنشاء الاستجابة
     response = templates.TemplateResponse("admin.html", {
         "request": request,
         "csrf_token": csrf_token,
@@ -351,122 +488,98 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
         "current_page": page,
         "total_pages": total_pages
     })
-
     set_cache_headers(response)
     return response
 
-
-# إضافة مستخدم جديد
 @app.post("/admin/add_user")
 async def add_user(request: Request, username: str = Form(...), password: str = Form(...), role: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-      # استخدم with للحصول على الاتصال الصحيح
     with get_db_context() as conn:
-        cursor = conn.cursor()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+            if cursor.fetchone():
+                raise HTTPException(status_code=400, detail="المستخدم موجود بالفعل")
 
+            cursor.execute(
+                "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
+                (username, hash_password(password), role)
+            )
+            conn.commit()
 
-    # تحقق من وجود المستخدم
-    cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
-    if cursor.fetchone():
-        raise HTTPException(status_code=400, detail="المستخدم موجود بالفعل")
-    
-    cursor.execute("INSERT INTO users (username, password, role) VALUES (%s, %s, %s)", 
-                   (username, hash_password(password), role))
-    conn.commit()
-    
     return RedirectResponse(url="/admin", status_code=303)
 
-# حذف مستخدم
 @app.post("/admin/delete_user")
 async def delete_user(request: Request, user_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-      # استخدم with للحصول على الاتصال الصحيح
     with get_db_context() as conn:
-        cursor = conn.cursor()
-
-    
-    cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
-    conn.commit()
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+            conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
 
-# تعديل مستخدم
 @app.post("/admin/edit_user")
 async def edit_user(request: Request, user_id: int = Form(...), username: str = Form(...), role: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-      # استخدم with للحصول على الاتصال الصحيح
     with get_db_context() as conn:
-        cursor = conn.cursor()
-
-
-    cursor.execute("UPDATE users SET username = %s, role = %s WHERE id = %s", (username, role, user_id))
-    conn.commit()
+        with conn.cursor() as cursor:
+            cursor.execute("UPDATE users SET username = %s, role = %s WHERE id = %s", (username, role, user_id))
+            conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
 
-# دالة لتغيير كلمة مرور مستخدم
 @app.post("/admin/change_password")
 async def change_password(request: Request, user_id: int = Form(...), new_password: str = Form(...), csrf_token: str = Form(...)):
-    # التحقق من رمز CSRF
     verify_csrf_token(request, csrf_token)
 
-    # التحقق من صلاحيات المستخدم
     user = request.session.get("user", None)
     if not user or user != "admin":
-        raise HTTPException(status_code=403, detail="أنت بحاجة إلى صلاحيات إدارية للوصول إلى هذه الصفحة")
+        raise HTTPException(status_code=403, detail="أنت بحاجة إلى صلاحيات إدارية")
 
-    # تشفير كلمة المرور الجديدة
     hashed_password = hash_password(new_password)
 
-    # تحديث كلمة المرور في قاعدة البيانات
-      # استخدم with للحصول على الاتصال الصحيح
     with get_db_context() as conn:
-        cursor = conn.cursor()
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="المستخدم غير موجود")
 
-    
-    # التحقق من وجود المستخدم
-    cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
-    if not cursor.fetchone():
-        raise HTTPException(status_code=404, detail="المستخدم غير موجود")
+            cursor.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, user_id))
+            conn.commit()
 
-    # تحديث كلمة المرور
-    cursor.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, user_id))
-    conn.commit()
-
-    # إعادة توجيه إلى صفحة الإدارة بعد التحديث
     return RedirectResponse(url="/admin", status_code=303)
 
-# منح صلاحية لمستخدم
 @app.post("/admin/give_permission")
 async def give_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-      # استخدم with للحصول على الاتصال الصحيح
     with get_db_context() as conn:
-        cursor = conn.cursor()
-
-
-    cursor.execute("INSERT OR IGNORE INTO user_permissions (user_id, permission_id) VALUES (%s, %s)", (user_id, permission_id))
-    conn.commit()
+        with conn.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO user_permissions (user_id, permission_id)
+                VALUES (%s, %s)
+                ON CONFLICT DO NOTHING
+            """, (user_id, permission_id))
+            conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
 
-# إزالة صلاحية من مستخدم
 @app.post("/admin/remove_permission")
 async def remove_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
     with get_db_context() as conn:
-        cursor = conn.cursor()
-
-    cursor.execute("DELETE FROM user_permissions WHERE user_id = %s AND permission_id = %s", (user_id, permission_id))
-    conn.commit()
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "DELETE FROM user_permissions WHERE user_id = %s AND permission_id = %s",
+                (user_id, permission_id)
+            )
+            conn.commit()
 
     return RedirectResponse(url="/admin", status_code=303)
-
 
 # 5. صفحة غير موجودة (خطأ 404)
 @app.get("/404")
@@ -482,12 +595,6 @@ async def session_test(request: Request):
     user = request.session.get("user", None)
     print("Session user:", user)  # سيتم طباعتها في الـ console
     return {"session_user": user}
-
-
-
-
-
-
 
 
 #uvicorn main:app --reload

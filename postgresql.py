@@ -251,11 +251,6 @@ def give_all_permissions(username):
         conn.rollback()  # التراجع في حالة حدوث خطأ
         print(f"⚠️ حدث خطأ أثناء إعطاء جميع الصلاحيات للمستخدم {username}: {e}")
 
-
-
-
-
-
 # تطبيق الصلاحيات على المستخدمين
 give_all_permissions("admin")
 
