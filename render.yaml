@@ -1,15 +1,5 @@
 # render.yaml
 services:
-  # ============== قاعدة البيانات ==============
-  - type: pgsql
-    name: hottiyya-db
-    region: oregon
-    plan: free
-    database: family_tree
-    user: engcof
-    version: "16"
-
-  # ============== تطبيق FastAPI ==============
   - type: web
     name: hottiyya
     region: oregon
@@ -18,21 +8,8 @@ services:
     buildCommand: pip install -r requirements.txt && python init_db.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      DB_HOST: dpg-d4ai3b6mcj7s73ff4810-a
+      DB_NAME: hottiyya_db
+      DB_USER: hottiyya_db_user
       SECRET_KEY:
         generator: secret
-      DB_HOST:
-        fromDatabase:
-          name: hottiyya-db
-          property: host
-      DB_NAME:
-        fromDatabase:
-          name: hottiyya-db
-          property: database
-      DB_USER:
-        fromDatabase:
-          name: hottiyya-db
-          property: user
-      DB_PASSWORD:
-        fromDatabase:
-          name: hottiyya-db
-          property: password

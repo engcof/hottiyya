@@ -1,72 +1,96 @@
+# init_db.py
+# init_db.py
 import os
+import sys
 import logging
-import psycopg2
-import bcrypt
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
-# إعداد logging
-logging.basicConfig(level=logging.INFO)
+# إجبار الـ logging على stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 logger = logging.getLogger(__name__)
 
-host = os.getenv("DB_HOST")
-dbname = os.getenv("DB_NAME")
-user = os.getenv("DB_USER")
-password = os.getenv("DB_PASSWORD")
+logger.info("بدء تنفيذ init_db.py...")
 
-if not all([host, dbname, user, password]):
-    raise EnvironmentError("متغيرات قاعدة البيانات مفقودة!")
+# جلب المتغيرات
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
 
-logger.info(f"تهيئة قاعدة البيانات: {user}@{host}/{dbname}")
+logger.info(f"DB_HOST: {DB_HOST}")
+logger.info(f"DB_NAME: {DB_NAME}")
+logger.info(f"DB_USER: {DB_USER}")
 
+if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
+    logger.error("متغيرات قاعدة البيانات مفقودة!")
+    sys.exit(1)
 
+try:
+    import psycopg2
+    from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+    import bcrypt
 
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    logger.info("استيراد المكتبات ناجح")
 
-def check_password(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
-
-def init_database():
-    try:
-        logger.info("جاري الاتصال بقاعدة البيانات...")
-        conn = psycopg2.connect(
-        host=host,
-        dbname=dbname,
-        user=user,
-        password=password,
+    conn = psycopg2.connect(
+        host=DB_HOST,
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
         port="5432",
         sslmode="require"
-)
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cursor = conn.cursor()
+    )
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+    cursor = conn.cursor()
+    logger.info("تم الاتصال بقاعدة البيانات بنجاح!")
 
-        # التحقق من وجود جدول users (لتشغيل مرة واحدة)
-        cursor.execute("SELECT COUNT(*) FROM information_schema.tables WHERE table_name = 'users'")
-        if cursor.fetchone()[0] > 0:
-            logger.info("الجداول موجودة بالفعل. تخطي التهيئة.")
-            cursor.close()
-            conn.close()
-            return
+    # تحقق من وجود جدول users
+    cursor.execute("SELECT to_regclass('public.users');")
+    if cursor.fetchone()[0]:
+        logger.info("الجداول موجودة بالفعل. تخطي التهيئة.")
+        cursor.close()
+        conn.close()
+        sys.exit(0)
 
-        # إنشاء الجداول (مع تحسينات)
-        tables_sql = """
-        CREATE TABLE IF NOT EXISTS family_name (
+    logger.info("إنشاء الجداول...")
+
+    # === جدول المستخدمين ===
+    cursor.execute("""
+        CREATE TABLE users (
+            id SERIAL PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT CHECK(role IN ('admin', 'manager', 'user')) DEFAULT 'user'
+        );
+    """)
+
+    # === جدول شجرة العائلة ===
+    cursor.execute("""
+        CREATE TABLE family_name (
             code TEXT PRIMARY KEY,
             name TEXT NOT NULL,
             f_code TEXT,
             m_code TEXT,
             w_code TEXT,
             h_code TEXT,
-            type TEXT CHECK(type IN ('ابن', 'ابنة', 'زوج', 'زوجة', 'ابن زوج', 'ابنة زوج', 'ابن زوجة', 'ابنة زوجة')),
-            level INTEGER,
+            type TEXT CHECK(type IN (
+                'ابن', 'ابنة', 'زوج', 'زوجة',
+                'ابن زوج', 'ابنة زوج', 'ابن زوجة', 'ابنة زوجة'
+            )),
+            level INTEGER DEFAULT 0,
             FOREIGN KEY(f_code) REFERENCES family_name(code) ON DELETE SET NULL,
             FOREIGN KEY(m_code) REFERENCES family_name(code) ON DELETE SET NULL,
             FOREIGN KEY(w_code) REFERENCES family_name(code) ON DELETE SET NULL,
-            FOREIGN KEY(h_code) REFERENCES family_name(code) ON DELETE SET NULL
+            FOREIGN KEY(h_code) REFERENCES family_name(code) ON DELETE SET NULL      
+           
         );
-
+    """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS family_info (
-            id SERIAL PRIMARY KEY,
+            id SERIAL PRIMARY KEY,       
             code_info TEXT,
             gender TEXT,
             d_o_b TEXT,
@@ -75,17 +99,19 @@ def init_database():
             phone TEXT,
             address TEXT,
             p_o_b TEXT,
-            FOREIGN KEY(code_info) REFERENCES family_name(code) ON DELETE CASCADE
+            FOREIGN KEY(code_info) REFERENCES family_name(code)       
         );
-
+    """) 
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS family_picture (
-            id SERIAL PRIMARY KEY,
+            id SERIAL PRIMARY KEY,       
             code_pic TEXT,
             pic_path TEXT,
             picture BYTEA,
-            FOREIGN KEY(code_pic) REFERENCES family_name(code) ON DELETE CASCADE
+            FOREIGN KEY(code_pic) REFERENCES family_name(code)       
         );
-
+    ''')
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS articles (
             id SERIAL PRIMARY KEY,
             title TEXT NOT NULL,
@@ -93,113 +119,96 @@ def init_database():
             author TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-
+    ''')
+    conn.commit()
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS comments (
             id SERIAL PRIMARY KEY,
             article_id INTEGER,
             username TEXT,
             content TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+            FOREIGN KEY(article_id) REFERENCES articles(id)
         );
-
-        CREATE TABLE IF NOT EXISTS logs (
+    ''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS news (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        image_url TEXT,
+        video_url TEXT,
+        author TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ''')
+    # === جدول السجلات (logs) ===
+    cursor.execute("""
+        CREATE TABLE logs (
             id SERIAL PRIMARY KEY,
-            username TEXT NOT NULL,
+            user_id INTEGER REFERENCES users(id),
             action TEXT NOT NULL,
-            target TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            timestamp TIMESTAMP DEFAULT NOW()
         );
+    """)
 
-        CREATE TABLE IF NOT EXISTS news (
-            id SERIAL PRIMARY KEY,
-            title TEXT NOT NULL,
-            content TEXT NOT NULL,
-            image_url TEXT,
-            video_url TEXT,
-            author TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT CHECK(role IN ('admin', 'manager', 'user')) DEFAULT 'user',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS permissions (
+    # === جدول الصلاحيات ===
+    cursor.execute("""
+        CREATE TABLE permissions (
             id SERIAL PRIMARY KEY,
             name TEXT UNIQUE NOT NULL,
-            description TEXT,
-            category TEXT DEFAULT 'عام'
+            description TEXT
         );
+    """)
 
-        CREATE TABLE IF NOT EXISTS user_permissions (
-            user_id INTEGER,
-            permission_id INTEGER,
-            PRIMARY KEY (user_id, permission_id),
-            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+    # === جدول ربط المستخدمين بالصلاحيات ===
+    cursor.execute("""
+        CREATE TABLE user_permissions (
+            user_id INTEGER REFERENCES users(id),
+            permission_id INTEGER REFERENCES permissions(id),
+            PRIMARY KEY (user_id, permission_id)
         );
-        """
-        cursor.execute(tables_sql)
+    """)
 
-        # إضافة الصلاحيات
-        permissions_list = [
-            ("add_member", "إضافة عضو جديد في شجرة العائلة", 'الشجرة'),
-            ("edit_member", "تعديل بيانات الأعضاء", 'الشجرة'),
-            ("delete_member", "حذف الأعضاء من الشجرة", 'الشجرة'),
-            ("add_article", "إضافة مقال جديد", 'المقالات'),
-            ("edit_article", "تعديل المقالات", 'المقالات'),
-            ("delete_article", "حذف المقالات", 'المقالات'),
-            ("add_news", "إضافة خبر جديد", 'الأخبار'),
-            ("edit_news", "تعديل الأخبار", 'الأخبار'),
-            ("delete_news", "حذف الأخبار", 'الأخبار'),
-            ("add_comment", "إضافة تعليق", 'عام'),
-            ("delete_comment", "حذف تعليق", 'عام'),
-            ("view_logs", "عرض سجل النشاطات", 'عام'),
-        ]
-        for name, desc, cat in permissions_list:
+    # === إضافة صلاحيات افتراضية ===
+    permissions = [
+        ("add_member", "إضافة عضو في الشجرة"),
+        ("edit_member", "تعديل عضو"),
+        ("delete_member", "حذف عضو"),
+        ("view_logs", "عرض السجلات"),
+        ("manage_users", "إدارة المستخدمين")
+    ]
+    for name, desc in permissions:
+        cursor.execute("""
+            INSERT INTO permissions (name, description) 
+            VALUES (%s, %s) ON CONFLICT (name) DO NOTHING
+        """, (name, desc))
+
+    # === إضافة المستخدم admin ===
+    hashed = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    cursor.execute("""
+        INSERT INTO users (username, password, role) 
+        VALUES (%s, %s, %s) ON CONFLICT (username) DO NOTHING
+    """, ("admin", hashed, "admin"))
+
+    # === منح admin كل الصلاحيات ===
+    cursor.execute("SELECT id FROM users WHERE username = 'admin'")
+    admin_id = cursor.fetchone()
+    if admin_id:
+        cursor.execute("SELECT id FROM permissions")
+        perm_ids = cursor.fetchall()
+        for (perm_id,) in perm_ids:
             cursor.execute("""
-                INSERT INTO permissions (name, description, category)
-                VALUES (%s, %s, %s) ON CONFLICT (name) DO NOTHING
-            """, (name, desc, cat))
+                INSERT INTO user_permissions (user_id, permission_id) 
+                VALUES (%s, %s) ON CONFLICT DO NOTHING
+            """, (admin_id[0], perm_id))
 
-        # إضافة مستخدمين (مع كلمات مرور آمنة - غيّرها!)
-        users = [
-            ("admin", "admin123", "admin"),
-            ("manager", "manager123", "manager"),
-            ("user", "user123", "user"),
-        ]
-        for username, password, role in users:
-            hashed = hash_password(password)
-            cursor.execute("""
-                INSERT INTO users (username, password, role)
-                VALUES (%s, %s, %s) ON CONFLICT (username) DO NOTHING
-            """, (username, hashed, role))
+    logger.info("تم إنشاء جميع الجداول وإعداد admin بنجاح!")
+    cursor.close()
+    conn.close()
 
-        # منح صلاحيات للـ admin
-        cursor.execute("SELECT id FROM users WHERE username = %s", ("admin",))
-        admin_id = cursor.fetchone()
-        if admin_id:
-            cursor.execute("SELECT id FROM permissions")
-            for (perm_id,) in cursor.fetchall():
-                cursor.execute("""
-                    INSERT INTO user_permissions (user_id, permission_id)
-                    VALUES (%s, %s) ON CONFLICT DO NOTHING
-                """, (admin_id[0], perm_id))
-
-        logger.info("✅ تم تهيئة قاعدة البيانات بنجاح!")
-        cursor.close()
-        conn.close()
-
-    except Exception as e:
-        logger.error(f"⚠️ فشل التهيئة: {e}")
-        if 'conn' in locals():
-            conn.close()
-        raise  # أعد رفع الخطأ للمعالجة العليا
-
-if __name__ == "__main__":
-    init_database()
+except Exception as e:
+    logger.error(f"فشل في init_db.py: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
+    sys.exit(1)
