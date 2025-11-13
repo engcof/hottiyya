@@ -4,7 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-   
+    <meta name="theme-color" content="#2d1b3d">
+    <link rel="icon" href="/static/favicon.ico">  
     <!-- إضافة ملفات CSS مشتركة هنا -->
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
    
@@ -22,12 +23,14 @@
             </a>
             <ul class="nav-links"> 
                 <li><a href="/">الرئيسية</a></li>
+                <li><a href="/names">الاسماء</a></li>
                 <li><a href="#">اتصل بنا</a></li>
                 <li><a href="#">عننا</a></li>
                 <li><a href="#">المساعدة</a></li> 
                 {% if user == "admin" or user == "engcof"%}
                     <li><a href="/admin">الإدارة</a></li> 
                 {% endif %}
+        
             </ul>
             <div class="mobile-menu-toggle">
                 <div class="hamburger-line"></div>
@@ -41,7 +44,7 @@
             <a href="#">عننا</a>
             <a href="#">المساعدة</a>
             {% if user == "admin" %}
-                    <li><a href="/admin">الإدارة</a></li> 
+            <a href="/admin">الإدارة</a>
             {% endif %}
         </div>
     </header>  
@@ -69,6 +72,6 @@
     </footer>      
    
     <!-- إضافة ملفات JavaScript مشتركة هنا -->
-    <!-- <script src="{{ url_for('static', path='') }}"></script>-->
+    <script src="{{ url_for('static', path='js/main.js') }}"></script>
 </body>
 </html>

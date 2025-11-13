@@ -1,11 +1,13 @@
 import os
 import logging
 import bcrypt
+import shutil
 import psycopg2
-import secrets  # لحماية إضافية مع CSRF
+import secrets
 from typing import Optional
 from dotenv import load_dotenv
 from datetime import timedelta
+from fastapi import UploadFile, File
 from contextlib import contextmanager
 from psycopg2.extras import RealDictCursor
 from fastapi.staticfiles import StaticFiles
@@ -16,215 +18,33 @@ from fastapi import FastAPI, Request, Depends, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
+
 SECRET_KEY = os.getenv("SECRET_KEY")
-DB_HOST = os.getenv("DB_HOST")  # أو يمكنك تخصيص عنوان الـHost
+DB_HOST = os.getenv("DB_HOST")
 DB_NAME = os.getenv("DB_NAME")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 
 if not SECRET_KEY:
-    raise RuntimeError("❌ SECRET_KEY or DB_PATH not set in .env file")
+    raise RuntimeError("SECRET_KEY or DB_PATH not set in .env file")
 
-# إعداد الـ logger في بداية الملف
+# إعداد الـ logger
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("app.log"),      # يخزن في ملف
-        logging.StreamHandler()              # يطبع في الـ console
+        logging.FileHandler("app.log"),
+        logging.StreamHandler()
     ]
 )
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)  # اسم الـ logger هو اسم الملف
-
-def init_database():
-    conn = None
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            port="5432",
-            sslmode="require"
-        )
-        conn.autocommit = True
-        cur = conn.cursor()
-
-        # قائمة الجداول مع تعليمات الإنشاء
-        tables = [
-            ("users", """
-                CREATE TABLE users (
-                    id SERIAL PRIMARY KEY,
-                    username TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL,
-                    role TEXT CHECK(role IN ('admin', 'manager', 'user')) DEFAULT 'user'
-                );
-            """),
-            ("family_name", """
-                CREATE TABLE family_name (
-                    code TEXT PRIMARY KEY,
-                    name TEXT NOT NULL,
-                    f_code TEXT,
-                    m_code TEXT,
-                    w_code TEXT,
-                    h_code TEXT,
-                    type TEXT CHECK(type IN ('ابن', 'ابنة', 'زوج', 'زوجة', 'ابن زوج', 'ابنة زوج', 'ابن زوجة', 'ابنة زوجة')),
-                    level INTEGER,
-                    FOREIGN KEY(f_code) REFERENCES family_name(code) ON DELETE SET NULL,
-                    FOREIGN KEY(m_code) REFERENCES family_name(code) ON DELETE SET NULL,
-                    FOREIGN KEY(w_code) REFERENCES family_name(code) ON DELETE SET NULL,
-                    FOREIGN KEY(h_code) REFERENCES family_name(code) ON DELETE SET NULL
-                );
-            """),
-            ("family_info", """
-                CREATE TABLE family_info (
-                    id SERIAL PRIMARY KEY,
-                    code_info TEXT,
-                    gender TEXT,
-                    d_o_b TEXT,
-                    d_o_d TEXT,
-                    email TEXT,
-                    phone TEXT,
-                    address TEXT,
-                    p_o_b TEXT,
-                    FOREIGN KEY(code_info) REFERENCES family_name(code)
-                );
-            """),
-            ("family_picture", """
-                CREATE TABLE family_picture (
-                    id SERIAL PRIMARY KEY,
-                    code_pic TEXT,
-                    pic_path TEXT,
-                    picture BYTEA,
-                    FOREIGN KEY(code_pic) REFERENCES family_name(code)
-                );
-            """),
-            ("articles", """
-                CREATE TABLE articles (
-                    id SERIAL PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    author TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """),
-            ("comments", """
-                CREATE TABLE comments (
-                    id SERIAL PRIMARY KEY,
-                    article_id INTEGER,
-                    username TEXT,
-                    content TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY(article_id) REFERENCES articles(id)
-                );
-            """),
-            ("logs", """
-                CREATE TABLE logs (
-                    id SERIAL PRIMARY KEY,
-                    username TEXT NOT NULL,
-                    action TEXT NOT NULL,
-                    target TEXT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """),
-            ("news", """
-                CREATE TABLE news (
-                    id SERIAL PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    content TEXT NOT NULL,
-                    image_url TEXT,
-                    video_url TEXT,
-                    author TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                );
-            """),
-            ("permissions", """
-                CREATE TABLE permissions (
-                    id SERIAL PRIMARY KEY,
-                    name TEXT UNIQUE NOT NULL,
-                    description TEXT,
-                    category TEXT DEFAULT 'عام'
-                );
-            """),
-            ("user_permissions", """
-                CREATE TABLE user_permissions (
-                    user_id INTEGER,
-                    permission_id INTEGER,
-                    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
-                    FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE,
-                    PRIMARY KEY (user_id, permission_id)
-                );
-            """),
-        ]
-
-        # إنشاء الجداول إذا لم تكن موجودة
-        for table_name, create_sql in tables:
-            cur.execute(f"SELECT to_regclass('public.{table_name}');")
-            if cur.fetchone()[0] is None:
-                logger.info(f"إنشاء جدول {table_name}...")
-                cur.execute(create_sql)
-                conn.commit()
-            else:
-                logger.info(f"جدول {table_name} موجود بالفعل.")
-
-        # إضافة مستخدم admin إذا لم يكن موجودًا
-        cur.execute("SELECT username FROM users WHERE username = 'admin'")
-        if not cur.fetchone():
-            hashed = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            cur.execute("""
-                INSERT INTO users (username, password, role) VALUES (%s, %s, %s)
-            """, ("admin", hashed, "admin"))
-            conn.commit()
-            logger.info("تم إضافة المستخدم admin")
-
-        # إضافة الصلاحيات الأساسية
-        permissions_list = [
-            ("add_member", "إضافة عضو جديد في شجرة العائلة", 'الشجرة'),
-            ("edit_member", "تعديل بيانات الأعضاء", 'الشجرة'),
-            ("delete_member", "حذف الأعضاء من الشجرة", 'الشجرة'),
-            ("add_article", "إضافة مقال جديد", 'المقالات'),
-            ("edit_article", "تعديل المقالات", 'المقالات'),
-            ("delete_article", "حذف المقالات", 'المقالات'),
-            ("add_news", "إضافة خبر جديد", 'الأخبار'),
-            ("edit_news", "تعديل الأخبار", 'الأخبار'),
-            ("delete_news", "حذف الأخبار", 'الأخبار'),
-            ("add_comment", "إضافة تعليق", 'عام'),
-            ("delete_comment", "حذف تعليق", 'عام'),
-            ("view_logs", "عرض سجل النشاطات", 'عام'),
-        ]
-
-        for name, desc, categ in permissions_list:
-            cur.execute("""
-                INSERT INTO permissions (name, description, category)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (name) DO NOTHING
-            """, (name, desc, categ))
-        conn.commit()
-
-        cur.close()
-        conn.close()
-
-    except Exception as e:
-        logger.error(f"فشل في تهيئة قاعدة البيانات: {e}")
-        if conn:
-            conn.close()
-
-# دالة للتحقق من وجود جدول وإنشاؤه إذا لم يكن موجودًا
-
-
-# استدعِ الدالة عند بدء التطبيق
-init_database()
+logger = logging.getLogger(__name__)
 
 # =========================================
-#           إعداد FastAPI
+# إعداد FastAPI
 # =========================================
 app = FastAPI()
-
-# إعداد Jinja2 لعرض HTML
 templates = Jinja2Templates(directory="templates")
 
-# إعداد الجلسات باستخدام SessionMiddleware من starlette
 app.add_middleware(
     SessionMiddleware,
     secret_key=SECRET_KEY,
@@ -234,19 +54,19 @@ app.add_middleware(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://render.com"],  # يجب تحديد المجالات المسموح بها في الإنتاج
+    allow_origins=["https://render.com"],
     allow_methods=["*"],
     allow_headers=["*"],
-
 )
 
-# إعداد مسار ملفات Static
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+UPLOAD_DIR = os.path.join("static", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 # =========================================
-#              دوال مساعدة
+# دوال مساعدة
 # =========================================
-# context manager للاتصال
 @contextmanager
 def get_db_context():
     conn = None
@@ -255,20 +75,16 @@ def get_db_context():
         dbname = os.getenv("DB_NAME")
         user = os.getenv("DB_USER")
         password = os.getenv("DB_PASSWORD")
-
-        # تحقق من وجود القيم
         if not all([host, dbname, user, password]):
-            raise ValueError("متغيرات قاعدة البيانات مفقودة! أضفها في Render Environment.")
-
+            raise ValueError("متغيرات قاعدة البيانات مفقودة!")
         logger.info(f"الاتصال بقاعدة البيانات: {user}@{host}/{dbname}")
-
         conn = psycopg2.connect(
             host=host,
             dbname=dbname,
             user=user,
             password=password,
             port="5432",
-            sslmode="require"  # إجبار SSL
+            sslmode="require"
         )
         yield conn
     except Exception as e:
@@ -280,17 +96,9 @@ def get_db_context():
         if conn and not conn.closed:
             conn.close()
 
-# Dependency لـ FastAPI
 def get_db():
     with get_db_context() as conn:
         yield conn
-
-def get_db_dep():
-    conn = get_db()
-    try:
-        yield conn
-    finally:
-        conn.close()
 
 def get_current_user(request: Request):
     username = request.session.get("username")
@@ -299,30 +107,41 @@ def get_current_user(request: Request):
         raise HTTPException(status_code=401, detail="غير مسجل دخول")
     return {"username": username, "role": role}
 
-# دالة للتحقق من كلمة المرور
+def get_full_name(code: str) -> str:
+    """إرجاع الاسم الكامل: الأب، الجد، ...، الابن"""
+    with get_db_context() as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT name, f_code FROM family_name WHERE code=%s", (code,))
+            result = cursor.fetchone()
+            if not result:
+                return ""
+            name, father_code = result
+            names = [name]
+            while father_code:
+                cursor.execute("SELECT name, f_code FROM family_name WHERE code=%s", (father_code,))
+                row = cursor.fetchone()
+                if not row:
+                    break
+                fname, father_code = row
+                names.append(fname)
+            return " ".join((names))
+
 def check_password(password, hashed):
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
 def hash_password(password: str) -> str:
-    """
-    دالة لتشفير كلمة المرور باستخدام bcrypt.
-    تأخذ كلمة المرور النصية وتعيد كلمة مرور مشفرة.
-    """
     hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
     return hashed.decode('utf-8')
 
-def get_user(condition: str, param: tuple, db=None):
+def get_user(condition: str, param: tuple):
     with get_db_context() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cursor:
             cursor.execute(f"SELECT * FROM users WHERE {condition}", param)
-            user = cursor.fetchone()
-            return user
+            return cursor.fetchone()
 
-# دالة لتوليد رمز CSRF
 def generate_csrf_token():
     return secrets.token_urlsafe(32)
 
-# دالة للتحقق من CSRF
 def verify_csrf_token(request: Request, csrf_token: str):
     session_token = request.session.get("csrf_token")
     if not csrf_token or csrf_token != session_token:
@@ -334,87 +153,60 @@ def set_cache_headers(response: HTMLResponse):
     response.headers['Expires'] = '0'
     return response
 
-def error_response(status_code: int, detail: str):
-    raise HTTPException(status_code=status_code, detail=detail)
-
 # =========================================
-#            صفحة الرئيسية
+# الصفحة الرئيسية
 # =========================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    user = request.session.get("user", None)
-   
-    if user:
-        response = templates.TemplateResponse("index.html", {"request": request, "user": user})
-        set_cache_headers(response)
-        return response
-    else:
-        response = templates.TemplateResponse("index.html", {"request": request, "user": None})
-        set_cache_headers(response)
-        return response
+    user = request.session.get("user")
+    response = templates.TemplateResponse("index.html", {"request": request, "user": user})
+    set_cache_headers(response)
+    return response
 
 # =========================================
-#          إدارة الدخول والخروج 
+# تسجيل الدخول والخروج
 # =========================================
 @app.get("/login", response_class=HTMLResponse)
 async def login(request: Request):
     csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token  # تخزين رمز CSRF في الجلسة
+    request.session["csrf_token"] = csrf_token
     response = templates.TemplateResponse("login.html", {"request": request, "csrf_token": csrf_token})
     set_cache_headers(response)
     return response
 
 @app.post("/login")
 async def login_post(
-    request: Request, 
-    username: str = Form(...), 
-    password: str = Form(...), 
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
     csrf_token: str = Form(...),
-    db=Depends(get_db)):
-    # التحقق من CSRF token
-    try:
-        verify_csrf_token(request, csrf_token)
-    except HTTPException as e:
-        raise e
-    
-    # جلب بيانات المستخدم من قاعدة البيانات
-    user_data = get_user("username = %s", (username,), db)
-
-    # التحقق من كلمة المرور
-    if user_data:
-        password_valid = check_password(password, user_data["password"])
-    else:
-        password_valid = False
-
-    if user_data and password_valid:
-        # تخزين اسم المستخدم في الجلسة
+    db=Depends(get_db)
+):
+    verify_csrf_token(request, csrf_token)
+    user_data = get_user("username = %s", (username,))
+    if user_data and check_password(password, user_data["password"]):
         request.session["user"] = username
         request.session["username"] = username
         request.session["role"] = user_data["role"]
-        request.session["message"] = "تم تسجيل الدخول بنجاح ✅"
+        request.session["message"] = "تم تسجيل الدخول بنجاح"
+        return RedirectResponse(url="/", status_code=303)
+    raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
 
-        # إعادة التوجيه إلى الصفحة الرئيسية
-        response = RedirectResponse(url="/", status_code=303)
-        return response
-    else:
-        raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
-
-# 4. تسجيل الخروج
 @app.get("/logout")
 async def logout(request: Request):
-    request.session.clear()  # مسح جميع البيانات من الجلسة
-    response = RedirectResponse(url="/", status_code=303)  # إعادة توجيه المستخدم إلى الصفحة الرئيسية بعد الخروج
+    request.session.clear()
+    response = RedirectResponse(url="/", status_code=303)
     set_cache_headers(response)
     return response
 
 # =========================================
-#             إدارة المستخدمين 
+# إدارة المستخدمين
 # =========================================
 @app.get("/admin")
 async def admin(request: Request, page: int = 1, user=Depends(get_current_user)):
-    if not user or user.get("role") != "admin":
+    if user.get("role") != "admin":
         return RedirectResponse("/", status_code=303)
-    
+
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
@@ -422,19 +214,16 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
         with conn.cursor() as cursor:
             users_per_page = 10
             offset = (page - 1) * users_per_page
-
+            
             cursor.execute("SELECT id, username, role FROM users LIMIT %s OFFSET %s", (users_per_page, offset))
             users = cursor.fetchall()
 
-            MASTER_ADMIN_USERNAME = "admin"
-            if user["username"] != MASTER_ADMIN_USERNAME:
-                users = [u for u in users if u[1] != MASTER_ADMIN_USERNAME]
+            if user["username"] != "admin":
+                users = [u for u in users if u[1] != "admin"]
 
-            # جلب الصلاحيات
             cursor.execute("SELECT id, name, category FROM permissions")
             permissions = cursor.fetchall()
 
-            # جلب صلاحيات كل مستخدم
             user_permissions = {}
             for u in users:
                 cursor.execute("""
@@ -464,106 +253,332 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
 @app.post("/admin/add_user")
 async def add_user(request: Request, username: str = Form(...), password: str = Form(...), role: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
-
     with get_db_context() as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
             if cursor.fetchone():
                 raise HTTPException(status_code=400, detail="المستخدم موجود بالفعل")
-
-            cursor.execute(
-                "INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
-                (username, hash_password(password), role)
-            )
+            cursor.execute("INSERT INTO users (username, password, role) VALUES (%s, %s, %s)",
+                           (username, hash_password(password), role))
             conn.commit()
-
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/delete_user")
 async def delete_user(request: Request, user_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
-
     with get_db_context() as conn:
         with conn.cursor() as cursor:
             cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
             conn.commit()
-
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/edit_user")
 async def edit_user(request: Request, user_id: int = Form(...), username: str = Form(...), role: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
-
     with get_db_context() as conn:
         with conn.cursor() as cursor:
             cursor.execute("UPDATE users SET username = %s, role = %s WHERE id = %s", (username, role, user_id))
             conn.commit()
-
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/change_password")
 async def change_password(request: Request, user_id: int = Form(...), new_password: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
-
-    user = request.session.get("user", None)
-    if not user or user != "admin":
+    if request.session.get("user") != "admin":
         raise HTTPException(status_code=403, detail="أنت بحاجة إلى صلاحيات إدارية")
-
-    hashed_password = hash_password(new_password)
-
+    hashed = hash_password(new_password)
     with get_db_context() as conn:
         with conn.cursor() as cursor:
             cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
             if not cursor.fetchone():
                 raise HTTPException(status_code=404, detail="المستخدم غير موجود")
-
-            cursor.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, user_id))
+            cursor.execute("UPDATE users SET password = %s WHERE id = %s", (hashed, user_id))
             conn.commit()
-
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/give_permission")
 async def give_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
-
     with get_db_context() as conn:
         with conn.cursor() as cursor:
-            cursor.execute("""
-                INSERT INTO user_permissions (user_id, permission_id)
-                VALUES (%s, %s)
-                ON CONFLICT DO NOTHING
-            """, (user_id, permission_id))
+            cursor.execute("INSERT INTO user_permissions (user_id, permission_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                           (user_id, permission_id))
             conn.commit()
-
     return RedirectResponse(url="/admin", status_code=303)
 
 @app.post("/admin/remove_permission")
 async def remove_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
-
     with get_db_context() as conn:
         with conn.cursor() as cursor:
-            cursor.execute(
-                "DELETE FROM user_permissions WHERE user_id = %s AND permission_id = %s",
-                (user_id, permission_id)
-            )
+            cursor.execute("DELETE FROM user_permissions WHERE user_id = %s AND permission_id = %s",
+                           (user_id, permission_id))
             conn.commit()
-
     return RedirectResponse(url="/admin", status_code=303)
 
-# 5. صفحة غير موجودة (خطأ 404)
+# =========================================
+# إدارة الأسماء
+# =========================================
+@app.get("/names", response_class=HTMLResponse)
+async def show_names(request: Request, user=Depends(get_current_user)):
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT code FROM family_name ORDER BY code")
+            members = cur.fetchall()
+
+            members_list = []
+            for m in members:
+                code = m["code"]
+                full_name = get_full_name(code)
+                members_list.append({"code": code, "full_name": full_name})
+
+    response = templates.TemplateResponse("names.html", {
+        "request": request,
+        "username": user["username"],
+        "role": user["role"],
+        "members": members_list
+    })
+    set_cache_headers(response)
+    return response
+
+# إضافة عضو
+@app.get("/names/add", response_class=HTMLResponse)
+async def add_name_form(request: Request, user=Depends(get_current_user)):
+    return templates.TemplateResponse("add_name.html", {"request": request, "username": user["username"], "error": None})
+
+@app.post("/names/add")
+async def add_name(
+    request: Request,
+    code: str = Form(...),
+    name: str = Form(...),
+    f_code: str = Form(None),
+    m_code: str = Form(None),
+    w_code: str = Form(None),
+    h_code: str = Form(None),
+    type: str = Form(None),
+    level: int = Form(None),
+    gender: str = Form(None),
+    d_o_b: str = Form(None),
+    d_o_d: str = Form(None),
+    email: str = Form(None),
+    phone: str = Form(None),
+    address: str = Form(None),
+    p_o_b: str = Form(None),
+    picture: UploadFile = File(None),
+    user=Depends(get_current_user)
+):
+    error = None
+    # تنظيف البيانات
+    code = code.strip()
+    name = name.strip()
+    
+    # تحويل السلاسل الفارغة إلى None
+    f_code = f_code.strip() if f_code and f_code.strip() else None
+    m_code = m_code.strip() if m_code and m_code.strip() else None
+    w_code = w_code.strip() if w_code and w_code.strip() else None
+    h_code = h_code.strip() if h_code and h_code.strip() else None
+    type = type.strip() if type and type.strip() else None
+    gender = gender.strip() if gender and gender.strip() else None
+    d_o_b = d_o_b.strip() if d_o_b and d_o_b.strip() else None
+    d_o_d = d_o_d.strip() if d_o_d and d_o_d.strip() else None
+    email = email.strip() if email and email.strip() else None
+    phone = phone.strip() if phone and phone.strip() else None
+    address = address.strip() if address and address.strip() else None
+    p_o_b = p_o_b.strip() if p_o_b and p_o_b.strip() else None
+
+    # التحقق من صحة البيانات الأساسية
+    if not code or not name:
+        error = "الكود والاسم مطلوبان!"
+        return templates.TemplateResponse("add_name.html", {
+            "request": request, 
+            "username": user["username"]  
+        })
+
+    try:
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT code FROM family_name WHERE code = %s", (code,))
+                if cur.fetchone():
+                    error = "الكود مستخدم مسبقاً! اختر كوداً آخر."
+                if not error:
+                    cur.execute("""
+                        INSERT INTO family_name (code, name, f_code, m_code, w_code, h_code, type, level)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (code, name, f_code, m_code, w_code, h_code, type, level))
+
+                    cur.execute("""
+                        INSERT INTO family_info (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b))
+
+                    if picture and picture.filename:
+                        pic_path = os.path.join(UPLOAD_DIR, picture.filename)
+                        with open(pic_path, "wb") as buffer:
+                            shutil.copyfileobj(picture.file, buffer)
+                        cur.execute("INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)", (code, pic_path))
+
+                    conn.commit()
+                    return RedirectResponse("/names", status_code=303)
+    except Exception as e:
+        logger.error(f"خطأ غير متوقع عند إضافة عضو: {e}")
+        error = "حدث خطأ غير متوقع. حاول مرة أخرى."            
+  
+
+# تفاصيل العضو
+@app.get("/names/details/{code}", response_class=HTMLResponse)
+async def name_details(request: Request, code: str, user=Depends(get_current_user)):
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
+            member = cur.fetchone()
+            if not member:
+                raise HTTPException(status_code=404, detail="العضو غير موجود")
+
+            cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
+            info = cur.fetchone() or {}
+
+            cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
+            pic = cur.fetchone()
+            picture_url = pic["pic_path"] if pic else None
+
+            gender = info.get("gender")
+            if not gender and member.get("type"):
+                t = member["type"]
+                if "ابن" in t or "زوج" in t:
+                    gender = "ذكر"
+                elif "ابنة" in t or "زوجة" in t:
+                    gender = "أنثى"
+
+            full_name = get_full_name(code)
+            mother_full_name = get_full_name(member["m_code"]) if member.get("m_code") else ""
+
+            wives = []
+            if gender == "ذكر":
+                cur.execute("SELECT code FROM family_name WHERE h_code = %s", (code,))
+                for w in cur.fetchall():
+                    wives.append({"code": w["code"], "name": get_full_name(w["code"])})
+
+            husbands = []
+            if gender == "أنثى":
+                cur.execute("SELECT code FROM family_name WHERE w_code = %s", (code,))
+                for h in cur.fetchall():
+                    husbands.append({"code": h["code"], "name": get_full_name(h["code"])})
+
+            cur.execute("SELECT code FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
+            children = [{"code": c["code"], "name": get_full_name(c["code"])} for c in cur.fetchall()]
+
+    return templates.TemplateResponse("details.html", {
+        "request": request,
+        "username": user["username"],
+        "member": member,
+        "info": info,
+        "picture_url": picture_url,
+        "full_name": full_name,
+        "mother_full_name": mother_full_name,
+        "wives": wives,
+        "husbands": husbands,
+        "children": children,
+        "gender": gender
+    })
+
+# تعديل عضو
+@app.get("/names/edit/{code}", response_class=HTMLResponse)
+async def edit_name_form(request: Request, code: str, user=Depends(get_current_user)):
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM family_name WHERE code=%s", (code,))
+            member = cur.fetchone()
+            cur.execute("SELECT * FROM family_info WHERE code_info=%s", (code,))
+            info = cur.fetchone() or {}
+    if not member:
+        raise HTTPException(status_code=404, detail="العضو غير موجود")
+    return templates.TemplateResponse("edit_name.html", {
+        "request": request,
+        "member": member,
+        "info": info,
+        "username": user["username"]
+    })
+
+@app.post("/names/edit/{code}")
+async def edit_name(
+    request: Request,
+    code: str,
+    name: str = Form(...),
+    f_code: str = Form(None),
+    m_code: str = Form(None),
+    w_code: str = Form(None),
+    h_code: str = Form(None),
+    type: str = Form(None),
+    level: int = Form(None),
+    gender: str = Form(None),
+    d_o_b: str = Form(None),
+    d_o_d: str = Form(None),
+    email: str = Form(None),
+    phone: str = Form(None),
+    address: str = Form(None),
+    p_o_b: str = Form(None),
+    picture: UploadFile = File(None)
+):
+    
+    
+    with get_db_context() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE family_name SET name=%s, f_code=%s, m_code=%s, w_code=%s, h_code=%s, type=%s, level=%s
+                WHERE code=%s
+            """, (name, f_code, m_code, w_code, h_code, type, level, code))
+
+            cur.execute("""
+                UPDATE family_info SET gender=%s, d_o_b=%s, d_o_d=%s, email=%s, phone=%s, address=%s, p_o_b=%s
+                WHERE code_info=%s
+            """, (gender, d_o_b, d_o_d, email, phone, address, p_o_b, code))
+
+            if picture and picture.filename:
+                # حذف الصورة القديمة
+                cur.execute("SELECT pic_path FROM family_picture WHERE code_pic=%s", (code,))
+                old = cur.fetchone()
+                if old and old["pic_path"] and os.path.exists(old["pic_path"]):
+                    os.remove(old["pic_path"])
+
+                pic_path = os.path.join(UPLOAD_DIR, picture.filename)
+                with open(pic_path, "wb") as buffer:
+                    shutil.copyfileobj(picture.file, buffer)
+                cur.execute("""
+                    INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
+                    ON CONFLICT (code_pic) DO UPDATE SET pic_path=%s
+                """, (code, pic_path, pic_path))
+
+            conn.commit()
+    return RedirectResponse(f"/names/details/{code}", status_code=303)
+
+# حذف عضو
+@app.post("/names/delete")
+async def delete_name(code: str = Form(...), user=Depends(get_current_user)):
+    with get_db_context() as conn:
+        with conn.cursor() as cur:
+            # حذف الصورة من القرص
+            cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
+            pic = cur.fetchone()
+            if pic and pic["pic_path"] and os.path.exists(pic["pic_path"]):
+                os.remove(pic["pic_path"])
+
+            cur.execute("DELETE FROM family_picture WHERE code_pic = %s", (code,))
+            cur.execute("DELETE FROM family_info WHERE code_info = %s", (code,))
+            cur.execute("DELETE FROM family_name WHERE code = %s", (code,))
+            conn.commit()
+    return RedirectResponse("/names", status_code=303)
+
+# =========================================
+# صفحات إضافية
+# =========================================
 @app.get("/404")
 async def not_found(request: Request):
     return {"message": "الصفحة غير موجودة"}
 
 @app.get("/session_test")
 async def session_test(request: Request):
-    """
-    دالة مؤقتة لاختبار الجلسة.
-    تعرض اسم المستخدم المخزن في الجلسة حالياً.
-    """
-    user = request.session.get("user", None)
-    print("Session user:", user)  # سيتم طباعتها في الـ console
+    user = request.session.get("user")
+    print("Session user:", user)
     return {"session_user": user}
 
 

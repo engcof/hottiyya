@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}تفاصيل العضو - {{ full_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5 pt-4">
+    <!-- العنوان الرئيسي -->
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold text-gradient mb-3">
+            {{ full_name }}
+        </h1>
+        <p class="text-muted">الكود: <strong>{{ member.code }}</strong></p>
+    </div>
+
+    <div class="row g-4">
+        <!-- الصورة -->
+        {% if picture_url %}
+        <div class="col-lg-4">
+            <div class="glass-strong p-4 text-center">
+                <a href="/{{ picture_url }}" target="_blank">
+                    <img src="/{{ picture_url }}" alt="صورة {{ full_name }}"
+                         class="img-fluid rounded-circle shadow-lg"
+                         style="width: 180px; height: 180px; object-fit: cover; border: 4px solid rgba(224, 163, 255, 0.3);">
+                </a>
+                <p class="mt-3 text-light">صورة العضو</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- بطاقة المعلومات الأساسية -->
+        <div class="col-lg-{% if picture_url %}8{% else %}12{% endif %}">
+            <div class="glass p-4">
+                <h4 class="text-primary mb-4">المعلومات الشخصية</h4>
+                <div class="row g-3">
+                    <!-- الاسم الكامل -->
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">الاسم</span>
+                            <p class="info-value">{{ full_name }}</p>
+                        </div>
+                    </div>
+
+                    <!-- النوع -->
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">النوع</span>
+                            <p class="info-value">{{ member.type or 'غير محدد' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- الجنس -->
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">الجنس</span>
+                            <p class="info-value">
+                                {% if gender == "ذكر" %}ذكر
+                                {% elif gender == "أنثى" %}أنثى
+                                {% else %}غير محدد{% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- تاريخ الميلاد -->
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">تاريخ الميلاد</span>
+                            <p class="info-value">{{ info.d_o_b or 'غير محدد' }}</p>
+                        </div>
+                    </div>
+
+                    <!-- تاريخ الوفاة -->
+                    {% if info.d_o_d %}
+                    <div class="col-md-6">
+                        <div class="info-card text-danger">
+                            <span class="info-icon">تاريخ الوفاة</span>
+                            <p class="info-value">{{ info.d_o_d }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- العنوان -->
+                    {% if info.address %}
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">العنوان</span>
+                            <p class="info-value">{{ info.address }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- البريد -->
+                    {% if info.email %}
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">البريد</span>
+                            <p class="info-value">
+                                <a href="mailto:{{ info.email }}" class="text-decoration-none text-info">{{ info.email }}</a>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- الهاتف -->
+                    {% if info.phone %}
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">الهاتف</span>
+                            <p class="info-value">
+                                <a href="tel:{{ info.phone }}" class="text-decoration-none text-success">{{ info.phone }}</a>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- مكان الميلاد -->
+                    {% if info.p_o_b %}
+                    <div class="col-md-6">
+                        <div class="info-card">
+                            <span class="info-icon">مكان الميلاد</span>
+                            <p class="info-value">{{ info.p_o_b }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- العلاقات الأسرية -->
+    <div class="row g-4 mt-3">
+        <!-- الأم -->
+        <div class="col-md-6 col-lg-4">
+            <div class="glass p-4 text-center">
+                <h5 class="text-info mb-3">الأم</h5>
+                {% if mother_full_name %}
+                    <p><a href="/names/details/{{ member.m_code }}" class="text-light text-decoration-none hover-glow">
+                        {{ mother_full_name }}
+                    </a></p>
+                {% else %}
+                    <p class="text-muted">غير معروف</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- الزوج/الزوجة -->
+        {% if gender == "ذكر" and wives %}
+            {% for w in wives %}
+            <div class="col-md-6 col-lg-4">
+                <div class="glass p-4 text-center">
+                    <h5 class="text-pink mb-3">الزوجة</h5>
+                    <p><a href="/names/details/{{ w.code }}" class="text-light text-decoration-none hover-glow">
+                        {{ w.name }}
+                    </a></p>
+                </div>
+            </div>
+            {% endfor %}
+        {% elif gender == "أنثى" and husbands %}
+            {% for h in husbands %}
+            <div class="col-md-6 col-lg-4">
+                <div class="glass p-4 text-center">
+                    <h5 class="text-success mb-3">الزوج</h5>
+                    <p><a href="/names/details/{{ h.code }}" class="text-light text-decoration-none hover-glow">
+                        {{ h.name }}
+                    </a></p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-md-6 col-lg-4">
+                <div class="glass p-4 text-center">
+                    <h5 class="text-warning mb-3">الزوج/الزوجة</h5>
+                    <p class="text-muted">لا يوجد</p>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- الأبناء -->
+        <div class="col-12">
+            <div class="glass p-4">
+                <h5 class="text-primary mb-3">الأبناء ({{ children|length }})</h5>
+                {% if children %}
+                <div class="row g-3">
+                    {% for c in children %}
+                    <div class="col-sm-6 col-md-4 col-lg-3">
+                        <a href="/names/details/{{ c.code }}" class="child-card glass-strong p-3 d-block text-center text-decoration-none hover-lift">
+                            <small class="d-block text-muted">الكود: {{ c.code }}</small>
+                            <strong class="text-light d-block mt-1">{{ c.name }}</strong>
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center">لا يوجد أبناء مسجلون</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- الأزرار -->
+    <div class="text-center mt-5">
+        <a href="/names/edit/{{ member.code }}" class="btn btn-warning btn-lg px-4 me-3">
+            تعديل البيانات
+        </a>
+        <a href="/names" class="btn btn-outline-light btn-lg px-4">
+            رجوع إلى القائمة
+        </a>
+    </div>
+</div>
+{% endblock %}

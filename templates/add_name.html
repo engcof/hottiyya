@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}إضافة عضو جديد{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <h3>➕ إضافة عضو جديد</h3>
+  <form action="/names/add" method="post" enctype="multipart/form-data" class="row g-3">
+    <div class="col-md-3">
+      <label class="form-label">الكود</label>
+      <input type="text" name="code" required class="form-control">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">الاسم</label>
+      <input type="text" name="name" required class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">النوع</label>
+      <select name="type" class="form-select">
+        <option value="ابن">ابن</option>
+        <option value="ابنة">ابنة</option>
+        <option value="زوج">زوج</option>
+        <option value="زوجة">زوجة</option>
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">الكود الأب</label>
+      <input type="text" name="f_code" placeholder="رمز الأب (اختياري)" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">الكود الأم</label>
+      <input type="text" name="m_code" class="form-control">
+    </div>
+
+    <div class="col-md-2">
+      <label class="form-label">المستوى</label>
+      <input type="number" name="level" class="form-control">
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">الجنس</label>
+      <select name="gender" class="form-select">
+        <option value="ذكر">ذكر</option>
+        <option value="أنثى">أنثى</option>
+      </select>
+    </div>
+
+    <div class="col-md-3">
+      <label class="form-label">تاريخ الميلاد</label>
+      <input type="date" name="d_o_b" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label">تاريخ الوفاة</label>
+      <input type="date" name="d_o_d" class="form-control">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">البريد الإلكتروني</label>
+      <input type="email" name="email" class="form-control">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">رقم الهاتف</label>
+      <input type="text" name="phone" class="form-control">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">العنوان</label>
+      <input type="text" name="address" class="form-control">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">مكان الميلاد</label>
+      <input type="text" name="p_o_b" class="form-control">
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">الصورة (اختياري)</label>
+      <input type="file" name="picture" class="form-control">
+    </div>
+
+    <div class="col-12 text-center mt-3">
+      <button type="submit" class="btn btn-success">💾 حفظ</button>
+      <a href="/names" class="btn btn-secondary">🔙 رجوع</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

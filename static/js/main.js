@@ -1,29 +1,28 @@
-  // منع العودة بعد Logout
-if (window.history.replaceState) {
-    window.history.replaceState(null, null, window.location.href);
-}
-window.onload = function() {
-    window.addEventListener("pageshow", function(event) {
-        if (event.persisted) {
-            window.location.reload();
-        }
+// Mobile menu functionality
+const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+const mobileNav = document.querySelector('.mobile-nav');
+
+mobileMenuToggle.addEventListener('click', () => {
+    mobileMenuToggle.classList.toggle('active');
+    mobileNav.classList.toggle('active');
+});
+
+// Close mobile menu when clicking on links
+document.querySelectorAll('.mobile-nav a').forEach(link => {
+    link.addEventListener('click', () => {
+        mobileMenuToggle.classList.remove('active');
+        mobileNav.classList.remove('active');
     });
-}
+});
 
-// مسح الفورم عند عمل Back
-window.addEventListener('pageshow', function(event) {
-    if (event.persisted) {
-        document.querySelectorAll('form').forEach(form => form.reset());
+// Close mobile menu when clicking outside
+document.addEventListener('click', (e) => {
+    if (!mobileMenuToggle.contains(e.target) && !mobileNav.contains(e.target)) {
+        mobileMenuToggle.classList.remove('active');
+        mobileNav.classList.remove('active');
     }
 });
 
-// تفعيل الرسائل المنبثقة
-window.addEventListener('DOMContentLoaded', () => {
-    const toast = document.getElementById('toast');
-    if (toast) {
-        toast.classList.add('show');
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 2000); // تظهر لمدة 2 ثانية
-    }
-});
+  
+  
+  
