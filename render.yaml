@@ -5,8 +5,8 @@ services:
     region: oregon
     plan: free
     env: python
-    buildCommand: pip install -r requirements.txt && python init_db.py
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r requirements.txt && python -c "print('Running init_db.py...')" && python init_db.py
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 10000
     envVars:
       DB_HOST: dpg-d4ai3b6mcj7s73ff4810-a
       DB_NAME: hottiyya_db
