@@ -39,6 +39,61 @@ logging.basicConfig(
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)  # اسم الـ logger هو اسم الملف
 
+# دالة للتحقق من وجود جدول وإنشاؤه إذا لم يكن موجودًا
+def init_database():
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            host=os.getenv("DB_HOST"),
+            dbname=os.getenv("DB_NAME"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            port="5432",
+            sslmode="require"
+        )
+        conn.autocommit = True
+        cur = conn.cursor()
+
+        # تحقق من وجود جدول users
+        cur.execute("SELECT to_regclass('public.users');")
+        if cur.fetchone()[0] is not None:
+            logger.info("جدول users موجود بالفعل.")
+            cur.close()
+            conn.close()
+            return
+
+        logger.info("إنشاء جدول users وإضافة المستخدم admin...")
+
+        # إنشاء جدول users
+        cur.execute("""
+            CREATE TABLE users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT CHECK(role IN ('admin', 'manager', 'user')) DEFAULT 'user'
+            );
+        """)
+
+        # إضافة admin
+        hashed = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cur.execute("""
+            INSERT INTO users (username, password, role) 
+            VALUES (%s, %s, %s) ON CONFLICT (username) DO NOTHING
+        """, ("admin", hashed, "admin"))
+
+        logger.info("تم إنشاء جدول users وإضافة admin بنجاح!")
+        cur.close()
+        conn.close()
+
+    except Exception as e:
+        logger.error(f"فشل في تهيئة قاعدة البيانات: {e}")
+        if conn:
+            conn.close()
+        # لا نوقف التطبيق – فقط نسجل الخطأ
+
+# استدعِ الدالة عند بدء التطبيق
+init_database()
+
 # =========================================
 #           إعداد FastAPI
 # =========================================
