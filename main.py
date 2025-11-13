@@ -189,7 +189,9 @@ def hash_password(password: str) -> str:
     return hashed.decode('utf-8')
 
 def get_user(condition: str, param: tuple, db=Depends(get_db)):
-    cursor = db.cursor(cursor_factory=RealDictCursor)
+    with get_db_context() as conn:
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+    
     try:
         cursor.execute(f"SELECT * FROM users WHERE {condition}", param)
         return cursor.fetchone()
@@ -248,16 +250,17 @@ async def login_post(
     request: Request, 
     username: str = Form(...), 
     password: str = Form(...), 
-    csrf_token: str = Form(...),
-    db=Depends(get_db)):
+    csrf_token: str = Form(...)
+    ):
     # التحقق من CSRF token
     try:
         verify_csrf_token(request, csrf_token)
     except HTTPException as e:
         raise e
-
+    
+    with get_db_context() as conn:
     # جلب بيانات المستخدم من قاعدة البيانات
-    user_data = get_user("username = %s", (username,), db)
+        user_data = get_user("username = %s", (username,), conn)
 
     # التحقق من كلمة المرور
     if user_data:
@@ -359,8 +362,10 @@ async def admin(request: Request, page: int = 1, user=Depends(get_current_user))
 async def add_user(request: Request, username: str = Form(...), password: str = Form(...), role: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-    conn = get_db()
-    cursor = conn.cursor()
+      # استخدم with للحصول على الاتصال الصحيح
+    with get_db_context() as conn:
+        cursor = conn.cursor()
+
 
     # تحقق من وجود المستخدم
     cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
@@ -378,8 +383,10 @@ async def add_user(request: Request, username: str = Form(...), password: str = 
 async def delete_user(request: Request, user_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-    conn = get_db()
-    cursor = conn.cursor()
+      # استخدم with للحصول على الاتصال الصحيح
+    with get_db_context() as conn:
+        cursor = conn.cursor()
+
     
     cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
     conn.commit()
@@ -391,8 +398,10 @@ async def delete_user(request: Request, user_id: int = Form(...), csrf_token: st
 async def edit_user(request: Request, user_id: int = Form(...), username: str = Form(...), role: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-    conn = get_db()
-    cursor = conn.cursor()
+      # استخدم with للحصول على الاتصال الصحيح
+    with get_db_context() as conn:
+        cursor = conn.cursor()
+
 
     cursor.execute("UPDATE users SET username = %s, role = %s WHERE id = %s", (username, role, user_id))
     conn.commit()
@@ -414,8 +423,10 @@ async def change_password(request: Request, user_id: int = Form(...), new_passwo
     hashed_password = hash_password(new_password)
 
     # تحديث كلمة المرور في قاعدة البيانات
-    conn = get_db()
-    cursor = conn.cursor()
+      # استخدم with للحصول على الاتصال الصحيح
+    with get_db_context() as conn:
+        cursor = conn.cursor()
+
     
     # التحقق من وجود المستخدم
     cursor.execute("SELECT id FROM users WHERE id = %s", (user_id,))
@@ -434,8 +445,10 @@ async def change_password(request: Request, user_id: int = Form(...), new_passwo
 async def give_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-    conn = get_db()
-    cursor = conn.cursor()
+      # استخدم with للحصول على الاتصال الصحيح
+    with get_db_context() as conn:
+        cursor = conn.cursor()
+
 
     cursor.execute("INSERT OR IGNORE INTO user_permissions (user_id, permission_id) VALUES (%s, %s)", (user_id, permission_id))
     conn.commit()
@@ -447,8 +460,8 @@ async def give_permission(request: Request, user_id: int = Form(...), permission
 async def remove_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
 
-    conn = get_db()
-    cursor = conn.cursor()
+    with get_db_context() as conn:
+        cursor = conn.cursor()
 
     cursor.execute("DELETE FROM user_permissions WHERE user_id = %s AND permission_id = %s", (user_id, permission_id))
     conn.commit()
