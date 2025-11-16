@@ -1,0 +1,120 @@
+
+{% extends "base.html" %}
+{% block title %}تعديل: {{ full_name }}{% endblock %}
+
+{% block content %}
+<section class="edit-section">
+    <div class="container">
+        <h1>تعديل بيانات: <span class="highlight">{{ full_name }}</span></h1>
+        <p class="code">الكود: <code>{{ code }}</code></p>
+
+        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data" class="edit-form">
+            <div class="form-grid">
+                <!-- الاسم -->
+                <div class="form-group">
+                    <label>الاسم <span class="required">*</span></label>
+                    <input type="text" name="name" value="{{ member.name }}" required>
+                </div>
+
+                <!-- الأب -->
+                <div class="form-group">
+                    <label>كود الأب</label>
+                    <input type="text" name="f_code" value="{{ member.f_code or '' }}" placeholder="مثال: F001">
+                </div>
+
+                <!-- الأم -->
+                <div class="form-group">
+                    <label>كود الأم</label>
+                    <input type="text" name="m_code" value="{{ member.m_code or '' }}" placeholder="مثال: M001">
+                </div>
+
+                <!-- الزوج/الزوجة -->
+                <div class="form-group">
+                    <label>كود الزوج (إذا كانت أنثى)</label>
+                    <input type="text" name="h_code" value="{{ member.h_code or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label>كود الزوجة (إذا كان ذكر)</label>
+                    <input type="text" name="w_code" value="{{ member.w_code or '' }}">
+                </div>
+
+                <!-- النوع -->
+                <div class="form-group">
+                    <label>النوع</label>
+                    <input type="text" name="type" value="{{ member.type or '' }}" placeholder="مثال: ابن، ابنة، زوج">
+                </div>
+
+                <!-- المستوى -->
+                <div class="form-group">
+                    <label>المستوى</label>
+                    <input type="number" name="level" value="{{ member.level or '' }}">
+                </div>
+
+                <!-- الجنس -->
+                <div class="form-group">
+                    <label>الجنس</label>
+                    <select name="gender">
+                        <option value="">-- اختر --</option>
+                        <option value="ذكر" {% if info.gender == "ذكر" %}selected{% endif %}>ذكر</option>
+                        <option value="أنثى" {% if info.gender == "أنثى" %}selected{% endif %}>أنثى</option>
+                    </select>
+                </div>
+
+                <!-- تاريخ الميلاد -->
+                <div class="form-group">
+                    <label>تاريخ الميلاد</label>
+                    <input type="date" name="d_o_b" value="{{ info.d_o_b or '' }}">
+                </div>
+
+                <!-- تاريخ الوفاة -->
+                <div class="form-group">
+                    <label>تاريخ الوفاة</label>
+                    <input type="date" name="d_o_d" value="{{ info.d_o_d or '' }}">
+                </div>
+
+                <!-- البريد -->
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" name="email" value="{{ info.email or '' }}">
+                </div>
+
+                <!-- الهاتف -->
+                <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="tel" name="phone" value="{{ info.phone or '' }}">
+                </div>
+
+                <!-- العنوان -->
+                <div class="form-group">
+                    <label>العنوان</label>
+                    <input type="text" name="address" value="{{ info.address or '' }}">
+                </div>
+
+                <!-- مكان الميلاد -->
+                <div class="form-group">
+                    <label>مكان الميلاد</label>
+                    <input type="text" name="p_o_b" value="{{ info.p_o_b or '' }}">
+                </div>
+
+                <!-- الصورة -->
+                <div class="form-group full-width">
+                    <label>صورة العضو</label>
+                    {% if picture_url %}
+                    <div class="current-pic">
+                        <img src="{{ picture_url }}" alt="الصورة الحالية" style="max-width: 150px; border-radius: 8px;">
+                        <p><small>الصورة الحالية</small></p>
+                    </div>
+                    {% endif %}
+                    <input type="file" name="picture" accept="image/*">
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-success">حفظ التعديلات</button>
+                <a href="/names" class="btn btn-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

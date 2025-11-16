@@ -23,12 +23,17 @@
             </a>
             <ul class="nav-links"> 
                 <li><a href="/">الرئيسية</a></li>
-                <li><a href="/names">الاسماء</a></li>
-                <li><a href="#">اتصل بنا</a></li>
-                <li><a href="#">عننا</a></li>
-                <li><a href="#">المساعدة</a></li> 
-                {% if user == "admin" or user == "engcof"%}
-                    <li><a href="/admin">الإدارة</a></li> 
+                <li><a href="#">الاخبار</a></li>
+                <li><a href="#">المقالات</a></li>
+                 <li><a href="/names">شجرة العائلة</a></li>
+                <li><a href="#">عننا</a></li> 
+                {% if user and user.role == "admin" %}
+                <li><a href="/admin">الإدارة</a></li>
+                {% endif %}
+               {% if user %}
+                <li><a href="/auth/logout">تسجيل الخروج</a></li>
+                {% else %}
+                <li><a href="/auth/login">تسجيل الدخول</a></li>
                 {% endif %}
         
             </ul>
@@ -40,11 +45,17 @@
         </nav>
         <div class="mobile-nav">
             <a href="/">الرئيسية</a>
-            <a href="#">اتصل بنا</a>
+            <a href="#">الاخبار</a>
+            <a href="#">المقالات</a>
+            <a href="/names">شجرة العائلة</a>
             <a href="#">عننا</a>
-            <a href="#">المساعدة</a>
-            {% if user == "admin" %}
+            {% if user and user.role == "admin" %}
             <a href="/admin">الإدارة</a>
+            {% endif %}
+            {% if user %}
+            <a href="/auth/logout">تسجيل الخروج</a>
+            {% else %}
+            <a href="/auth/login">تسجيل الدخول</a>
             {% endif %}
         </div>
     </header>  

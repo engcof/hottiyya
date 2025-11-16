@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}الأسماء العائلية{% endblock %}
+
+{% block content %}
+<section class="names-section">
+    <div class="container">
+        <div class="section-header">
+            <h1>أفراد عائلة الحوطية</h1>
+            <a href="/names/add" class="btn-primary">إضافة عضو جديد</a>
+        </div>
+
+        {% if members %}
+        <div class="table-container">
+            <table class="family-table">
+                <thead>
+                    <tr>
+                        <th>الكود</th>
+                        <th>الاسم الكامل</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in members %}
+                    <tr>
+                        <td><code>{{ m.code }}</code></td>
+                        <td class="full-name">{{ m.full_name }}</td>
+                        <td class="actions">
+                            <a href="/names/details/{{ m.code }}" class="btn btn-info">تفاصيل</a>
+                            <a href="/names/edit/{{ m.code }}" class="btn btn-warning">تعديل</a>
+                            <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;">
+                                <button type="submit" class="btn btn-danger" 
+                                        onclick="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟')">
+                                    حذف
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- أزرار التصفح -->
+        <div class="pagination">
+            {% if has_prev %}
+            <a href="/names?page={{ page - 1 }}" class="btn">السابق</a>
+            {% endif %}
+            <span>الصفحة {{ page }} من {{ total_pages }}</span>
+            {% if has_next %}
+            <a href="/names?page={{ page + 1 }}" class="btn">التالي</a>
+            {% endif %}
+        </div>
+        {% else %}
+        <p class="no-data">لا توجد أسماء مسجلة بعد.</p>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

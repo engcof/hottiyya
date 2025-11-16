@@ -2,14 +2,10 @@
 {% block title %}عائلة الحوطية{% endblock %}
 
 {% block content %}
-<!-- الخلفية المتحركة -->
-<div class="neural-background"></div>
-
 <!-- المحتوى الرئيسي -->
-<section class="hero-section py-5">
+<section class="hero-section">
     <div class="container">
         <div class="row align-items-start g-5">
-
             <!-- الجزء الأيسر: الشعار فقط (في div منفصل) -->
             <div class="col-lg-6 text-center text-lg-start">
                 <div class="logo-wrapper">
@@ -30,7 +26,7 @@
                     <h1 class="family-title">الحوطية</h1>
                     <div class="family-bio">
                         <p>
-                            عائلة عريقة تنتمي إلى قبيلة <strong>الحوطية</strong>، 
+                            قبيلة <strong>الحوطية</strong>، 
                             تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي. 
                             سجلت تاريخها في خدمة المجتمع والدين منذ قرون.
                         </p>
@@ -42,41 +38,12 @@
                     <a href="#about" class="read-more-btn">اقرأ المزيد</a>
                 </div>
 
-                <!-- 4. بطاقة الترحيب - في div منفصل -->
-                <div class="welcome-wrapper">
-                    <div class="glass-strong p-5 welcome-card">
-                        <h3 class="text-gradient mb-4">
-                            {% if user %}مرحباً، {{ user }}!{% else %}أهلاً وسهلاً!{% endif %}
-                        </h3>
-                        <div class="auth-actions">
-                            {% if user %}
-                                <a href="/logout" class="btn btn-primary btn-lg w-100 mb-3">تسجيل الخروج</a>
-                            {% else %}
-                                <a href="/login" class="btn btn-primary btn-lg w-100 mb-3">تسجيل الدخول</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
+              
 
             </div>
         </div>
     </div>
 </section>
 
-<!-- قسم "حول العائلة" -->
-<section id="about" class="py-5">
-    <div class="container">
-        <div class="glass p-5">
-            <h2 class="text-center text-gradient mb-4">نبذة عن عائلة الحوطية</h2>
-            <p class="lead text-light text-center">
-                 قبيلة <strong>الحـوطية</strong>، وهي إحدى العوائل العريقة في المنطقة. 
-                اشتهرت بكرمها، علو همتها، ودورها البارز في خدمة المسجد والمجتمع. 
-                <em></em>، وتفرعت فروعها في عدة مناطق.
-            </p>
-            <p class="text-light text-center mt-3">
-                نحن فخورون بتراثنا، ونسعى لتوثيق تاريخنا وحفظه للأجيال القادمة.
-            </p>
-        </div>
-    </div>
-</section>
+
 {% endblock %}
