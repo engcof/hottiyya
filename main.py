@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
-from routers import auth, admin, family, permissions
+from routers import auth, admin, family, articles, news, permissions
 import os
 
 # =========================================
@@ -24,10 +24,11 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Routers
+app.include_router(news.router)
 app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(family.router)
-#app.include_router(permissions.router)
+app.include_router(articles.router)
 
 # =========================================
 # الصفحة الرئيسية
@@ -44,7 +45,7 @@ async def home(request: Request):
     )
 
 
-
+# uvicorn main:app --reload
 
 
 

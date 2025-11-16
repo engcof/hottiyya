@@ -26,49 +26,47 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @router.get("/", response_class=HTMLResponse)
-async def show_names(request: Request, page: int = 1):
+async def show_names(request: Request, page: int = 1, q: str = None):
     user = get_current_user(request)
     if not user:
         return RedirectResponse("/auth/login")
-    
+
     ITEMS_PER_PAGE = 18
     offset = (page - 1) * ITEMS_PER_PAGE
+    search_query = f"%{q}%" if q else None
 
     with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # جلب الأعضاء مع التصفح
-            cur.execute("""
-                SELECT code FROM family_name 
-                ORDER BY code 
-                LIMIT %s OFFSET %s
-            """, (ITEMS_PER_PAGE, offset))
-            rows = cur.fetchall()
+        with conn.cursor() as cur:
+            if search_query:
+                # بحث في الاسم الكامل (بعد تجميعه)
+                cur.execute("""
+                    SELECT code FROM family_name 
+                    WHERE code ILIKE %s OR name ILIKE %s
+                    ORDER BY code 
+                    LIMIT %s OFFSET %s
+                """, (search_query, search_query, ITEMS_PER_PAGE, offset))
+                rows = cur.fetchall()
 
-            # حساب عدد الصفحات
-            cur.execute("SELECT COUNT(*) FROM family_name")
-            total = cur.fetchone()["count"]
+                cur.execute("""
+                    SELECT COUNT(*) FROM family_name 
+                    WHERE code ILIKE %s OR name ILIKE %s
+                """, (search_query, search_query))
+                total = cur.fetchone()[0]
+            else:
+                cur.execute("SELECT code FROM family_name ORDER BY code LIMIT %s OFFSET %s", (ITEMS_PER_PAGE, offset))
+                rows = cur.fetchall()
+                cur.execute("SELECT COUNT(*) FROM family_name")
+                total = cur.fetchone()[0]
+
             total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+            members = [{"code": r[0], "full_name": get_full_name(r[0])} for r in rows]
 
-            members = []
-            for r in rows:
-                members.append({
-                    "code": r["code"],
-                    "full_name": get_full_name(r["code"])
-                })
-
-    return templates.TemplateResponse(
-        "/family/names.html",
-        {
-            "request": request,
-            "user": user,
-            "role": user.get("role"),
-            "members": members,
-            "page": page,
-            "total_pages": total_pages,
-            "has_prev": page > 1,
-            "has_next": page < total_pages
-        }
-    )
+    return templates.TemplateResponse("family/names.html", {
+        "request": request, "user": user, "members": members,
+        "page": page, "total_pages": total_pages,
+        "has_prev": page > 1, "has_next": page < total_pages,
+        "q": q
+    })
 
 @router.get("/names/details/{code}", response_class=HTMLResponse)
 async def name_details(request: Request, code: str):

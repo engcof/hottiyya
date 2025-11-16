@@ -2,13 +2,22 @@
 {% block title %}الأسماء العائلية{% endblock %}
 
 {% block content %}
-<section class="names-section">
+<!-- المحتوى الرئيسي -->
+<section class="hero-section">
     <div class="container">
         <div class="section-header">
             <h1>أفراد عائلة الحوطية</h1>
             <a href="/names/add" class="btn-primary">إضافة عضو جديد</a>
         </div>
-
+        <div class="search-bar">
+            <form method="get" action="/names">
+                <input type="text" name="q" value="{{ q or '' }}" placeholder="ابحث بالكود أو الاسم..." />
+                <button type="submit">بحث</button>
+            </form>
+            {% if q %}
+            <a href="/names" class="clear-search">إلغاء البحث</a>
+            {% endif %}
+        </div>
         {% if members %}
         <div class="table-container">
             <table class="family-table">

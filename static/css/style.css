@@ -489,7 +489,43 @@ nav {
      transform: translateY(-3px);
      box-shadow: 0 10px 30px rgba(0, 255, 255, 0.4);
 }
+/* Section : Cof */
+.cof-section  {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    
+}
 
+ 
+.cof-section .cof-container {
+    max-width: 1200px;
+    padding: 160px 20px 20px 20px;
+    margin: 0 auto;
+    align-items: center;
+  
+    
+}
+
+ .coof-section .cooof-container {
+    max-width: 1200px;
+    padding: 100px  20px;
+    margin: 0 auto;
+    align-items: center;
+     
+}
+ .coof-container {
+     max-width: 1200px;
+     margin: 0 auto;
+     padding: 0 20px;
+     display: grid;
+     grid-template-columns: 1fr 1fr;
+     gap: 80px;
+     align-items: center;
+}
 
 /* تنسيق العام للصفحة */
 

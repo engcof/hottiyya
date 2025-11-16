@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}إضافة خبر{% endblock %}
+
+{% block content %}
+<section class="add-news">
+    <div class="container">
+        <h1>إضافة خبر جديد</h1>
+        <form method="post" action="/news/add" enctype="multipart/form-data" class="form">
+            <div class="form-group">
+                <label>العنوان</label>
+                <input type="text" name="title" required>
+            </div>
+            <div class="form-group">
+                <label>المحتوى</label>
+                <textarea name="content" rows="6" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>الكاتب</label>
+                <input type="text" name="author" value="{{ user.username }}" required>
+            </div>
+            <div class="form-group">
+                <label>صورة الخبر (اختياري)</label>
+                <input type="file" name="image" accept="image/*">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-success">نشر الخبر</button>
+                <a href="/news" class="btn-secondary">رجوع</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

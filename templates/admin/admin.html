@@ -4,137 +4,158 @@
 
 {% block content %}
 <!-- المحتوى الرئيسي -->
-<section class="hero-section">
-    <div class="container">
+<section class="cof-section">
+    <div class="cof-container">
         <!-- إضافة مستخدم جديد -->
-        <h2>إضافة مستخدم جديد</h2>
         <form method="post" action="/admin/add_user">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <label for="username">اسم المستخدم:</label>
-            <input type="text" id="username" name="username" required><br>
-            <label for="password">كلمة المرور:</label>
-            <input type="password" id="password" name="password" required><br>
-            <label for="role">الدور:</label>
-            <select id="role" name="role">
-                <option value="admin">أدمن</option>
-                <option value="manager">مدير</option>
-                <option value="user">مستخدم</option>
-            </select><br>
-            <button type="submit">إضافة مستخدم</button>
+            <div class="contact-form glass">
+                <div class="form-group">
+                    <input type="text" id="username" name="username" placeholder="اسم المستخدم:" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" name="password" placeholder="كلمة المرور:" required>
+                </div>
+                <div class="form-group">
+                    <select id="role" name="role">
+                        <option value="admin">أدمن</option>
+                        <option value="manager">مدير</option>
+                        <option value="user">مستخدم</option>
+                    </select>
+                </div>
+                <button type="submit" class="submit-btn">إضافة مستخدم</button>
+            </div>
         </form>
-    </div>
-
-    <div class="user-forms">
+    
         <!-- تغيير كلمة المرور -->
         <form method="POST" action="/admin/change_password">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <label for="user_id">اختيار المستخدم</label>
-            <select name="user_id">
-                {% for user in users %}
-                    <option value="{{ user[0] }}">{{ user[1] }} ({{ user[2] }})</option>
-                {% endfor %}
-            </select>
-            <br>
-            <label for="new_password">كلمة المرور الجديدة</label>
-            <input type="password" name="new_password" required>
-            <br>
-            <button type="submit">تغيير كلمة المرور</button>
-        </form>
-    </div>
-</section>
-
-<!-- قائمة المستخدمين مع خيارات تعديل وحذف -->
-<div class="table-container">
-    <h2>قائمة المستخدمين</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>اسم المستخدم</th>
-                <th>الدور</th>
-                <th>الصلاحيات</th>
-                <th>التعديلات</th>
-                <th>إضافة صلاحية</th>
-                <th>إزالة صلاحية</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user in users %}
-            <tr>
-                <td>{{ user[1] }}</td>
-                <td>{{ user[2] }}</td>
-                <td>
-                    <select >
-                        {% if user_permissions[user[0]] %}
-                            {% for perm in user_permissions[user[0]] %}
-                                <option value="{{ perm }}">{{ perm }}</option>
-                            {% endfor %}
-                        {% else %}
-                            <option value="">لا توجد صلاحيات</option>
-                        {% endif %}
+            <div class="contact-form glass">
+                <div class="form-group">
+                    <label for="user_id">اختيار المستخدم</label>
+                    <select name="user_id">
+                        {% for user in users %}
+                            <option value="{{ user[0] }}">{{ user[1] }} ({{ user[2] }})</option>
+                        {% endfor %}
                     </select>
-                </td>
-                <td>
-                    <!-- تعديل مستخدم -->
-                    <form method="post" action="/admin/edit_user">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="user_id" value="{{ user[0] }}">
-                        <input type="text" name="username" value="{{ user[1] }}" required>
-                        <select name="role">
-                            <option value="admin" {% if user[2] == 'admin' %}selected{% endif %}>أدمن</option>
-                            <option value="manager" {% if user[2] == 'manager' %}selected{% endif %}>مدير</option>
-                            <option value="user" {% if user[2] == 'user' %}selected{% endif %}>مستخدم</option>
-                        </select>
-                        <button type="submit">تعديل</button>
-                    </form>
+                </div>    
+                <div class="form-group">
+                    <input type="password" name="new_password" placeholder="كلمة المرور الجديدة" required>
+                </div>    
+                <button type="submit" class="submit-btn">تغيير كلمة المرور</button>
+            </div>
+        </form>
+       
+        <form method="post" action="/admin/add_user">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="contact-form glass">
+                    <div class="form-group">
+                    <input type="text" id="username" name="username" placeholder="اسم المستخدم:" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="password" name="password" placeholder="كلمة المرور:" required>
+                </div>
+                <button type="submit" class="submit-btn">تغيير كلمة المرور</button>
+            </div>
+        </form>       
+        <div class="contact-form glass">
+             <div class="table-container">
+            <table class="family-table">
+            <!-- قائمة المستخدمين مع خيارات تعديل وحذف -->
+            <h2>قائمة المستخدمين</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>اسم المستخدم</th>
+                        <th>الدور</th>
+                        <th>الصلاحيات</th>
+                        <th>التعديلات</th>
+                        <th>إضافة صلاحية</th>
+                        <th>إزالة صلاحية</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user[1] }}</td>
+                        <td>{{ user[2] }}</td>
+                        <td>
+                            <select >
+                                {% if user_permissions[user[0]] %}
+                                    {% for perm in user_permissions[user[0]] %}
+                                        <option value="{{ perm }}">{{ perm }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="">لا توجد صلاحيات</option>
+                                {% endif %}
+                            </select>
+                        </td>
+                        <td>
+                            <!-- تعديل مستخدم -->
+                            <form method="post" action="/admin/edit_user">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="user_id" value="{{ user[0] }}">
+                                <input type="text" name="username" value="{{ user[1] }}" required>
+                                <select name="role">
+                                    <option value="admin" {% if user[2] == 'admin' %}selected{% endif %}>أدمن</option>
+                                    <option value="manager" {% if user[2] == 'manager' %}selected{% endif %}>مدير</option>
+                                    <option value="user" {% if user[2] == 'user' %}selected{% endif %}>مستخدم</option>
+                                </select>
+                                <button type="submit">تعديل</button>
+                            </form>
 
-                    <!-- حذف مستخدم -->
-                    <form method="post" action="/admin/delete_user" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="user_id" value="{{ user[0] }}">
-                        <button type="submit" class="delete-btn">حذف</button>
-                    </form>
-                </td>
-                <td>
-                    <form method="post" action="/admin/give_permission">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="user_id" value="{{ user[0] }}">
-                        <select name="permission_id">
-                            {% for perm in permissions %}
-                            <option value="{{ perm[0] }}">{{ perm[1] }} - {{ perm[2] }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit">إضافة صلاحية</button>
-                    </form>
-                </td>
-                <td>
-                    <form method="post" action="/admin/remove_permission">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <input type="hidden" name="user_id" value="{{ user[0] }}">
-                        <select name="permission_id">
-                            {% for perm in permissions %}
-                            <option value="{{ perm[0] }}">{{ perm[1] }} - {{ perm[2] }}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="submit" class="delete-btn">إزالة صلاحية</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+                            <!-- حذف مستخدم -->
+                            <form method="post" action="/admin/delete_user" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="user_id" value="{{ user[0] }}">
+                                <button type="submit" class="delete-btn">حذف</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" action="/admin/give_permission">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="user_id" value="{{ user[0] }}">
+                                <select name="permission_id">
+                                    {% for perm in permissions %}
+                                    <option value="{{ perm[0] }}">{{ perm[1] }} - {{ perm[2] }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit">إضافة صلاحية</button>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="post" action="/admin/remove_permission">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <input type="hidden" name="user_id" value="{{ user[0] }}">
+                                <select name="permission_id">
+                                    {% for perm in permissions %}
+                                    <option value="{{ perm[0] }}">{{ perm[1] }} - {{ perm[2] }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="delete-btn">إزالة صلاحية</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+      
 
-<!-- ترقيم الصفحات -->
-<div class="pagination">
-    {% if current_page > 1 %}
-    <a href="/admin?page={{ current_page - 1 }}">السابق</a>
-    {% endif %}
+            <!-- ترقيم الصفحات -->
+            <div class="pagination">
+                {% if current_page > 1 %}
+                <a href="/admin?page={{ current_page - 1 }}">السابق</a>
+                {% endif %}
 
-    <span>الصفحة {{ current_page }} من {{ total_pages }}</span>
+                <span>الصفحة {{ current_page }} من {{ total_pages }}</span>
 
-    {% if current_page < total_pages %}
-    <a href="/admin?page={{ current_page + 1 }}">التالي</a>
-    {% endif %}
-</div>
-
+                {% if current_page < total_pages %}
+                <a href="/admin?page={{ current_page + 1 }}">التالي</a>
+                {% endif %}
+            </div>
+        </div>
+          </div>
+   </div>
+   </div>
+</section>
 {% endblock %}

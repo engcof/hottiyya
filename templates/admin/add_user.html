@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}إضافة مستخدم{% endblock %}
+
+{% block content %}
+<section class="add-user">
+    <div class="container">
+        <h1>إضافة مستخدم جديد</h1>
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        <form method="post" action="/admin/add_user" class="form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-group">
+                <label>اسم المستخدم</label>
+                <input type="text" name="username" required>
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label>الدور</label>
+                <select name="role">
+                    <option value="user">مستخدم</option>
+                    <option value="manager">مدير</option>
+                    <option value="admin">أدمن</option>
+                </select>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn-success">إضافة</button>
+                <a href="/admin" class="btn-secondary">رجوع</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}
