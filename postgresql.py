@@ -14,6 +14,7 @@ def get_db_context():
         dbname = os.getenv("DB_NAME")
         user = os.getenv("DB_USER")
         password = os.getenv("DB_PASSWORD")
+        
         if not all([host, dbname, user, password]):
             raise ValueError("متغيرات قاعدة البيانات مفقودة!")
 
@@ -34,69 +35,72 @@ def get_db_context():
         if conn and not conn.closed:
             conn.close()
 
+
+# ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+# دالة التهيئة: تُستدعى مرة واحدة فقط عند تشغيل التطبيق
+# من main.py عبر lifespan
 def init_database():
-    conn = None
-    try:
-        conn = psycopg2.connect(
-            host=os.getenv("DB_HOST"),
-            dbname=os.getenv("DB_NAME"),
-            user=os.getenv("DB_USER"),
-            password=os.getenv("DB_PASSWORD"),
-            port="5432",
-            sslmode="require"
-        )
+    with get_db_context() as conn:
         conn.autocommit = True
         cur = conn.cursor()
 
-        # إنشاء جدول articles بالشكل الصحيح من الأول
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS articles (
-                id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
-                content TEXT NOT NULL,
-                author_id INTEGER NOT NULL,
-                image_url TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE SET NULL
-            );
-        ''')
+        # --- تحديث جدول articles ---
+        cur.execute('ALTER TABLE articles ADD COLUMN IF NOT EXISTS author_id INTEGER;')
+        cur.execute('ALTER TABLE articles ADD COLUMN IF NOT EXISTS image_url TEXT;')
 
-        # إضافة العمود إذا ما كان موجود (للتوافق مع القديم)
-        cur.execute('''
-            ALTER TABLE articles 
-            ADD COLUMN IF NOT EXISTS author_id INTEGER;
-        ''')
+        # تحقق إذا العمود author موجود قبل الترحيل
+        cur.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'articles' AND column_name = 'author'
+        """)
+        author_column_exists = cur.fetchone() is not None
 
-        # نقل البيانات من author إلى author_id إذا لسه ما تم النقل
-        cur.execute('''
-            UPDATE articles a
-            SET author_id = u.id
-            FROM users u
-            WHERE a.author = u.username
-              AND a.author_id IS NULL
-              AND a.author IS NOT NULL;
-        ''')
+        if author_column_exists:
+            print("وجد عمود author قديم → جاري نقل البيانات إلى author_id...")
+            cur.execute('''
+                UPDATE articles a
+                SET author_id = u.id
+                FROM users u
+                WHERE a.author = u.username
+                  AND a.author_id IS NULL
+                  AND a.author IS NOT NULL;
+            ''')
 
-        # اجعل author_id مطلوب + احذف العمود القديم
-        cur.execute('ALTER TABLE articles ALTER COLUMN author_id SET NOT NULL;')
-        cur.execute('ALTER TABLE articles DROP COLUMN IF EXISTS author;')
+            try:
+                cur.execute('ALTER TABLE articles ALTER COLUMN author_id SET NOT NULL;')
+            except:
+                pass
 
-        # جدول التعليقات (تأكد من وجود user_id)
-        cur.execute('''
-            CREATE TABLE IF NOT EXISTS comments (
-                id SERIAL PRIMARY KEY,
-                article_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL,
-                content TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            );
-        ''')
+            try:
+                cur.execute('ALTER TABLE articles DROP COLUMN author;')
+                print("تم حذف العمود author بنجاح")
+            except:
+                pass
+        else:
+            print("العمود author غير موجود (تم الترحيل من قبل) → لا حاجة لنقل البيانات")
 
-        print("تم تهيئة قاعدة البيانات بنجاح!")
-    except Exception as e:
-        print(f"خطأ في init_database: {e}")
-    finally:
-        if conn:
-            conn.close()
+              # === ترحيل comments بأمان 100% ===
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'comments' AND column_name = 'user_id'")
+        user_id_exists = cur.fetchone() is not None
+
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name = 'comments' AND column_name = 'username'")
+        username_exists = cur.fetchone() is not None
+
+        if not user_id_exists:
+            cur.execute('ALTER TABLE comments ADD COLUMN user_id INTEGER')
+
+        if username_exists and user_id_exists:
+            print("جاري نقل البيانات من username → user_id...")
+            cur.execute('''
+                UPDATE comments c SET user_id = u.id
+                FROM users u
+                WHERE c.username = u.username AND c.user_id IS NULL
+            ''')
+
+            try: cur.execute('ALTER TABLE comments ALTER COLUMN user_id SET NOT NULL')
+            except: pass
+            try: cur.execute('ALTER TABLE comments DROP COLUMN username')
+            except: pass
+
+        print("تم تحديث جدول comments بنجاح (username → user_id)")
