@@ -74,7 +74,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
 
     
 
-@router.get("/names/details/{code}", response_class=HTMLResponse)
+@router.get("/details/{code}", response_class=HTMLResponse)
 async def name_details(request: Request, code: str):
     if not request.session.get("user"):
         return RedirectResponse(url="/login", status_code=303)
@@ -112,7 +112,7 @@ async def name_details(request: Request, code: str):
             cur.execute("SELECT code FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
             children = [{"code": c["code"], "name": get_full_name(c["code"])} for c in cur.fetchall()]
 
-    return templates.TemplateResponse("details.html", {
+    return templates.TemplateResponse("family/details.html", {
         "request": request,
         "username": request.session.get("user"),
         "member": member,
@@ -132,7 +132,7 @@ async def add_name_form(request: Request):
     user = request.session.get("user")
     if not user or not can(user, "add_member"):
         return RedirectResponse("/names")
-    return templates.TemplateResponse("add_name.html", {
+    return templates.TemplateResponse("family/add_name.html", {
         "request": request, "user": user, "error": None
     })
 
@@ -211,7 +211,7 @@ async def add_name(
     except Exception as e:
         error = "حدث خطأ غير متوقع. حاول مرة أخرى."
 
-    return templates.TemplateResponse("add_name.html", {
+    return templates.TemplateResponse("family/add_name.html", {
         "request": request,
         "username": request.session.get("user"),
         "error": error
@@ -239,7 +239,7 @@ async def edit_name_form(request: Request, code: str):
             pic = cur.fetchone()
             picture_url = pic["pic_path"] if pic else None
 
-    return templates.TemplateResponse("edit_name.html", {
+    return templates.TemplateResponse("family/edit_name.html", {
         "request": request,
         "user": user,
         "member": member,
