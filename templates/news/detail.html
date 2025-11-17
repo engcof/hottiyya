@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block content %}
+<section class="news-detail">
+    <div class="container">
+        <h1>{{ item.title }}</h1>
+        <p class="meta">بواسطة {{ item.author }} • {{ item.created_at.strftime('%Y-%m-%d') }}</p>
+
+        {% if item.image_url %}
+        <img src="{{ item.image_url }}" alt="{{ item.title }}" class="detail-img">
+        {% endif %}
+
+        {% if item.video_url %}
+        <div class="video-container">
+            <video controls>
+                <source src="{{ item.video_url }}" type="video/mp4">
+                المتصفح لا يدعم الفيديو.
+            </video>
+        </div>
+        {% endif %}
+
+        <div class="content">
+            {{ item.content | replace('\n', '<br>') | safe }}
+        </div>
+
+       <div class="actions">
+            <a href="/news" class="btn-secondary">رجوع إلى الأخبار</a>
+
+           {% if can_edit %}
+            <a href="/news/edit/{{ item.id }}" class="btn-edit">تعديل</a>
+            {% endif %}
+            {% if can_delete %}
+            <form action="/news/delete/{{ item.id }}" method="post" style="display:inline;" 
+                onsubmit="return confirm('متأكد من الحذف؟');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="btn-danger">حذف</button>
+            </form>
+            {% endif %}
+           
+        </div>
+    </div>
+</section>
+{% endblock %}

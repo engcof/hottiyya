@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}{{ article.title }}{% endblock %}
+
+{% block content %}
+<section class="article-detail">
+    <div class="container">
+        <article class="glass">
+            {% if article.image_url %}
+            <img src="{{ article.image_url }}" alt="{{ article.title }}" class="article-header-img">
+            {% endif %}
+
+            <h1>{{ article.title }}</h1>
+            <p class="meta">
+                بواسطة <strong>{{ article.username }}</strong> • 
+                {{ article.created_at.strftime('%d %B %Y') }}
+            </p>
+
+            <div class="article-body">
+                {{ article.content | replace('\n', '<br>') | safe }}
+            </div>
+
+            <div class="article-actions">
+                <a href="/articles" class="btn-secondary">رجوع إلى المقالات</a>
+
+                {% if can_edit %}
+                <a href="/articles/edit/{{ article.id }}" class="btn-edit">تعديل المقال</a>
+                {% endif %}
+
+                {% if can_delete %}
+                <form action="/articles/delete/{{ article.id }}" method="post" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn-danger" 
+                            onclick="return confirm('هل أنت متأكد من حذف هذا المقال نهائيًا؟');">
+                        حذف المقال
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </article>
+
+       <div class="comments-list">
+            {% for c in comments %}
+            <div class="comment glass" id="comment-{{ c.id }}">
+                <div class="comment-header">
+                    <strong>{{ c.username }}</strong>
+                    <small>{{ c.created_at.strftime('%d/%m/%Y %I:%M %p') }}</small>
+
+                    <!-- زر الحذف: يظهر لصاحب التعليق أو الأدمن أو من عنده صلاحية delete_comment -->
+                    {% if user and (user.role == "admin" or user.id == c.user_id or (user.id and has_permission(user.id, "delete_comment"))) %}
+                    <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;margin-right:10px;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="btn-delete-small" 
+                                onclick="return confirm('هل أنت متأكد من حذف هذا التعليق؟');"
+                                title="حذف التعليق">
+                            حذف
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                <p>{{ c.content | replace('\n', '<br>') | safe }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

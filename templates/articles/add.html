@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}كتابة مقال جديد{% endblock %}
+
+{% block content %}
+<section class="add-article">
+    <div class="container">
+        <h1 class="page-title">كتابة مقال جديد</h1>
+        
+        <form method="post" action="/articles/add" enctype="multipart/form-data" class="glass-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="form-group">
+                <label>عنوان المقال <span class="required">*</span></label>
+                <input type="text" name="title" required placeholder="أدخل عنوانًا جذابًا...">
+            </div>
+
+            <div class="form-group">
+                <label>محتوى المقال <span class="required">*</span></label>
+                <textarea name="content" rows="12" required placeholder="اكتب مقالك هنا..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>صورة المقال (اختياري)</label>
+                <input type="file" name="image" accept="image/*">
+                <small>يمكنك رفع صورة لتظهر أعلى المقال</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn-success">نشر المقال</button>
+                <a href="/articles" class="btn-secondary">رجوع</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

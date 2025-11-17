@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}المقالات{% endblock %}
+
+{% block content %}
+<section class="articles-section">
+    <div class="container">
+        <div class="section-header">
+            <h1 class="page-title">المقالات العائلية</h1>
+            {% if can_add %}
+            <a href="/articles/add" class="btn-primary">كتابة مقال جديد</a>
+            {% endif %}
+        </div>
+
+        {% if articles %}
+        <div class="articles-grid">
+            {% for a in articles %}
+            <div class="article-card glass">
+                {% if a.image_url %}
+                <img src="{{ a.image_url }}" alt="{{ a.title }}" class="article-img">
+                {% endif %}
+                <div class="article-content">
+                    <h3><a href="/articles/{{ a.id }}">{{ a.title }}</a></h3>
+                    <p class="meta">
+                        <strong>{{ a.username }}</strong> • 
+                        {{ a.created_at.strftime('%Y-%m-%d') }}
+                    </p>
+                    <p class="excerpt">
+                        {{ a.content[:150] }}{% if a.content|length > 150 %}...{% endif %}
+                    </p>
+                    <a href="/articles/{{ a.id }}" class="read-more">اقرأ المزيد →</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-data glass">
+            <p>لا توجد مقالات بعد. كن أول من يكتب!</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

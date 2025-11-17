@@ -41,8 +41,10 @@ async def login(
          # تسجيل الدخول الصحيح
         request.session["user"] = {
             "username": user_data["username"],
-            "role": user_data["role"]
+            "role": user_data["role"],
+            "id": user_data["id"]
         }
+        
         return RedirectResponse(url="/", status_code=303)
     raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
 

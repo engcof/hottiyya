@@ -669,7 +669,19 @@ button.delete-btn:hover {
     color: #555;
     font-size: 16px;
 }
-
+.btn-delete-small {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    font-size: 0.9em;
+    cursor: pointer;
+    padding: 2px 8px;
+    text-decoration: underline;
+}
+.btn-delete-small:hover {
+    color: #c0392b;
+    font-weight: bold;
+}
 
 /* FOOTER  */
 /* === Footer (تم تصغيره) === */

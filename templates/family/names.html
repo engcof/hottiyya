@@ -3,12 +3,19 @@
 
 {% block content %}
 <!-- المحتوى الرئيسي -->
-<section class="hero-section">
-    <div class="container">
+<section class="cof-section">
+      <div class="cof-container">
         <div class="section-header">
             <h1>أفراد عائلة الحوطية</h1>
+            {% if can_add %}
             <a href="/names/add" class="btn-primary">إضافة عضو جديد</a>
-        </div>
+            {% endif %}
+        </div> 
+    </div>
+</section> 
+<section class="cof-section">
+      <div class="cof-container">
+         <div class="contact-form glass">
         <div class="search-bar">
             <form method="get" action="/names">
                 <input type="text" name="q" value="{{ q or '' }}" placeholder="ابحث بالكود أو الاسم..." />
@@ -18,8 +25,16 @@
             <a href="/names" class="clear-search">إلغاء البحث</a>
             {% endif %}
         </div>
-        {% if members %}
-        <div class="table-container">
+</div>
+</div>
+</section>
+
+      
+         <section class="cof-section">
+           <div class="cof-container">    
+            <div class="contact-form glass">
+              
+            <div class="table-container">
             <table class="family-table">
                 <thead>
                     <tr>
@@ -33,22 +48,25 @@
                     <tr>
                         <td><code>{{ m.code }}</code></td>
                         <td class="full-name">{{ m.full_name }}</td>
-                        <td class="actions">
+                       <td class="actions">
                             <a href="/names/details/{{ m.code }}" class="btn btn-info">تفاصيل</a>
+                            
+                            {% if can_edit %}
                             <a href="/names/edit/{{ m.code }}" class="btn btn-warning">تعديل</a>
-                            <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;">
-                                <button type="submit" class="btn btn-danger" 
-                                        onclick="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟')">
-                                    حذف
-                                </button>
+                            {% endif %}
+                            
+                            {% if can_delete %}
+                            <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;"
+                                onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
+                                <button type="submit" class="btn btn-danger">حذف</button>
                             </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-
+     
         <!-- أزرار التصفح -->
         <div class="pagination">
             {% if has_prev %}
@@ -59,9 +77,10 @@
             <a href="/names?page={{ page + 1 }}" class="btn">التالي</a>
             {% endif %}
         </div>
-        {% else %}
-        <p class="no-data">لا توجد أسماء مسجلة بعد.</p>
-        {% endif %}
-    </div>
+       
+   </div>
+      </div>
+   </div>
+
 </section>
 {% endblock %}

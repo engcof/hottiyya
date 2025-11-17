@@ -2,36 +2,32 @@
 {% block title %}الأخبار{% endblock %}
 
 {% block content %}
-
-<!-- Section 5: Contact -->
 <section class="login-section">
     <div class="content-container">
-    
+        <h1 class="page-title">أخبار العائلة</h1>
         {% if news %}
         <div class="news-grid">
             {% for item in news %}
             <div class="news-card">
-                {% if item.image_path %}
-                <img src="{{ item.image_path }}" alt="{{ item.title }}" class="news-img">
+                {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.title }}" class="news-img">
                 {% endif %}
                 <h3>{{ item.title }}</h3>
                 <p class="meta">بواسطة {{ item.author }} • {{ item.created_at.strftime('%Y-%m-%d') }}</p>
                 <p>{{ item.content[:200] }}{% if item.content|length > 200 %}...{% endif %}</p>
-                <a href="#" class="read-more">اقرأ المزيد</a>
+                <!-- الرابط داخل اللوب فقط -->
+                <a href="/news/{{ item.id }}" class="read-more">اقرأ المزيد →</a>
             </div>
             {% endfor %}
         </div>
         {% else %}
         <p class="no-data">لا توجد أخبار بعد.</p>
         {% endif %}
-
-        {% if user and user.role == "admin" %}
+        {% if can_add %}
         <div class="admin-actions">
             <a href="/news/add" class="btn-primary">إضافة خبر جديد</a>
         </div>
-        
         {% endif %}
     </div>
 </section>
 {% endblock %}
-   

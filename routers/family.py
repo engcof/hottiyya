@@ -1,35 +1,38 @@
 # app/routes/family.py
-from fastapi import APIRouter, Request, Form, UploadFile, File, Depends, HTTPException
+from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from services.family_service import get_full_name
 from security.session import get_current_user
 from postgresql import get_db_context
-import logging
-import shutil
-import os
 from psycopg2.extras import RealDictCursor
 from fastapi.templating import Jinja2Templates
+from utils.permissions import has_permission  # ← أضف هذا
+import shutil
+import os
 
 router = APIRouter(prefix="/names", tags=["family"])
 templates = Jinja2Templates(directory="templates")
-
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# إعداد الـ logger
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.FileHandler("app.log"),logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+# دالة مساعدة للتحقق من الصلاحية (الأدمن عنده كل شيء)
+def can(user: dict, perm: str) -> bool:
+    if not user:
+        return False
+    if user.get("role") == "admin":
+        return True
+    user_id = user.get("id")
+    return user_id and has_permission(user_id, perm)
 
 @router.get("/", response_class=HTMLResponse)
 async def show_names(request: Request, page: int = 1, q: str = None):
-    user = get_current_user(request)
+    user = request.session.get("user")
     if not user:
         return RedirectResponse("/auth/login")
+
+    can_add = can(user, "add_member")
+    can_edit = can(user, "edit_member")
+    can_delete = can(user, "delete_member")
 
     ITEMS_PER_PAGE = 18
     offset = (page - 1) * ITEMS_PER_PAGE
@@ -38,19 +41,13 @@ async def show_names(request: Request, page: int = 1, q: str = None):
     with get_db_context() as conn:
         with conn.cursor() as cur:
             if search_query:
-                # بحث في الاسم الكامل (بعد تجميعه)
                 cur.execute("""
-                    SELECT code FROM family_name 
+                    SELECT code FROM family_name
                     WHERE code ILIKE %s OR name ILIKE %s
-                    ORDER BY code 
-                    LIMIT %s OFFSET %s
+                    ORDER BY code LIMIT %s OFFSET %s
                 """, (search_query, search_query, ITEMS_PER_PAGE, offset))
                 rows = cur.fetchall()
-
-                cur.execute("""
-                    SELECT COUNT(*) FROM family_name 
-                    WHERE code ILIKE %s OR name ILIKE %s
-                """, (search_query, search_query))
+                cur.execute("SELECT COUNT(*) FROM family_name WHERE code ILIKE %s OR name ILIKE %s", (search_query, search_query))
                 total = cur.fetchone()[0]
             else:
                 cur.execute("SELECT code FROM family_name ORDER BY code LIMIT %s OFFSET %s", (ITEMS_PER_PAGE, offset))
@@ -62,11 +59,20 @@ async def show_names(request: Request, page: int = 1, q: str = None):
             members = [{"code": r[0], "full_name": get_full_name(r[0])} for r in rows]
 
     return templates.TemplateResponse("family/names.html", {
-        "request": request, "user": user, "members": members,
-        "page": page, "total_pages": total_pages,
-        "has_prev": page > 1, "has_next": page < total_pages,
-        "q": q
+        "request": request,
+        "user": user,
+        "members": members,
+        "page": page,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "q": q,
+        "can_add": can_add,
+        "can_edit": can_edit,
+        "can_delete": can_delete
     })
+
+    
 
 @router.get("/names/details/{code}", response_class=HTMLResponse)
 async def name_details(request: Request, code: str):
@@ -120,14 +126,14 @@ async def name_details(request: Request, code: str):
         "gender": gender
     })
 
-@router.get("/names/add", response_class=HTMLResponse)
+#=== إضافة عضو ===
+@router.get("/add", response_class=HTMLResponse)
 async def add_name_form(request: Request):
-    if not request.session.get("user"):
-        return RedirectResponse(url="/login", status_code=303)
+    user = request.session.get("user")
+    if not user or not can(user, "add_member"):
+        return RedirectResponse("/names")
     return templates.TemplateResponse("add_name.html", {
-        "request": request,
-        "username": request.session.get("user"),
-        "error": None
+        "request": request, "user": user, "error": None
     })
 
 @router.post("/names/add")
@@ -148,10 +154,13 @@ async def add_name(
     phone: str = Form(None),
     address: str = Form(None),
     p_o_b: str = Form(None),
-    picture: UploadFile = File(None)
+    picture: UploadFile = File(None),
+      **form_data
 ):
-    if not request.session.get("user"):
-        return RedirectResponse(url="/login", status_code=303)
+   
+    user = request.session.get("user")
+    if not user or not can(user, "add_member"):
+        return RedirectResponse("/names")
 
     error = None
     code = code.strip()
@@ -208,11 +217,12 @@ async def add_name(
         "error": error
     })
 
-@router.get("/names/edit/{code}", response_class=HTMLResponse)
+# === تعديل عضو ===
+@router.get("/edit/{code}", response_class=HTMLResponse)
 async def edit_name_form(request: Request, code: str):
-    user = get_current_user(request)
-    if not user or user.get("role") != "admin":
-        return RedirectResponse("/login", status_code=303)
+    user = request.session.get("user")
+    if not user or not can(user, "edit_member"):
+        return RedirectResponse("/names")
 
     with get_db_context() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -257,11 +267,12 @@ async def update_name(
     phone: str = Form(None),
     address: str = Form(None),
     p_o_b: str = Form(None),
-    picture: UploadFile = File(None)
+    picture: UploadFile = File(None),
+    **form_data
 ):
-    user = get_current_user(request)
-    if not user or user.get("role") != "admin":
-        return RedirectResponse("/login", status_code=303)
+    user = request.session.get("user")
+    if not user or not can(user, "edit_member"):
+        return RedirectResponse("/names")
 
     # تنظيف البيانات
     name = name.strip()
@@ -316,16 +327,16 @@ async def update_name(
 
                 conn.commit()
     except Exception as e:
-        logger.error(f"خطأ عند تعديل العضو {code}: {e}")
         raise HTTPException(status_code=500, detail="فشل في حفظ التعديلات")
 
     return RedirectResponse("/names", status_code=303)
 
-@router.post("/names/delete/{code}")
+# === حذف عضو ===
+@router.post("/delete/{code}")
 async def delete_name(request: Request, code: str):
-    user = get_current_user(request)
-    if not user or user.get("role") != "admin":
-        return RedirectResponse("/login", status_code=303)
+    user = request.session.get("user")
+    if not user or not can(user, "delete_member"):
+        return RedirectResponse("/names")
 
     with get_db_context() as conn:
         with conn.cursor() as cur:

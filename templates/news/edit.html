@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}تعديل الخبر{% endblock %}
+
+{% block content %}
+<section class="add-news">
+<div class="container">
+    <h1>تعديل الخبر</h1>
+    <form method="post" action="/news/edit/{{ item.id }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group">
+            <label>العنوان</label>
+            <input type="text" name="title" value="{{ item.title }}" required>
+        </div>
+        <div class="form-group">
+            <label>المحتوى</label>
+            <textarea name="content" rows="8" required>{{ item.content }}</textarea>
+        </div>
+        <div class="form-group">
+            <label>الكاتب</label>
+            <input type="text" name="author" value="{{ item.author }}" required>
+        </div>
+        <div class="form-group">
+            <label>صورة الخبر (اتركه فارغًا إذا لا تريد تغيير الصورة)</label>
+            {% if item.image_url %}
+            <p>الصورة الحالية: <img src="{{ item.image_url }}" style="max-height:200px;"></p>
+            {% endif %}
+            <input type="file" name="image" accept="image/*">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-success">حفظ التعديلات</button>
+            <a href="/news" class="btn-secondary">إلغاء</a>
+        </div>
+    </form>
+</div>
+</section>
+{% endblock %}
