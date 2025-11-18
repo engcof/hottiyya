@@ -17,26 +17,60 @@
     
      <!-- Header -->
     <header class="glass">
-        <nav>
-            <a href="/" class="logo">
-                الحـوطية
-            </a>
-            <ul class="nav-links"> 
-                <li><a href="/">الرئيسية</a></li>
-                <li><a href="/news">الأخبار</a></li>
-                <li><a href="/articles">المقالات</a></li>
-                 <li><a href="/names">شجرة العائلة</a></li>
-                <li><a href="#">عننا</a></li> 
-                {% if user and user.role == "admin" %}
-                <li><a href="/admin">الإدارة</a></li>
-                {% endif %}
-               {% if user %}
-                <li><a href="/auth/logout">تسجيل الخروج</a></li>
+        <nav >
+            <div>
+                <a href="/" class="logo">الحـوطية</a>
+            </div>
+
+            <div class="nav-center">
+                <ul class="nav-links">
+                    <li><a href="/">الرئيسية</a></li>
+                    <li><a href="/news">الأخبار</a></li>
+                    <li><a href="/articles">المقالات</a></li>
+                    <li><a href="/names">شجرة العائلة</a></li>
+                    <li><a href="#">عننا</a></li>
+                    {% if user and user.role == "admin" %}
+                    <li><a href="/admin">الإدارة</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+
+            <!-- الـ User Area في أقصى اليمين 100% -->
+            <div class="user-area">
+                {% if user %}
+                    <button class="modern-user-btn" id="modernUserBtn">
+                        <div class="avatar-circle">
+                            {{ user.username[0] | upper }}
+                        </div>
+                        <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
+                            <path fill="currentColor" d="M7 10l5 5 5-5z"/>
+                        </svg>
+                    </button>
+
+                    <div class="modern-dropdown" id="modernDropdown">
+                        <div class="dropdown-header-mini">
+                            <div class="avatar-circle big">{{ user.username[0] | upper }}</div>
+                            <div>
+                                <div class="name">{{ user.username }}</div>
+                                <div class="role">
+                                    {% if user.role == 'admin' %}مدير النظام
+                                    {% elif user.role == 'manager' %}مدير
+                                    {% else %}عضو{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <a href="/profile" class="dropdown-link">
+                            صفحتي الشخصية
+                        </a>
+                        <a href="/auth/logout" class="dropdown-link logout">
+                            تسجيل الخروج
+                        </a>
+                    </div>
                 {% else %}
-                <li><a href="/auth/login">تسجيل الدخول</a></li>
+                    <a href="/auth/login" class="btn-login">تسجيل الدخول</a>
                 {% endif %}
-        
-            </ul>
+            </div>
+
             <div class="mobile-menu-toggle">
                 <div class="hamburger-line"></div>
                 <div class="hamburger-line"></div>
@@ -48,12 +82,12 @@
             <a href="/news">الأخبار</a>
             <a href="/articles">المقالات</a>
             <a href="/names">شجرة العائلة</a>
-            <a href="#">عننا</a>
             {% if user and user.role == "admin" %}
             <a href="/admin">الإدارة</a>
             {% endif %}
             {% if user %}
-            <a href="/auth/logout">تسجيل الخروج</a>
+            <a href="/profile">صفحتي الشخصية</a>
+             <a href="/auth/logout" style="color:#ff6b6b;">تسجيل الخروج</a>
             {% else %}
             <a href="/auth/login">تسجيل الدخول</a>
             {% endif %}
@@ -84,5 +118,22 @@
    
     <!-- إضافة ملفات JavaScript مشتركة هنا -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
+    <!-- الحل السحري الأخير - يشتغل مهما حصل -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.getElementById("modernUserBtn");
+    const menu = document.getElementById("modernDropdown");
+
+    if (btn && menu) {
+        btn.addEventListener("click", e => {
+            e.stopPropagation();
+            menu.classList.toggle("show");
+        });
+
+        document.addEventListener("click", () => menu.classList.remove("show"));
+        menu.addEventListener("click", e => e.stopPropagation());
+    }
+});
+</script>
 </body>
 </html>

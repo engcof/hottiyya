@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}صفحتي الشخصية{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="glass p-4" style="max-width: 600px; margin: 0 auto;">
+        <h2 class="text-center mb-4">مرحباً، {{ user.username }} 👋</h2>
+        
+        <div class="alert alert-info text-center">
+            <strong>دورك:</strong> 
+            {% if user.role == 'admin' %}
+                👑 مدير النظام
+            {% elif user.role == 'manager' %}
+                👔 مدير
+            {% else %}
+                👤 مستخدم عادي
+            {% endif %}
+        </div>
+
+        {% if success %}
+            <div class="alert alert-success">تم تغيير كلمة السر بنجاح!</div>
+        {% endif %}
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <h4 class="mt-4">تغيير كلمة السر</h4>
+        <form method="post" action="/profile/change-password">
+            <div class="mb-3">
+                <label>كلمة السر الحالية</label>
+                <input type="password" name="current_password" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label>كلمة السر الجديدة</label>
+                <input type="password" name="new_password" class="form-control" required minlength="6">
+            </div>
+            <div class="mb-3">
+                <label>تأكيد كلمة السر الجديدة</label>
+                <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-success">تحديث كلمة السر</button>
+            </div>
+        </form>
+
+        <div class="text-center mt-4">
+            <a href="/" class="btn btn-secondary">العودة للرئيسية</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
