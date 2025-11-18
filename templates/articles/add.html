@@ -2,14 +2,15 @@
 {% block title %}كتابة مقال جديد{% endblock %}
 
 {% block content %}
-<section class="add-article">
-    <div class="container">
+<section class="family-section">
+    <div class="family-content">
         <h1 class="page-title">كتابة مقال جديد</h1>
         
-        <form method="post" action="/articles/add" enctype="multipart/form-data" class="glass-form">
+        <form method="post" action="/articles/add" enctype="multipart/form-data" class="edit-form">
+            
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-            <div class="form-group">
+             <div class="form-group">
                 <label>عنوان المقال <span class="required">*</span></label>
                 <input type="text" name="title" required placeholder="أدخل عنوانًا جذابًا...">
             </div>
@@ -26,8 +27,8 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn-success">نشر المقال</button>
-                <a href="/articles" class="btn-secondary">رجوع</a>
+                <button type="submit" class="submit-btn">نشر المقال</button>
+                <a href="/articles" class="submit-btn">رجوع</a>
             </div>
         </form>
     </div>

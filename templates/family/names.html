@@ -3,84 +3,78 @@
 
 {% block content %}
 <!-- المحتوى الرئيسي -->
-<section class="cof-section">
-      <div class="cof-container">
+<section class="family-section">
+    <div class="family-content">
         <div class="section-header">
-            <h1>أفراد عائلة الحوطية</h1>
-            {% if can_add %}
-            <a href="/names/add" class="btn-primary">إضافة عضو جديد</a>
-            {% endif %}
+            <h1>شجرة العائلة</h1>   
         </div> 
-    </div>
-</section> 
-<section class="cof-section">
-      <div class="cof-container">
-         <div class="contact-form glass">
-        <div class="search-bar">
-            <form method="get" action="/names">
-                <input type="text" name="q" value="{{ q or '' }}" placeholder="ابحث بالكود أو الاسم..." />
-                <button type="submit">بحث</button>
-            </form>
-            {% if q %}
-            <a href="/names" class="clear-search">إلغاء البحث</a>
+        <div class="contact-form glass">
+             <div class="form-actions">
+            {% if can_add %}
+            <a href="/names/add" class="submit-btn">إضافة عضو جديد</a>
             {% endif %}
-        </div>
-</div>
-</div>
-</section>
-
-      
-         <section class="cof-section">
-           <div class="cof-container">    
-            <div class="contact-form glass">
-              
+            </div>
+            <div class="form-actions">
+                <form method="get" action="/names">
+                    <div class="contact-form glass">
+                        <div class="form-group">
+                        <input type="text" name="q" value="{{ q or '' }}" placeholder="ابحث بالكود أو الاسم..." />
+                        </div>
+                        <button type="submit" class="submit-btn">بحث</button>
+                    </div>
+                </form>
+                {% if q %}
+                <a href="/names" class="clear-search">إلغاء البحث</a>
+                {% endif %}
+            </div>
             <div class="table-container">
-            <table class="family-table">
-                <thead>
-                    <tr>
-                        <th>الكود</th>
-                        <th>الاسم الكامل</th>
-                        <th>الإجراءات</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for m in members %}
-                    <tr>
-                        <td><code>{{ m.code }}</code></td>
-                        <td class="full-name">{{ m.full_name }}</td>
-                       <td class="actions">
-                            <a href="/names/details/{{ m.code }}" class="btn btn-info">تفاصيل</a>
-                            
-                            {% if can_edit %}
-                            <a href="/names/edit/{{ m.code }}" class="btn btn-warning">تعديل</a>
-                            {% endif %}
-                            
-                            {% if can_delete %}
-                            <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;"
-                                onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
-                                <button type="submit" class="btn btn-danger">حذف</button>
-                            </form>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                <table class="family-table">
+                    <thead>
+                        <tr>
+                            <th>الكود</th>
+                            <th>الاسم الكامل</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for m in members %}
+                        <tr>
+                            <td><code>{{ m.code }}</code></td>
+                            <td class="full-name">{{ m.full_name }}</td>
+                            <td class="actions">
+                                 <div class="form-actions">
+                                <a href="/names/details/{{ m.code }}" class="submit-btn">تفاصيل</a>
+                                
+                                {% if can_edit %}
+                                <a href="/names/edit/{{ m.code }}" class="submit-btn">تعديل</a>
+                                {% endif %}
+                                
+                                {% if can_delete %}
+                                <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;"
+                                    onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
+                                    <button type="submit" class="submit-btn">حذف</button>
+                                </form>
+                                {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
      
-        <!-- أزرار التصفح -->
-        <div class="pagination">
-            {% if has_prev %}
-            <a href="/names?page={{ page - 1 }}" class="btn">السابق</a>
-            {% endif %}
-            <span>الصفحة {{ page }} من {{ total_pages }}</span>
-            {% if has_next %}
-            <a href="/names?page={{ page + 1 }}" class="btn">التالي</a>
-            {% endif %}
-        </div>
+                <!-- أزرار التصفح -->
+                <div class="pagination">
+                    {% if has_prev %}
+                    <a href="/names?page={{ page - 1 }}" class="btn">السابق</a>
+                    {% endif %}
+                    <span>الصفحة {{ page }} من {{ total_pages }}</span>
+                    {% if has_next %}
+                    <a href="/names?page={{ page + 1 }}" class="btn">التالي</a>
+                    {% endif %}
+                </div>
        
+            </div>
+        </div>
    </div>
-      </div>
-   </div>
-
 </section>
 {% endblock %}

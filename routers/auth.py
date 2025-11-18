@@ -14,12 +14,15 @@ templates = Jinja2Templates(directory="templates")  # الجذر
 # GET /login
 # ------------------------------
 @router.get("/login")
-async def login_page(request: Request):
+async def login_page(request: Request, error: str = None):
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
     response = templates.TemplateResponse(
         "auth/login.html", 
-        {"request": request, "csrf_token": csrf_token}
+        {"request": request, 
+         "csrf_token": csrf_token,
+         "error": error
+        }
     )
     set_cache_headers(response)
     return response
@@ -46,7 +49,11 @@ async def login(
         }
         
         return RedirectResponse(url="/", status_code=303)
-    raise HTTPException(status_code=401, detail="اسم المستخدم أو كلمة المرور غير صحيحة")
+    # لو البيانات غلط → نرجع نفس الصفحة مع رسالة خطأ
+    return await login_page(
+        request=request,
+        error="اسم المستخدم أو كلمة المرور غير صحيحة"
+    )
 
 # ------------------------------
 # GET /logout

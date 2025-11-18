@@ -9,6 +9,28 @@
 <!-- Section 5: Contact -->
 <section class="login-section">
     <div class="content-container">
+        {% if error %}
+        <div class="alert-error" id="errorAlert">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <span>{{ error }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+
+        <script>
+        // الرسالة تختفي تلقائيًا بعد 5 ثواني
+        setTimeout(() => {
+            const alert = document.getElementById("errorAlert");
+            if (alert) {
+                alert.style.transition = "all 0.6s ease";
+                alert.style.opacity = "0";
+                alert.style.transform = "translateY(-20px)";
+                setTimeout(() => alert.remove(), 600);
+            }
+        }, 5000);
+        </script>
+        {% endif %}
         <form method="post" action="/auth/login">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="contact-form glass">

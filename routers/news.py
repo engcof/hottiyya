@@ -121,6 +121,7 @@ async def add_news(
 # === تعديل الخبر ===
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_news_form(request: Request, id: int):
+    user = request.session.get("user")
     if not check_permission(request, "edit_news"):
         return RedirectResponse("/news")
 

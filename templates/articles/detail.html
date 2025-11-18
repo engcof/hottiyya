@@ -2,8 +2,8 @@
 {% block title %}{{ article.title }}{% endblock %}
 
 {% block content %}
-<section class="article-detail">
-    <div class="container">
+<section class="family-section">
+    <div class="family-content">
         <article class="glass">
             {% if article.image_url %}
             <img src="{{ article.image_url }}" alt="{{ article.title }}" class="article-header-img">
@@ -19,48 +19,90 @@
                 {{ article.content | replace('\n', '<br>') | safe }}
             </div>
 
-            <div class="article-actions">
-                <a href="/articles" class="btn-secondary">رجوع إلى المقالات</a>
+            <div class="form-actions">
+                <a href="/articles" class="submit-btn">رجوع إلى المقالات</a>
 
                 {% if can_edit %}
-                <a href="/articles/edit/{{ article.id }}" class="btn-edit">تعديل المقال</a>
+                <a href="/articles/edit/{{ article.id }}" class="submit-btn">تعديل المقال</a>
                 {% endif %}
 
                 {% if can_delete %}
                 <form action="/articles/delete/{{ article.id }}" method="post" style="display:inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" class="btn-danger" 
+                    <button type="submit" class="submit-btn" 
                             onclick="return confirm('هل أنت متأكد من حذف هذا المقال نهائيًا؟');">
                         حذف المقال
                     </button>
                 </form>
                 {% endif %}
             </div>
-        </article>
+         </article>
 
-       <div class="comments-list">
-            {% for c in comments %}
-            <div class="comment glass" id="comment-{{ c.id }}">
-                <div class="comment-header">
+         <!-- === عرض التعليقات === -->
+<div class="comments-section">
+    <h2 class="comments-title">
+        التعليقات 
+        <span class="comments-count">({{ comments|length }})</span>
+    </h2>
+
+    {% if comments %}
+    <div class="comments-list">
+        {% for c in comments %}
+        <div class="comment glass" id="comment-{{ c.id }}">
+            <div class="comment-header">
+                <div class="comment-author">
                     <strong>{{ c.username }}</strong>
-                    <small>{{ c.created_at.strftime('%d/%m/%Y %I:%M %p') }}</small>
-
-                    <!-- زر الحذف: يظهر لصاحب التعليق أو الأدمن أو من عنده صلاحية delete_comment -->
-                    {% if user and (user.role == "admin" or user.id == c.user_id or (user.id and has_permission(user.id, "delete_comment"))) %}
-                    <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;margin-right:10px;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="btn-delete-small" 
-                                onclick="return confirm('هل أنت متأكد من حذف هذا التعليق؟');"
-                                title="حذف التعليق">
-                            حذف
-                        </button>
-                    </form>
-                    {% endif %}
+                    <small>{{ c.created_at.strftime('%d/%m/%Y في %I:%M %p') }}</small>
                 </div>
-                <p>{{ c.content | replace('\n', '<br>') | safe }}</p>
+                {% if user and (user.role == "admin" or user.id == c.user_id or (user.id and has_permission(user.id, "delete_comment"))) %}
+                <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn-delete-small" title="حذف التعليق"
+                        onclick="return confirm('متأكد من حذف التعليق؟');">
+                        حذف
+                    </button>
+                </form>
+                {% endif %}
             </div>
-            {% endfor %}
+            <p class="comment-content">{{ c.content | replace('\n', '<br>') | safe }}</p>
         </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-comments glass">
+        <p>لا توجد تعليقات بعد.. كن أول من يكتب!</p>
+    </div>
+    {% endif %}
+</div>
+
+       <!-- بعد </div> بتاع .comments-list مباشرة، أضف ده -->
+{% if can_comment %}
+<div class="add-comment-section" id="comments">
+    <h3>أضف تعليقك</h3>
+    <form action="/articles/{{ article.id }}/comment" method="post" class="comment-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="textarea-container">
+            <textarea 
+                name="content" 
+                placeholder="اكتب تعليقك هنا..." 
+                required 
+                rows="4"
+                maxlength="1000"
+            ></textarea>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="submit-btn">
+                إرسال التعليق
+            </button>
+        </div>
+    </form>
+</div>
+{% else %}
+<div class="login-prompt" id="comments">
+    <p>قم <a href="/auth/login">بتسجيل الدخول</a> لتتمكن من إضافة تعليق</p>
+</div>
+{% endif %}
+       
     </div>
 </section>
 {% endblock %}

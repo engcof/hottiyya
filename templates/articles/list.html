@@ -2,8 +2,8 @@
 {% block title %}المقالات{% endblock %}
 
 {% block content %}
-<section class="articles-section">
-    <div class="container">
+<section class="family-section">
+    <div class="family-content">
         <div class="section-header">
             <h1 class="page-title">المقالات العائلية</h1>
             {% if can_add %}
@@ -12,25 +12,60 @@
         </div>
 
         {% if articles %}
-        <div class="articles-grid">
-            {% for a in articles %}
-            <div class="article-card glass">
-                {% if a.image_url %}
-                <img src="{{ a.image_url }}" alt="{{ a.title }}" class="article-img">
+        <div class="articles-table-container">
+            <table class="articles-table glass">
+                <thead>
+                    <tr>
+                        <th>العنوان</th>
+                        <th>نبذة</th>
+                        <th>الكاتب</th>
+                        <th>التاريخ</th>
+                        <th>التعليقات</th>
+                        <th>عرض</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in articles %}
+                    <tr>
+                        <td class="title-cell">
+                            <a href="/articles/{{ a.id }}">{{ a.title }}</a>
+                        </td>
+                        <td class="excerpt-cell">
+                            {{ a.content[:120] }}{% if a.content|length > 120 %}...{% endif %}
+                        </td>
+                        <td><strong>{{ a.username }}</strong></td>
+                        <td>{{ a.created_at.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <span class="comments-badge">
+                                {% if a.comments_count > 0 %}
+                                {{ a.comments_count }} تعليق
+                                {% else %}
+                                لا يوجد تعليق
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/articles/{{ a.id }}" class="view-link">عرض</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- ترقيم الصفحات -->
+            <div class="pagination">
+                {% if has_prev %}
+                <a href="/articles?page={{ page - 1 }}" class="page-btn">السابق</a>
                 {% endif %}
-                <div class="article-content">
-                    <h3><a href="/articles/{{ a.id }}">{{ a.title }}</a></h3>
-                    <p class="meta">
-                        <strong>{{ a.username }}</strong> • 
-                        {{ a.created_at.strftime('%Y-%m-%d') }}
-                    </p>
-                    <p class="excerpt">
-                        {{ a.content[:150] }}{% if a.content|length > 150 %}...{% endif %}
-                    </p>
-                    <a href="/articles/{{ a.id }}" class="read-more">اقرأ المزيد →</a>
-                </div>
+
+                <span class="page-info">
+                    صفحة {{ page }} من {{ total_pages }}
+                </span>
+
+                {% if has_next %}
+                <a href="/articles?page={{ page + 1 }}" class="page-btn">التالي</a>
+                {% endif %}
             </div>
-            {% endfor %}
         </div>
         {% else %}
         <div class="no-data glass">
