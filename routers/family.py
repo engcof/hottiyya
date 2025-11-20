@@ -36,49 +36,83 @@ async def show_names(request: Request, page: int = 1, q: str = None):
 
     ITEMS_PER_PAGE = 18
     offset = (page - 1) * ITEMS_PER_PAGE
-    search_query = f"%{q}%" if q else None
+    members = []
+    total_pages = 1
+    total = 0
 
     with get_db_context() as conn:
         with conn.cursor() as cur:
-            if search_query:
+
+            if q and q.strip():
+                # ====== وضع البحث ======
+                keywords = [kw.strip() for kw in q.strip().split() if kw.strip()]
+
                 cur.execute("""
-                    SELECT code, name, nick_name FROM family_name
-                    WHERE code ILIKE %s OR name ILIKE %s OR nick_name ILIKE %s
-                    ORDER BY name LIMIT %s OFFSET %s
-                """, (search_query, search_query, search_query, ITEMS_PER_PAGE, offset))
-                rows = cur.fetchall()
-                cur.execute("SELECT COUNT(*) FROM family_name WHERE code ILIKE %s OR name ILIKE %s OR nick_name ILIKE %s",
-                            (search_query, search_query, search_query))
-                total = cur.fetchone()[0]
+                    SELECT code, name, nick_name 
+                    FROM family_name 
+                    WHERE level > 0
+                    ORDER BY name
+                """)
+                all_members = cur.fetchall()
+
+                filtered = []
+                for code, name, nick_name in all_members:
+                    full_name = get_full_name(code, max_length=None, include_nick=False).lower()
+                    nickname_str = (nick_name or "").lower()
+                    code_str = code.lower()
+
+                    if all(kw.lower() in full_name or kw.lower() in nickname_str or kw.lower() in code_str for kw in keywords):
+                        filtered.append((code, name, nick_name))
+
+                # ترتيب حسب عدد الكلمات المتطابقة
+                filtered.sort(key=lambda x: sum(
+                    kw.lower() in get_full_name(x[0], max_length=None, include_nick=False).lower()
+                    for kw in keywords
+                ), reverse=True)
+
+                total = len(filtered)
+                rows = filtered[offset:offset + ITEMS_PER_PAGE]
+
             else:
+                # ====== بدون بحث ======
                 cur.execute("""
-                    SELECT code, name, nick_name FROM family_name WHERE level > 0
-                    ORDER BY name LIMIT %s OFFSET %s
+                    SELECT code, name, nick_name 
+                    FROM family_name 
+                    WHERE level > 0
+                    ORDER BY name 
+                    LIMIT %s OFFSET %s
                 """, (ITEMS_PER_PAGE, offset))
                 rows = cur.fetchall()
-                cur.execute("SELECT COUNT(*) FROM family_name WHERE level > 1")
+
+                cur.execute("SELECT COUNT(*) FROM family_name WHERE level > 0")
                 total = cur.fetchone()[0]
 
-            total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-
-            members = []
-            for code, _, nick_name in rows:
-                full_name = get_full_name(code, max_length=7, include_nick=False)
+            # ====== بناء القائمة النهائية (هنا المفتاح!) ======
+            for code, name, nick_name in rows:
+                display_name = get_full_name(code, max_length=7, include_nick=False)
                 members.append({
                     "code": code,
-                    "full_name": full_name,
+                    "full_name": display_name,
                     "nick_name": nick_name.strip() if nick_name else None
                 })
 
+            total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+
     response = templates.TemplateResponse("family/names.html", {
-        "request": request, "user": user, "members": members,
-        "page": page, "total_pages": total_pages,
-        "has_prev": page > 1, "has_next": page < total_pages, "q": q,
-        "can_add": can_add, "can_edit": can_edit, "can_delete": can_delete
+        "request": request,
+        "user": user,
+        "members": members,
+        "page": page,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "q": q,
+        "can_add": can_add,
+        "can_edit": can_edit,
+        "can_delete": can_delete
     })
     set_cache_headers(response)
     return response
-
 # ====================== تفاصيل العضو ======================
 @router.get("/details/{code}", response_class=HTMLResponse)
 async def name_details(request: Request, code: str):
@@ -149,19 +183,19 @@ async def add_name_form(request: Request):
     set_cache_headers(response)
     return response
 
-
 @router.post("/add")
-async def add_name(request: Request,
-                   code: str = Form(...), name: str = Form(...),
-                   f_code: str = Form(None), m_code: str = Form(None),
-                   w_code: str = Form(None), h_code: str = Form(None),
-                   relation: str = Form(None), level: int = Form(None),
-                   nick_name: str = Form(None), gender: str = Form(None),
-                   d_o_b: str = Form(None), d_o_d: str = Form(None),
-                   email: str = Form(None), phone: str = Form(None),
-                   address: str = Form(None), p_o_b: str = Form(None),
-                   status: str = Form(None), picture: UploadFile = File(None)):
-
+async def add_name(
+    request: Request,
+    code: str = Form(...), name: str = Form(...),
+    f_code: str = Form(None), m_code: str = Form(None),
+    w_code: str = Form(None), h_code: str = Form(None),
+    relation: str = Form(None), level: int = Form(None),
+    nick_name: str = Form(None), gender: str = Form(None),
+    d_o_b: str = Form(None), d_o_d: str = Form(None),
+    email: str = Form(None), phone: str = Form(None),
+    address: str = Form(None), p_o_b: str = Form(None),
+    status: str = Form(None), picture: UploadFile = File(None)
+):
     user = request.session.get("user")
     if not user or not can(user, "add_member"):
         return RedirectResponse("/names")
@@ -187,51 +221,75 @@ async def add_name(request: Request,
     p_o_b = p_o_b.strip() if p_o_b else None
     status = status.strip() if status else None
 
+    error = None
+    success = None
+
+    # التحقق من الحقول الإجبارية
     if not code or not name:
-        csrf = generate_csrf_token()
-        request.session["csrf_token"] = csrf
-        return templates.TemplateResponse("family/add_name.html", {
-            "request": request, "user": user, "error": "الكود والاسم مطلوبان!", "csrf_token": csrf
-        })
+        error = "الكود والاسم مطلوبان!"
+    elif level is None:
+        error = "يجب إدخال المستوى (level)!"
+    else:
+        try:
+            with get_db_context() as conn:
+                with conn.cursor() as cur:
+                    # التحقق من تكرار الكود
+                    cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code,))
+                    if cur.fetchone():
+                        error = "الكود مستخدم مسبقاً!"
+                    else:
+                        # إضافة العضو
+                        cur.execute("""
+                            INSERT INTO family_name (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name))
 
-    try:
-        with get_db_context() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code,))
-                if cur.fetchone():
-                    csrf = generate_csrf_token()
-                    request.session["csrf_token"] = csrf
-                    return templates.TemplateResponse("family/add_name.html", {
-                        "request": request, "user": user, "error": "الكود مستخدم مسبقاً!", "csrf_token": csrf
-                    })
+                        cur.execute("""
+                            INSERT INTO family_info (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                            ON CONFLICT (code_info) DO NOTHING
+                        """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
 
-                cur.execute("""
-                    INSERT INTO family_name (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name))
+                        if picture and picture.filename:
+                            pic_path = os.path.join(UPLOAD_DIR, f"{code}_{picture.filename}")
+                            with open(pic_path, "wb") as f:
+                                shutil.copyfileobj(picture.file, f)
+                            cur.execute("""
+                                INSERT INTO family_picture (code_pic, pic_path) 
+                                VALUES (%s, %s) ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
+                            """, (code, pic_path, pic_path))
 
-                cur.execute("""
-                    INSERT INTO family_info (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
+                        conn.commit()
+                        success = f"تم إضافة {name} بنجاح!"
 
-                if picture and picture.filename:
-                    pic_path = os.path.join(UPLOAD_DIR, picture.filename)
-                    with open(pic_path, "wb") as f:
-                        shutil.copyfileobj(picture.file, f)
-                    cur.execute("INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)", (code, pic_path))
+                        # تصفير النموذج بعد النجاح
+                        code = name = f_code = m_code = w_code = h_code = relation = nick_name = ""
+                        level = gender = d_o_b = d_o_d = email = phone = address = p_o_b = status = None
 
-                conn.commit()
-        return RedirectResponse("/names", status_code=303)
+        except Exception as e:
+            error = "حدث خطأ أثناء الحفظ، تأكد من البيانات وحاول مرة أخرى"
 
-    except Exception as e:
-        csrf = generate_csrf_token()
-        request.session["csrf_token"] = csrf
-        return templates.TemplateResponse("family/add_name.html", {
-            "request": request, "user": user,
-            "error": "حدث خطأ أثناء الحفظ، تأكد من البيانات وحاول مرة أخرى",
-            "csrf_token": csrf
-        })
+    # تحديث CSRF دائمًا
+    csrf_token = generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
+
+    return templates.TemplateResponse("family/add_name.html", {
+        "request": request,
+        "user": user,
+        "error": error,
+        "success": success,
+        "csrf_token": csrf_token,
+        # إعادة تمرير القيم لو في خطأ
+        "form_data": {
+            "code": code, "name": name, "f_code": f_code, "m_code": m_code,
+            "w_code": w_code, "h_code": h_code, "relation": relation,
+            "level": level, "nick_name": nick_name, "gender": gender,
+            "d_o_b": d_o_b, "d_o_d": d_o_d, "email": email,
+            "phone": phone, "address": address, "p_o_b": p_o_b, "status": status
+        } if error else None
+    })
+
+
 
 
 # ====================== تعديل عضو ======================

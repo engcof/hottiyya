@@ -61,7 +61,12 @@
                             {% else %}غير محدد{% endif %}
                         </span>
                     </div>
-
+                      {% if member.level %}
+                    <div class="info-block">
+                        <span class="label">المستوي</span>
+                        <span class="value">{{ member.level}}</span>
+                    </div>
+                    {% endif %}
                     <!-- تاريخ الميلاد -->
                     {% if info.d_o_b %}
                     <div class="info-block">

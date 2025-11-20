@@ -2,112 +2,122 @@
 {% block title %}إضافة عضو جديد{% endblock %}
 {% block content %}
 <section class="family-section">
-<div class="family-content">
-<h1>إضافة عضو جديد</h1>
+    <div class="family-content">
+        <h1>إضافة عضو جديد</h1>
+        {% if success %}
+        <div class="alert success">
+            <strong>تم بنجاح!</strong> {{ success }}
+        </div>
+        {% endif %}
 
-<form action="/names/add" method="post" enctype="multipart/form-data" class="edit-form">
-<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        {% if error %}
+        <div class="alert error">
+            <strong>خطأ:</strong> {{ error }}
+        </div>
+        {% endif %}
+        <form action="/names/add" method="post" enctype="multipart/form-data" class="edit-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-<div class="form-grid">
-    <div class="form-group">
-        <label>الكود <span class="required">*</span></label>
-        <input type="text" name="code" required class="form-control">
-    </div>
-    <div class="form-group">
-        <label>الاسم <span class="required">*</span></label>
-        <input type="text" name="name" required class="form-control">
-    </div>
-    <div class="form-group">
-        <label>العلاقة</label>
-        <select name="relation" class="form-select">
-            <option value="">-- اختر --</option>
-            <option value="ابن">ابن</option>
-            <option value="ابنة">ابنة</option>
-            <option value="زوج">زوج</option>
-            <option value="زوجة">زوجة</option>
-            <option value="ابن زوج">ابن زوج</option>
-            <option value="ابنة زوج">ابنة زوج</option>
-            <option value="ابن زوجة">ابن زوجة</option>
-            <option value="ابنة زوجة">ابنة زوجة</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>كود الأب</label>
-        <input type="text" name="f_code" placeholder="مثال: A001" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>كود الأم</label>
-        <input type="text" name="m_code" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>كود الزوج (للأنثى)</label>
-        <input type="text" name="h_code" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>كود الزوجة (للذكر)</label>
-        <input type="text" name="w_code" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>المستوى</label>
-        <input type="number" name="level" min="1" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>اللقب (مثل: أبو أحمد، أم محمد)</label>
-        <input type="text" name="nick_name" placeholder="اختياري" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>الجنس</label>
-        <select name="gender" class="form-select">
-            <option value="">-- اختر --</option>
-            <option value="ذكر">ذكر</option>
-            <option value="أنثى">أنثى</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>تاريخ الميلاد</label>
-        <input type="date" name="d_o_b" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>تاريخ الوفاة</label>
-        <input type="date" name="d_o_d" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>الحالة</label>
-        <select name="status" class="form-select">
-            <option value="">-- اختر --</option>
-            <option value="حي">حي</option>
-            <option value="حية">حية</option>
-            <option value="متوفي">متوفي</option>
-            <option value="متوفية">متوفية</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label>البريد الإلكتروني</label>
-        <input type="email" name="email" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>رقم الهاتف</label>
-        <input type="text" name="phone" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>العنوان</label>
-        <input type="text" name="address" class="form-control">
-    </div>
-    <div class="form-group">
-        <label>مكان الميلاد</label>
-        <input type="text" name="p_o_b" class="form-control">
-    </div>
-    <div class="form-group full-width">
-        <label>صورة العضو (اختياري)</label>
-        <input type="file" name="picture" accept="image/*" class="form-control">
-    </div>
-</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>الكود <span class="required">*</span></label>
+                    <input type="text" name="code" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>الاسم <span class="required">*</span></label>
+                    <input type="text" name="name" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>العلاقة</label>
+                    <select name="relation" class="form-select">
+                        <option value="">-- اختر --</option>
+                        <option value="ابن">ابن</option>
+                        <option value="ابنة">ابنة</option>
+                        <option value="زوج">زوج</option>
+                        <option value="زوجة">زوجة</option>
+                        <option value="ابن زوج">ابن زوج</option>
+                        <option value="ابنة زوج">ابنة زوج</option>
+                        <option value="ابن زوجة">ابن زوجة</option>
+                        <option value="ابنة زوجة">ابنة زوجة</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>كود الأب</label>
+                    <input type="text" name="f_code" placeholder="مثال: A001" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>كود الأم</label>
+                    <input type="text" name="m_code" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>كود الزوج (للأنثى)</label>
+                    <input type="text" name="h_code" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>كود الزوجة (للذكر)</label>
+                    <input type="text" name="w_code" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>المستوى</label>
+                    <input type="number" name="level" min="1" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>اللقب (مثل: أبو أحمد، أم محمد)</label>
+                    <input type="text" name="nick_name" placeholder="اختياري" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>الجنس</label>
+                    <select name="gender" class="form-select">
+                        <option value="">-- اختر --</option>
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الميلاد</label>
+                    <input type="date" name="d_o_b" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>تاريخ الوفاة</label>
+                    <input type="date" name="d_o_d" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>الحالة</label>
+                    <select name="status" class="form-select">
+                        <option value="">-- اختر --</option>
+                        <option value="حي">حي</option>
+                        <option value="حية">حية</option>
+                        <option value="متوفي">متوفي</option>
+                        <option value="متوفية">متوفية</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" name="email" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="text" name="phone" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>العنوان</label>
+                    <input type="text" name="address" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>مكان الميلاد</label>
+                    <input type="text" name="p_o_b" class="form-control">
+                </div>
+                <div class="form-group full-width">
+                    <label>صورة العضو (اختياري)</label>
+                    <input type="file" name="picture" accept="image/*" class="form-control">
+                </div>
+            </div>
 
-<div class="form-actions">
-    <button type="submit" class="submit-btn">حفظ العضو</button>
-    <a href="/names" class="submit-btn secondary">رجوع</a>
-</div>
-</form>
-</div>
+            <div class="form-actions">
+                <button type="submit" class="submit-btn">حفظ العضو</button>
+                <a href="/names" class="submit-btn secondary">رجوع</a>
+            </div>
+        </form>
+    </div>
 </section>
 {% endblock %}
