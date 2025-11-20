@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}استيراد البيانات{% endblock %}
+{% block content %}
+<section class="family-section">
+    <div class="contact-form glass">
+        <h2 class="text-gradient">استيراد بيانات العائلة</h2>
+        
+        {% if message %}
+        <div class="alert {{ 'success' if 'نجاح' in message else 'error' }}">
+            {{ message | safe }}
+        </div>
+        {% endif %}
+
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>ملف النسخة الاحتياطية (.dump أو .sql)</label>
+                <input type="file" name="dump_file" accept=".dump,.sql" required />
+            </div>
+            <div class="form-group">
+                <label>كلمة سر الأدمن</label>
+                <input type="password" name="password" required />
+            </div>
+            <button type="submit" class="submit-btn">استيراد البيانات الآن</button>
+        </form>
+
+        <div style="margin-top: 20px;">
+            <a href="/names" class="submit-btn secondary">العودة للقائمة</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

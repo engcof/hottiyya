@@ -8,8 +8,14 @@ from psycopg2.extras import RealDictCursor
 from fastapi.templating import Jinja2Templates
 from utils.permissions import has_permission
 from security.session import set_cache_headers
+import subprocess
 import shutil
 import os
+from dotenv import load_dotenv  # لو بتستخدم .env محليًا
+
+load_dotenv()  # اختياري لو بتستخدم .env في التطوير
+
+IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "fallback_password_only_for_local")
 
 router = APIRouter(prefix="/names", tags=["family"])
 templates = Jinja2Templates(directory="templates")
@@ -435,3 +441,65 @@ async def delete_name(request: Request, code: str):
             conn.commit()
 
     return RedirectResponse("/names", status_code=303)
+
+
+# في app/routes/family.py أو في main.py
+
+
+# صفحة الاستيراد (للأدمن بس)
+@router.get("/import-data", response_class=HTMLResponse)
+async def import_page(request: Request):
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin":
+        return RedirectResponse("/names")
+    
+    return templates.TemplateResponse("family/import_data.html", {
+        "request": request, "user": user, "message": None
+    })
+
+# استلام الملف وتنفيذ الاستيراد
+@router.post("/import-data")
+async def import_data(
+    request: Request,
+    dump_file: UploadFile = File(...),
+    password: str = Form(...)
+):
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin" or password != os.getenv("IMPORT_PASSWORD"):
+        return RedirectResponse("/names")
+
+    if not dump_file.filename.endswith(('.dump', '.sql')):
+        return templates.TemplateResponse("family/import_data.html", {
+            "request": request, "user": user, 
+            "message": "خطأ: الملف لازم يكون .dump أو .sql"
+        })
+
+    # حفظ الملف مؤقتًا
+    file_path = f"/tmp/{dump_file.filename}"
+    with open(file_path, "wb") as f:
+        content = await dump_file.read()
+        f.write(content)
+
+    try:
+        # الأمر السحري اللي بيشتغل على Render مهما كان
+        if file_path.endswith('.dump'):
+            cmd = f"pg_restore -d {os.getenv('DATABASE_URL')} --no-owner --no-acl -v {file_path}"
+        else:
+            cmd = f"psql {os.getenv('DATABASE_URL')} < {file_path}"
+
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+
+        if result.returncode == 0:
+            message = "تم استيراد البيانات بنجاح! العائلة كلها موجودة الآن"
+        else:
+            message = f"فشل الاستيراد:<br><pre>{result.stderr[-500:]}</pre>"
+
+    except Exception as e:
+        message = f"خطأ: {str(e)}"
+    finally:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    return templates.TemplateResponse("family/import_data.html", {
+        "request": request, "user": user, "message": message
+    })
