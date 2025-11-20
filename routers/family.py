@@ -52,7 +52,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                 total = cur.fetchone()[0]
             else:
                 cur.execute("""
-                    SELECT code, name, nick_name FROM family_name WHERE level > 1
+                    SELECT code, name, nick_name FROM family_name WHERE level > 0
                     ORDER BY name LIMIT %s OFFSET %s
                 """, (ITEMS_PER_PAGE, offset))
                 rows = cur.fetchall()
@@ -119,8 +119,8 @@ async def name_details(request: Request, code: str):
             if gender == "أنثى" and member.get("h_code"):
                 husbands = [{"code": member["h_code"], "name": get_full_name(member["h_code"], include_nick=True)}]
 
-            cur.execute("SELECT code FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
-            children = [{"code": r["code"], "name": get_full_name(r["code"], include_nick=True)} for r in cur.fetchall()]
+            cur.execute("SELECT code , name FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
+            children = [{"code": r["code"], "name": r["name"],} for r in cur.fetchall()]
 
     response = templates.TemplateResponse("family/details.html", {
         "request": request, "user": user, "member": member, "info": info,

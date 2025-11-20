@@ -1847,19 +1847,23 @@ alert-error {
 }
 
  .family-detail-section { background: linear-gradient(135deg, #1a0033, #2d1b4e, #4a1a5c); min-height: 100vh; }
-    .text-gradient { 
-        background: linear-gradient(90deg, #e0a3ff, #ff69b4); 
-         -webkit-background-clip: text;
-         -webkit-text-fill-color: transparent; 
-        }
+.text-gradient {
+    background: linear-gradient(90deg, #e0a3ff, #ff69b4);
+    background-clip: text;
+    -webkit-background-clip: text;        /* لـ Safari و Chrome القديم */
+    -webkit-text-fill-color: transparent; /* لـ Safari و Chrome القديم */
+    color: transparent;                   /* للتوافق مع المتصفحات الحديثة */
+}
     .code-badge { background: #6a1b9a; color: white; padding: 6px 16px; border-radius: 50px; font-weight: bold; }
-    .nickname-big { 
-        font-size: 2rem; 
-        background: linear-gradient(45deg, #8a2be2, #ff1493);
-         -webkit-background-clip: text;
-         -webkit-text-fill-color: transparent; 
-         font-weight: bold;
-         }
+.nickname-big {
+    font-size: 2rem;
+    font-weight: bold;
+    background: linear-gradient(45deg, #8a2be2, #ff1493);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
     .status { padding: 12px 30px; border-radius: 50px; font-weight: bold; display: inline-block; }
     .status.alive { background: #1b5e20; color: #c8e6c9; }
     .status.deceased { background: #8b0000; color: #ffcdd2; }

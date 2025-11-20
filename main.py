@@ -11,7 +11,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from routers import auth, admin, family, articles, news, permissions
 
 # استيراد الدوال المهمة
-from postgresql import init_database
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token
 
@@ -19,17 +18,7 @@ from security.csrf import generate_csrf_token
 # =========================================
 # Lifespan: تشغيل init_database مرة واحدة عند بدء التطبيق
 # =========================================
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    print("جاري تهيئة قاعدة البيانات...")
-    try:
-        init_database()  # تعديل الأعمدة: relation, nick_name, status
-        print("تم تهيئة قاعدة البيانات بنجاح!")
-    except Exception as e:
-        print(f"خطأ في تهيئة قاعدة البيانات: {e}")
-        raise
-    yield
-    print("التطبيق يتم إيقافه...")
+
 
 
 # =========================================
@@ -37,9 +26,8 @@ async def lifespan(app: FastAPI):
 # =========================================
 app = FastAPI(
     title="عائلة الحوطية الرقمية",
-    description="منصة عائلية عربية متكاملة - بُنيت بحب وإخلاص",
-    version="1.0.0",
-    lifespan=lifespan
+    description="منصة عائلية متكاملة",
+    version="1.0.0"
 )
 
 templates = Jinja2Templates(directory="templates")
@@ -58,7 +46,7 @@ app.add_middleware(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # في الإنتاج غيّرها للدومين الحقيقي
+    allow_origins=["https://render.com"],  # في الإنتاج غيّرها للدومين الحقيقي
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
