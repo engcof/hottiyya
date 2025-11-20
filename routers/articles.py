@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from psycopg2.extras import RealDictCursor
 from fastapi.templating import Jinja2Templates
+from security.session import set_cache_headers
 from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.permissions import has_permission
@@ -52,7 +53,7 @@ async def list_articles(request: Request, page: int = 1):
             total = cur.fetchone()["count"]
             total_pages = (total + per_page - 1) // per_page
 
-    return templates.TemplateResponse("articles/list.html", {
+    response = templates.TemplateResponse("articles/list.html", {
         "request": request,
         "user": user,
         "articles": articles,
@@ -62,6 +63,8 @@ async def list_articles(request: Request, page: int = 1):
         "has_prev": page > 1,
         "has_next": page < total_pages
     })
+    set_cache_headers(response)
+    return response
 
 # === عرض مقال + التعليقات ===
 @router.get("/{id:int}", response_class=HTMLResponse)
@@ -157,7 +160,6 @@ async def add_article(
     return RedirectResponse(f"/articles/{article_id}", status_code=303)
 
 # === تعديل مقال ===
-# === تعديل مقال ===
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_article_form(request: Request, id: int):
     user = request.session.get("user")
@@ -180,6 +182,7 @@ async def edit_article_form(request: Request, id: int):
         "article": article,      # صحيح
         "csrf_token": csrf_token
     })
+
 # === حفظ التعديلات ===
 @router.post("/edit/{id:int}")
 async def update_article(

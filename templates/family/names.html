@@ -33,14 +33,22 @@
                         <tr>
                             <th>الكود</th>
                             <th>الاسم الكامل</th>
-                            <th>الإجراءات</th>
+                            <th>اللقب</th>
+                            <th class="text-center">الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for m in members %}
                         <tr>
                             <td><code>{{ m.code }}</code></td>
-                            <td class="full-name">{{ m.full_name }}</td>
+                            <td class="full-name"><strong>{{ m.full_name }}</strong></td>
+                            <td>
+                                {% if m.nick_name %}
+                                    <span class="nickname-badge">{{ m.nick_name }}</span>
+                                {% else %}
+                                <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
                             <td class="actions">
                                  <div class="form-actions">
                                 <a href="/names/details/{{ m.code }}" class="submit-btn">تفاصيل</a>
@@ -52,7 +60,7 @@
                                 {% if can_delete %}
                                 <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;"
                                     onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
-                                    <button type="submit" class="submit-btn">حذف</button>
+                                    <button type="submit" class="submit-btn"> حذف</button>
                                 </form>
                                 {% endif %}
                                 </div>

@@ -5,6 +5,7 @@ from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.permissions import has_permission  # ← أضف هذا
+from security.session import set_cache_headers
 import shutil
 import os
 

@@ -3,44 +3,37 @@
 
 {% block content %}
 <!-- المحتوى الرئيسي -->
-<section class="hero-section">
-    <div class="container">
-        <div class="row align-items-start g-5">
+<section class="home">
+    <div class="family-content">
+        <!-- 1. بسم الله الرحمن الرحيم - في div منفصل في الأعلى -->
+        <div class="hero-subtitle">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</div>
+        <div class="home-row">
+        <div class="home-form glass">
             <!-- الجزء الأيسر: الشعار فقط (في div منفصل) -->
-            <div class="col-lg-6 text-center text-lg-start">
-                <div class="logo-wrapper">
-                    <img src="/static/uploads/Hottiyya1.jpg" alt="شعار عائلة الحوطية" class="family-logo">
-                </div>
-            </div>
-
-            <!-- الجزء الأيمن: كل شيء في div منفصل -->
-            <div class="col-lg-6 text-center text-lg-end">
-
-                <!-- 1. بسم الله الرحمن الرحيم - في div منفصل في الأعلى -->
-                <div class="bismillah-wrapper">
-                    <p class="bismillah">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</p>
-                </div>
-
-                <!-- 2. الحوطية + النبذة - في div منفصل على اليمين -->
-                <div class="family-name-bio-wrapper">
-                    <h1 class="family-title">الحوطية</h1>
-                    <div class="family-bio">
-                        <p>
-                            قبيلة <strong>الحوطية</strong>، 
-                            تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي. 
-                            سجلت تاريخها في خدمة المجتمع والدين منذ قرون.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- 3. اقرأ المزيد - في div منفصل -->
-                <div class="read-more-wrapper">
-                    <a href="#about" class="read-more-btn">اقرأ المزيد</a>
-                </div>
-
+           
               
-
+                    <img src="/static/uploads/Hottiyya1.jpg" alt="شعار عائلة الحوطية" >
+               
+           
+        </div>
+        <!-- الجزء الأيمن: كل شيء في div منفصل -->
+        <div class="home-info glass">
+            <!-- 2. الحوطية + النبذة - في div منفصل على اليمين -->
+            <div class="family-name-bio-wrapper">
+                <h1 class="family-title">الحوطية</h1>
+                <div class="family-bio">
+                    <p>
+                        قبيلة <strong>الحوطية</strong>، 
+                        تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي. 
+                        سجلت تاريخها في خدمة المجتمع والدين منذ قرون.
+                    </p>
+                </div>
             </div>
+            <!-- 3. اقرأ المزيد - في div منفصل -->
+            <div class="read-more-wrapper">
+                <a href="#about" class="read-more-btn">اقرأ المزيد</a>
+            </div>
+        </div>
         </div>
     </div>
 </section>
