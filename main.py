@@ -82,6 +82,16 @@ async def home(request: Request):
     set_cache_headers(response)
     return response
 
+@app.get("/about", response_class=HTMLResponse)
+async def about_page(request: Request):
+    user = request.session.get("user")
+    response = templates.TemplateResponse("/about.html", {
+        "request": request,
+        "user": user
+    })
+    set_cache_headers(response)
+    return response
+
 
 # =========================================
 # صفحة الملف الشخصي + تغيير كلمة السر

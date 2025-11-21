@@ -1900,8 +1900,227 @@ alert-error {
 .submit-btn.secondary { background: #6c757d; }
 .submit-btn.secondary:hover { background: #5a6268; }   
 
+/* بسم الله */
+.bismillah-container {
+    text-align: center;
+    padding: 120px 20px 20px;
+    position: relative;
+}
+.bismillah-line {
+    display: inline-block;
+    width: 120px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    vertical-align: middle;
+    margin: 0 20px;
+}
+.bismillah {
+    display: inline;
+    font-size: 2.6rem;
+    font-weight: 900;
+    color: #fff;
+    font-family: 'Amiri', 'Traditional Arabic', serif;
+    letter-spacing: 3px;
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+}
 
-    @keyframes slideDown {
+/* الهيرو الرئيسي */
+.hero-section {
+    padding: 60px 20px;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a0033, #2d0033, #4a0066);
+}
+
+.hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 50px;
+    max-width: 1300px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.logo-card, .info-card {
+    background: rgba(255,255,255,0.07);
+    backdrop-filter: blur(15px);
+    border-radius: 30px;
+    padding: 40px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    border: 1px solid rgba(212,175,55,0.15);
+    height: 520px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+.hero-logo {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    border-radius: 24px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+    transition: transform 0.4s;
+}
+.hero-logo:hover { transform: scale(1.05); }
+
+.hero-title {
+    font-size: 6.5rem;
+    font-weight: 900;
+    background: linear-gradient(45deg, #ff69b4, #d4af37, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 30px 0;
+    line-height: 1;
+    font-family: 'Cairo', sans-serif;
+}
+
+.hero-text {
+    font-size: 1.4rem;
+    line-height: 2;
+    color: #e8e8e8;
+    margin-bottom: 40px;
+    max-width: 90%;
+}
+
+.hero-btn {
+    display: inline-block;
+    padding: 16px 50px;
+    background: linear-gradient(45deg, #d4af37, #ffd700);
+    color: #1a0033;
+    font-weight: bold;
+    font-size: 1.3rem;
+    border-radius: 50px;
+    text-decoration: none;
+    box-shadow: 0 10px 25px rgba(212,175,55,0.4);
+    transition: all 0.3s;
+}
+.hero-btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(212,175,55,0.6);
+}
+
+/* آخر خبر */
+.latest-update {
+    padding: 80px 20px;
+    text-align: center;
+}
+.update-card {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 50px;
+    border-radius: 30px;
+    position: relative;
+}
+.badge {
+    position: absolute;
+    top: -15px;
+    right: 30px;
+    background: #e91e63;
+    color: white;
+    padding: 10px 25px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.about-hero {
+    padding: 100px 20px 60px;
+    text-align: center;
+    background: linear-gradient(rgba(26,0,51,0.9), rgba(45,0,51,0.95)), url('/static/images/pattern-arabic.jpg');
+    background-size: cover;
+}
+.page-title {
+    font-size: 5rem;
+    color: #d4af37;
+    text-shadow: 0 0 30px rgba(212,175,55,0.6);
+    margin-bottom: 20px;
+}
+.subtitle {
+    font-size: 1.8rem;
+    color: #ff69b4;
+    font-weight: bold;
+}
+
+.about-content { padding: 80px 20px; }
+.about-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 30px;
+    margin-bottom: 60px;
+}
+.about-card {
+    padding: 40px;
+    border-radius: 24px;
+    text-align: right;
+}
+.about-card h2 {
+    color: #d4af37;
+    font-size: 2.2rem;
+    margin-bottom: 25px;
+    position: relative;
+    padding-bottom: 15px;
+}
+.about-card h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 80px;
+    height: 4px;
+    background: linear-gradient(90deg, #d4af37, transparent);
+}
+.values-list {
+    font-size: 1.3rem;
+    line-height: 2.4;
+    color: #e0e0e0;
+}
+.values-list li::before {
+    content: "✦ ";
+    color: #d4af37;
+}
+.notable-person {
+    background: rgba(212,175,55,0.15);
+    padding: 15px;
+    border-radius: 12px;
+    margin: 12px 0;
+    font-size: 1.2rem;
+}
+.highlight { color: #ff69b4; font-weight: bold; margin-top: 20px; }
+
+.final-message {
+    padding: 60px;
+    text-align: center;
+    border-radius: 30px;
+    margin: 80px auto;
+    max-width: 1000px;
+}
+.quote {
+    font-size: 1.8rem;
+    line-height: 2.2;
+    color: #fff;
+    font-style: italic;
+    margin: 30px 0;
+}
+.signature {
+    color: #d4af37;
+    font-weight: bold;
+    font-size: 1.4rem;
+}
+/* للجوال */
+@media (max-width: 992px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+    .hero-title { font-size: 4.5rem; }
+    .bismillah { font-size: 2rem; }
+    .bismillah-line { width: 60px; }
+    .logo-card, .info-card { height: auto; padding: 30px; }
+}
+@keyframes slideDown {
     from { transform: translateY(-30px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }

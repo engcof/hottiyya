@@ -2,41 +2,41 @@
 {% block title %}عائلة الحوطية{% endblock %}
 
 {% block content %}
-<!-- المحتوى الرئيسي -->
-<section class="home">
-    <div class="family-content">
-        <!-- 1. بسم الله الرحمن الرحيم - في div منفصل في الأعلى -->
-        <div class="hero-subtitle">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</div>
-        <div class="home-row">
-        <div class="home-form glass">
-            <!-- الجزء الأيسر: الشعار فقط (في div منفصل) -->
-           
-              
-                    <img src="/static/uploads/Hottiyya1.jpg" alt="شعار عائلة الحوطية" >
-               
-           
+<!-- بسم الله الرحمن الرحيم في الأعلى -->
+<div class="bismillah-container">
+    <div class="bismillah-line"></div>
+    <h2 class="bismillah">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</h2>
+    <div class="bismillah-line"></div>
+</div>
+
+<section class="hero-section">
+    <div class="hero-grid">
+        <!-- الشعار الأيسر -->
+        <div class="logo-card glass-strong">
+            <img src="/static/uploads/Hottiyya1.jpg" alt="شعار عائلة الحوطية" class="hero-logo">
         </div>
-        <!-- الجزء الأيمن: كل شيء في div منفصل -->
-        <div class="home-info glass">
-            <!-- 2. الحوطية + النبذة - في div منفصل على اليمين -->
-            <div class="family-name-bio-wrapper">
-                <h1 class="family-title">الحوطية</h1>
-                <div class="family-bio">
-                    <p>
-                        قبيلة <strong>الحوطية</strong>، 
-                        تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي. 
-                        سجلت تاريخها في خدمة المجتمع والدين منذ قرون.
-                    </p>
-                </div>
-            </div>
-            <!-- 3. اقرأ المزيد - في div منفصل -->
-            <div class="read-more-wrapper">
-                <a href="#about" class="read-more-btn">اقرأ المزيد</a>
-            </div>
-        </div>
+
+        <!-- اسم العائلة + النبذة + الزر الأيمن -->
+        <div class="info-card glass-strong">
+            <h1 class="hero-title">الحوطية</h1>
+            <p class="hero-text">
+                قبيلة الحوطية، تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي. 
+                سجلت تاريخها في خدمة المجتمع والدين منذ قرون.
+            </p>
+            <a href="/about" class="hero-btn">اقرأ المزيد</a>
         </div>
     </div>
 </section>
 
-
+<!-- آخر خبر أو إعلان (اختياري تحت الهيرو) -->
+<section class="latest-update">
+    <div class="container">
+        <div class="update-card glass">
+            <span class="badge">أحدث إعلان</span>
+            <h3>تم إطلاق منصة عائلة الحوطية الرقمية رسميًا!</h3>
+            <p>بفضل الله ثم بجهود الاسرة الكريمة، أصبح لعائلتنا الآن منصة رقمية متكاملة تجمع الأجيال وتحفظ التراث إلى الأبد.</p>
+            <small>21 نوفمبر 2025</small>
+        </div>
+    </div>
+</section>
 {% endblock %}
