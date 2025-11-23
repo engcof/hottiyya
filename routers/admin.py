@@ -15,8 +15,6 @@ from core.templates import templates
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-
-
 @router.get("/", response_class=HTMLResponse)
 async def admin_page(request: Request, page: int = 1):
     usr = request.session.get("user")
@@ -114,6 +112,11 @@ async def add_user(
     csrf_token: str = Form(...)
 ):
     verify_csrf_token(request, csrf_token)
+    if role == "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="غير مسموح بإضافة مستخدم بدور إدمن. هذا الدور محجوز للإدارة العليا فقط."
+        )
     try:
         with get_db_context() as conn:
             with conn.cursor() as cur:
@@ -147,6 +150,11 @@ async def edit_user(
     csrf_token: str = Form(...)
 ):
     verify_csrf_token(request, csrf_token)
+    if role == "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="غير مسموح بإضافة مستخدم بدور إدمن. هذا الدور محجوز للإدارة العليا فقط."
+        )
 
     try:
         with get_db_context() as conn:

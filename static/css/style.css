@@ -1411,6 +1411,200 @@ footer { background:#0f172a; color:#94a3b8; text-align:center; padding:60px 20px
 .no-comments, .login-prompt {text-align: center; padding: 60px 20px; border-radius: 24px;}
 .login-link { color: var(--accent); font-weight: 700; text-decoration: underline; }
 
+/* ==================== لوحة الإدارة - النسخة الملكية ==================== */
+.admin-dashboard {
+    padding: 100px 20px 80px;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.dashboard-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.dashboard-header .page-title {
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 12px;
+}
+
+.dashboard-header .subtitle {
+    font-size: 1.25rem;
+    color: #64748b;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 28px;
+    margin-bottom: 40px;
+}
+
+.admin-card {
+    background: white;
+    padding: 32px;
+    border-radius: 24px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+}
+
+.admin-card.full {
+    grid-column: 1 / -1;
+}
+
+.admin-card h2 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 3px solid var(--accent);
+    display: inline-block;
+}
+
+.admin-form .form-group {
+    margin-bottom: 20px;
+}
+
+.admin-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.admin-form input,
+.admin-form select {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.admin-form input:focus,
+.admin-form select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
+}
+
+/* أزرار الإجراءات الصغيرة */
+.inline-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.small-input {
+    width: 120px !important;
+    padding: 10px 12px !important;
+    font-size: 0.9rem;
+}
+
+.small-select {
+    width: auto;
+    min-width: 100px;
+    padding: 10px 12px !important;
+}
+
+.btn-small {
+    padding: 8px 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-small.edit { background: #fbbf24; color: white; }
+.btn-small.add { background: var(--accent); color: white; }
+.btn-small.remove { background: #f59e0b; color: white; }
+.btn-small.delete { background: #ef4444; color: white; }
+
+.btn-small:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+/* الجدول */
+.table-wrapper {
+    overflow-x: auto;
+    border-radius: 16px;
+    margin-top: 20px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.admin-table th {
+    background: #0f172a;
+    color: white;
+    padding: 16px 12px;
+    text-align: center;
+    font-weight: 700;
+}
+
+.admin-table td {
+    padding: 16px 12px;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.admin-table tr:hover {
+    background: #f8fafc;
+}
+
+.role-badge {
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.role-badge.admin { background: #fee2e2; color: #991b1b; }
+.role-badge.manager { background: #fef3c7; color: #d97706; }
+.role-badge.user { background: #ecfdf5; color: #166534; }
+
+.perm-tag {
+    display: inline-block;
+    background: #ecfdf5;
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    margin: 2px;
+}
+
+.submit-btn.large {
+    width: 100%;
+    padding: 16px;
+    font-size: 1.1rem;
+    margin-top: 12px;
+}
+
+.submit-btn.warning {
+    background: #f59e0b;
+}
+
+.submit-btn.warning:hover {
+    background: #d97706;
+}
+
+/* موبايل */
+@media (max-width: 768px) {
+   
+}
+
+
 /* ===== موبايل ===== */
 @media (max-width: 768px) {
     header {padding: 12px 20px; }
@@ -1444,6 +1638,22 @@ footer { background:#0f172a; color:#94a3b8; text-align:center; padding:60px 20px
     .hero-btn { padding: 12px 32px; font-size: 1rem; }
     .update-card { padding: 40px 20px; }
     .update-card h3 { font-size: 1.6rem; }
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+    .inline-form {
+        flex-direction: column;
+    }
+    .small-input, .small-select {
+        width: 100% !important;
+    }
+    .admin-table {
+        font-size: 0.85rem;
+    }
+    .admin-table th,
+    .admin-table td {
+        padding: 10px 6px;
+    }
 }
 
 /* === Responsive === */
