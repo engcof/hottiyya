@@ -82,28 +82,44 @@
             <div class="footer-copyright">
                 © 2025 عائلة الحوطية • جميع الحقوق محفوظة
             </div>
-            <div style="margin-top:12px;color:#10b981;font-weight:600;">صُنع بـ ❤ بواسطة engcof الخالد</div>
+            <div style="margin-top:12px;color:#10b981;font-weight:600;">صُنع بـ ❤ بواسطة Osmancof</div>
         </div>
     </footer>
   <!-- إضافة ملفات JavaScript مشتركة هنا -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
      <!-- الحل السحري الأخير - يشتغل مهما حصل -->
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const btn = document.getElementById("userBtn");
-    const menu = document.getElementById("userDropdown");
+    <script>
+    // دروب داون المستخدم - النسخة الخالدة اللي تشتغل في كل الأجهزة مهما حصل
+    document.addEventListener("DOMContentLoaded", function () {
+        const btn = document.getElementById("userBtn");
+        const dropdown = document.getElementById("userDropdown");
 
-    if (btn && menu) {
-        btn.addEventListener("click", e => {
+        if (!btn || !dropdown) return;
+
+        // الضغط على الزر
+        btn.addEventListener("click", function (e) {
             e.stopPropagation();
-            menu.classList.toggle("show");
+            dropdown.classList.toggle("show");
         });
 
-        document.addEventListener("click", () => menu.classList.remove("show"));
-        menu.addEventListener("click", e => e.stopPropagation());
-    }
-});
-</script>
+        // إغلاق عند الضغط خارج الدروب داون
+        document.addEventListener("click", function () {
+            dropdown.classList.remove("show");
+        });
+
+        // منع الإغلاق لما تضغط داخل الدروب داون نفسه
+        dropdown.addEventListener("click", function (e) {
+            e.stopPropagation();
+        });
+
+        // إغلاق بالـ Escape
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") {
+                dropdown.classList.remove("show");
+            }
+        });
+    });
+    </script>
    
 </body>
 </html>
