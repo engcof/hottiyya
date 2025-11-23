@@ -1,52 +1,55 @@
-
-
-<!-- login.html -->
 {% extends "base.html" %}
-
-{% block title %}تسجيل الدخول{% endblock %}
+{% block title %}تسجيل الدخول - عائلة الحوطية{% endblock %}
 
 {% block content %}
-<!-- Section Login-->
-<section class="login-section">
-    <div class="content-container">
-        {% if error %}
-        <div class="alert-error" id="errorAlert">
-            <svg viewBox="0 0 24 24" width="20" height="20">
-                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-            </svg>
-            <span>{{ error }}</span>
-            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
-        </div>
-
-        <script>
-        // الرسالة تختفي تلقائيًا بعد 5 ثواني
-        setTimeout(() => {
-            const alert = document.getElementById("errorAlert");
-            if (alert) {
-                alert.style.transition = "all 0.6s ease";
-                alert.style.opacity = "0";
-                alert.style.transform = "translateY(-20px)";
-                setTimeout(() => alert.remove(), 600);
-            }
-        }, 5000);
-        </script>
-        {% endif %}
-        <form method="post" action="/auth/login">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div class="contact-form glass">
-                <div class="form-group">
-                    <input type="text" name="username" placeholder="اسم المستخدم" required>
-                </div>
-                <div class="form-group">
-                    <input type="password" name="password" placeholder="كلمة المرور" required>
-                </div>
-                <button class="submit-btn" type="submit">دخول</button>
+<section class="auth-section">
+    <div class="container">
+        <div class="auth-card glass-strong">
+            <!-- العنوان -->
+            <div class="auth-header">
+                <h1 class="auth-title">مرحباً بعودتك</h1>
+                <p class="auth-subtitle">سجّل دخولك للوصول إلى منصة العائلة الرقمية</p>
             </div>
-        </form>
-    </div>  
-</section>  
-{% endblock %}
 
+            <!-- رسالة الخطأ إذا وُجدت -->
+            {% if error %}
+            <div class="alert alert-error" id="errorAlert">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+                <span>{{ error }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endif %}
+
+            <!-- نموذج تسجيل الدخول -->
+            <form method="post" action="/auth/login" class="auth-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+                <div class="form-group">
+                    <label for="username">اسم المستخدم</label>
+                    <input type="text" name="username" id="username" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="password">كلمة المرور</label>
+                    <input type="password" name="password" id="password" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" class="submit-btn full-width">
+                    تسجيل الدخول
+                </button>
+
+                <div class="auth-footer">
+                    <p>ليس لديك حساب؟ 
+                        <a href="#" class="link-accent">إنشاء حساب جديد</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}
 
    
 

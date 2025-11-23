@@ -2,16 +2,17 @@
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from psycopg2.extras import RealDictCursor
-from fastapi.templating import Jinja2Templates
+
 from security.session import set_cache_headers
 from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.permissions import has_permission
 import shutil
 import os
+from core.templates import templates
 
 router = APIRouter(prefix="/articles", tags=["articles"])
-templates = Jinja2Templates(directory="templates")
+
 
 # دالة مساعدة للصلاحيات (الأدمن عنده كل شيء)
 def can(user: dict | None, perm: str) -> bool:

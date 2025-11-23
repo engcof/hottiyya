@@ -2,9 +2,9 @@
 {% block title %}صفحتي الشخصية{% endblock %}
 
 {% block content %}
-<section class="login-section">
-    <div class="content-container">
-        <div class="contact-form glass">
+<section class="auth-section">
+    <div class="container">
+        <div class="auth-card glass-strong">
             <h2 class="text-center mb-4">مرحباً، {{ user.username }} 👋</h2>
             <div class="alert alert-info text-center">
                 <strong>دورك:</strong> 
@@ -23,7 +23,7 @@
             <div class="alert alert-danger">{{ error }}</div>
             {% endif %}
             <h4 class="mt-4">تغيير كلمة السر</h4>
-            <form method="post" action="/profile/change-password">
+            <form method="post" action="/profile/change-password" class="auth-form">
                 <div class="form-group">
                     <input type="password" name="current_password" placeholder="كلمة السر الحالية"  required>
                 </div>

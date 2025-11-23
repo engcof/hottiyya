@@ -1,26 +1,24 @@
 {% extends "base.html" %}
-{% block title %}تفاصيل العضو - {{ full_name }}{% endblock %}
+{% block title %}تفاصيل العضو • {{ full_name }}{% endblock %}
 
 {% block content %}
-<section class="family-section">
-    <div class="family-content">
-        
-        <!-- العنوان الرئيسي - كما في الصورة -->
-        <div class="text-center mb-5">
-            <h1 class="display-4 fw-bold text-gradient mb-3">
-                {{ full_name }}
-            </h1>
-            <p class="lead text-light opacity-90">
-                الكود: <span class="code-badge">{{ member.code }}</span>
+<section class="member-details-section">
+    <div class="container">
+        <!-- العنوان الرئيسي + الكود + اللقب + الحالة -->
+        <div class="member-header text-center">
+            <h1 class="member-names">{{ full_name }}</h1>
+            <p class="member-code">
+                <span class="code-badge">{{ member.code }}</span>
             </p>
+
             {% if member.nick_name %}
-            <div class="nickname-display mt-3">
+            <div class="nickname-display">
                 <span class="nickname-big">{{ member.nick_name }}</span>
             </div>
             {% endif %}
 
             {% if info.status %}
-            <div class="status-display mt-4">
+            <div class="status-display">
                 {% if info.status in ["متوفي", "متوفية"] %}
                 <span class="status deceased">رحمه الله • {{ info.status }}</span>
                 {% else %}
@@ -30,176 +28,116 @@
             {% endif %}
         </div>
 
-        <div class="row g-5">
-
+        <div class="member-body">
             <!-- الصورة الشخصية -->
             {% if picture_url %}
-            <div class="col-lg-4">
-                <div class="profile-image-card text-center">
-                    <div class="image-wrapper">
-                        <img src="/{{ picture_url }}" alt="{{ full_name }}" class="profile-img">
-                    </div>
-                    <p class="text-light mt-3 opacity-80">صورة العضو</p>
-                </div>
+            <div class="profile-picture">
+                <img src="/{{ picture_url }}" alt="{{ full_name }}" class="profile-img">
+                <p class="img-caption">صورة العضو</p>
             </div>
             {% endif %}
 
             <!-- المعلومات الأساسية -->
-            <div class="col-lg-{% if picture_url %}8{% else %}12{% endif %}">
+            <div class="info-section">
+                <h2 class="section-title">المعلومات الأساسية</h2>
                 <div class="info-grid">
+                    {% macro info_row(label, value, link=False) %}
+                        {% if value %}
+                        <div class="info-row">
+                            <span class="info-label">{{ label }}</span>
+                            <span class="info-value">
+                                {% if link %}
+                                <a href="{{ link }}{{ value }}">{{ value }}</a>
+                                {% else %}
+                                {{ value }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endif %}
+                    {% endmacro %}
 
-                    <!-- الصف الأول -->
-                    <div class="info-block">
-                        <span class="label">العلاقة</span>
-                        <span class="value">{{ member.relation or "غير محدد" }}</span>
-                    </div>
-                    <div class="info-block">
-                        <span class="label">الجنس</span>
-                        <span class="value">
-                            {% if gender == "ذكر" %}ذكر
-                            {% elif gender == "أنثى" %}أنثى
-                            {% else %}غير محدد{% endif %}
-                        </span>
-                    </div>
-                      {% if member.level %}
-                    <div class="info-block">
-                        <span class="label">المستوي</span>
-                        <span class="value">{{ member.level}}</span>
-                    </div>
-                    {% endif %}
-                    <!-- تاريخ الميلاد -->
-                    {% if info.d_o_b %}
-                    <div class="info-block">
-                        <span class="label">تاريخ الميلاد</span>
-                        <span class="value">{{ info.d_o_b }}</span>
-                    </div>
-                    {% endif %}
-
-                    <!-- تاريخ الوفاة -->
-                    {% if info.d_o_d %}
-                    <div class="info-block text-danger">
-                        <span class="label">تاريخ الوفاة</span>
-                        <span class="value">{{ info.d_o_d }}</span>
-                    </div>
-                    {% endif %}
-
-                    <!-- مكان الميلاد -->
-                    {% if info.p_o_b %}
-                    <div class="info-block">
-                        <span class="label">مكان الميلاد</span>
-                        <span class="value">{{ info.p_o_b }}</span>
-                    </div>
-                    {% endif %}
-
-                    <!-- العنوان -->
-                    {% if info.address %}
-                    <div class="info-block">
-                        <span class="label">العنوان</span>
-                        <span class="value">{{ info.address }}</span>
-                    </div>
-                    {% endif %}
-
-                    <!-- البريد -->
-                    {% if info.email %}
-                    <div class="info-block">
-                        <span class="label">البريد الإلكتروني</span>
-                        <span class="value">
-                            <a href="mailto:{{ info.email }}" class="text-info">{{ info.email }}</a>
-                        </span>
-                    </div>
-                    {% endif %}
-
-                    <!-- الهاتف -->
-                    {% if info.phone %}
-                    <div class="info-block">
-                        <span class="label">رقم الهاتف</span>
-                        <span class="value">
-                            <a href="tel:{{ info.phone }}" class="text-success">{{ info.phone }}</a>
-                        </span>
-                    </div>
-                    {% endif %}
-
+                    {{ info_row("العلاقة", member.relation) }}
+                    {{ info_row("الجنس", gender) }}
+                    {{ info_row("المستوى", member.level) }}
+                    {{ info_row("تاريخ الميلاد", info.d_o_b) }}
+                    {{ info_row("تاريخ الوفاة", info.d_o_d) }}
+                    {{ info_row("مكان الميلاد", info.p_o_b) }}
+                    {{ info_row("العنوان", info.address) }}
+                    {{ info_row("البريد الإلكتروني", info.email, "mailto:") }}
+                    {{ info_row("رقم الهاتف", info.phone, "tel:") }}
                 </div>
             </div>
-        </div>
 
-        <!-- العلاقات الأسرية -->
-        <div class="relations-section mt-5">
+            <!-- العلاقات الأسرية -->
+            <div class="relations-section">
+                <h2 class="section-title">العلاقات الأسرية</h2>
+                <div class="relations-grid">
 
-            <!-- الأم -->
-            <div class="relation-card mother">
-                <h5>الأم</h5>
-                {% if mother_full_name %}
-                <a href="/names/details/{{ member.m_code }}" class="relation-link">
-                    {{ mother_full_name }}
-                </a>
-                {% else %}
-                <span class="text-muted">غير معروفة</span>
-                {% endif %}
-            </div>
+                    <!-- الأم -->
+                    <div class="relation-card mother">
+                        <h5>الأم</h5>
+                        {% if mother_full_name %}
+                        <a href="/names/details/{{ member.m_code }}" class="relation-link">{{ mother_full_name }}</a>
+                        {% else %}
+                        <span class="text-muted">غير معروفة</span>
+                        {% endif %}
+                    </div>
 
-            <!-- الزوج / الزوجات -->
-            {% if gender == "ذكر" and wives %}
-                <div class="relation-card wife">
-                    <h5>الزوجات ({{ wives|length }})</h5>
-                    {% for wife in wives %}
-                    <a href="/names/details/{{ wife.code }}" class="relation-link wife-link">
-                        {{ wife.name }}
-                        {% if loop.length > 1 %} ({{ loop.index }}){% endif %}
-                    </a>
-                    {% endfor %}
-                </div>
-            {% elif gender == "أنثى" and husbands %}
-                <div class="relation-card husband">
-                    <h5>الزوج</h5>
-                    {% for h in husbands %}
-                    <a href="/names/details/{{ h.code }}" class="relation-link husband-link">
-                        {{ h.name }}
-                    </a>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="relation-card spouse">
-                    <h5>الزوج / الزوجة</h5>
-                    <span class="text-muted">لا يوجد</span>
-                </div>
-            {% endif %}
-
-            <!-- الأبناء -->
-            <div class="relation-card children">
-                <h5>الأبناء ({{ children|length }})</h5>
-                <div class="children-grid">
-                    {% if children %}
-                        {% for child in children %}
-                        <a href="/names/details/{{ child.code }}" class="child-item">
-                            {{ child.name }}
+                    <!-- الزوج/الزوجة -->
+                    {% if gender == "ذكر" and wives %}
+                    <div class="relation-card wife">
+                        <h5>الزوجات ({{ wives|length }})</h5>
+                        {% for wife in wives %}
+                        <a href="/names/details/{{ wife.code }}" class="relation-link">
+                            {{ wife.name }}{% if loop.length > 1 %} ({{ loop.index }}){% endif %}
                         </a>
                         {% endfor %}
+                    </div>
+                    {% elif gender == "أنثى" and husbands %}
+                    <div class="relation-card husband">
+                        <h5>الزوج</h5>
+                        {% for h in husbands %}
+                        <a href="/names/details/{{ h.code }}" class="relation-link">{{ h.name }}</a>
+                        {% endfor %}
+                    </div>
                     {% else %}
-                        <span class="text-muted">لا يوجد أبناء مسجلون</span>
+                    <div class="relation-card spouse">
+                        <h5>الزوج / الزوجة</h5>
+                        <span class="text-muted">لا يوجد</span>
+                    </div>
                     {% endif %}
+
+                    <!-- الأبناء -->
+                    <div class="relation-card children">
+                        <h5>الأبناء ({{ children|length }})</h5>
+                        <div class="children-list">
+                            {% if children %}
+                                {% for child in children %}
+                                <a href="/names/details/{{ child.code }}" class="child-item">
+                                    {{ child.name }}
+                                </a>
+                                {% endfor %}
+                            {% else %}
+                            <span class="text-muted">لا يوجد أبناء مسجلون</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
                 </div>
             </div>
-
         </div>
 
         <!-- الأزرار السفلية -->
-        <div class="text-center mt-5">
-            {% if user and (user.role == "admin" or can(user, "edit_member")) %}
-            <a href="/names/edit/{{ member.code }}" class="btn btn-warning btn-lg px-5">
+        <div class="action-buttons">
+            {% if user.role == "admin"%}
+            <a href="/names/edit/{{ member.code }}" class="btn-edit">
                 تعديل البيانات
             </a>
             {% endif %}
-            <a href="/names" class="btn btn-outline-light btn-lg px-5 ms-3">
-                رجوع إلى القائمة
+            <a href="/names" class="btn-back">
+                رجوع إلى شجرة العائلة
             </a>
         </div>
-
     </div>
 </section>
-
-<!-- الأنماط الخاصة بالتصميم الجديد -->
-<style>
-   
-</style>
 {% endblock %}

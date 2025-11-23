@@ -1,55 +1,37 @@
-<!-- base.html -->
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#2d1b3d">
-    <link rel="icon" href="/static/icon/favicon.ico" /> 
-    <!-- إضافة ملفات CSS مشتركة هنا -->
-    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-   
-    <title>{% block title %}العائلة{% endblock %}</title>
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/static/icon/favicon.ico">
+   <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    <title>{% block title %}عائلة الحوطية{% endblock %}</title>
 </head>
 <body>
-    <!-- Epic Neural Background -->
-    <div class="neural-background"></div>
-    
-     <!-- Header -->
-    <header class="glass">
-        <nav >
-            <div>
-                <a href="/" class="logo">الحـوطية</a>
-            </div>
-
-            <div class="nav-center">
-                <ul class="nav-links">
-                    <li><a href="/">الرئيسية</a></li>
-                    <li><a href="/news">الأخبار</a></li>
-                    <li><a href="/articles">المقالات</a></li>
-                    <li><a href="/names">شجرة العائلة</a></li>
-                    <li><a href="#">عننا</a></li>
-                    {% if user and user.role == "admin" %}
-                    <li><a href="/admin">الإدارة</a></li>
-                    {% endif %}
-                </ul>
-            </div>
-
-            <!-- الـ User Area في أقصى اليمين 100% -->
+    <header class="glass-strong">
+        <nav class="container">
+            <a href="/" class="logo">الحوطية</a>
+            <ul class="nav-links">
+                <li><a href="/" {% if request.path == '/' %}class="active"{% endif %}>الرئيسية</a></li>
+                <li><a href="/news" {% if request.path.startswith('/news') %}class="active"{% endif %}>الأخبار</a></li>
+                <li><a href="/articles" {% if request.path.startswith('/articles') %}class="active"{% endif %}>المقالات</a></li>
+                <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة العائلة</a></li>
+                <li><a href="/about">عن العائلة</a></li>
+                {% if user and user.role == "admin" %}
+                <li><a href="/admin" {% if request.path.startswith('/admin') %}class="active"{% endif %}>الإدارة</a></li>
+                {% endif %}
+            </ul>
             <div class="user-area">
                 {% if user %}
-                    <button class="modern-user-btn" id="modernUserBtn">
-                        <div class="avatar-circle">
-                            {{ user.username[0] | upper }}
-                        </div>
+                    <button class="user-btn" id="userBtn">
+                        <span class="avatar">{{ user.username[0] | upper }}</span>
                         <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
-                            <path fill="currentColor" d="M7 10l5 5 5-5z"/>
-                        </svg>
+                            <path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
                     </button>
-
-                    <div class="modern-dropdown" id="modernDropdown">
-                        <div class="dropdown-header-mini">
-                            <div class="avatar-circle big">{{ user.username[0] | upper }}</div>
+                    <div class="dropdown" id="userDropdown">
+                        <div class="dropdown-header">
+                            <span class="avatar big">{{ user.username[0] | upper }}</span>
                             <div>
                                 <div class="name">{{ user.username }}</div>
                                 <div class="role">
@@ -59,70 +41,57 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="/profile" class="dropdown-link">
-                            صفحتي الشخصية
-                        </a>
-                        <a href="/auth/logout" class="dropdown-link logout">
-                            تسجيل الخروج
-                        </a>
+                        <a href="/profile" class="dropdown-link">صفحتي الشخصية</a>
+                        <a href="/auth/logout" class="dropdown-link logout">تسجيل الخروج</a>
                     </div>
                 {% else %}
-                    <a href="/auth/login" class="btn-login">تسجيل الدخول</a>
+                    <a href="/auth/login" style="padding:12px 28px;background:var(--accent);color:white;border-radius:50px;font-weight:600;">تسجيل الدخول</a>
                 {% endif %}
             </div>
 
-            <div class="mobile-menu-toggle">
-                <div class="hamburger-line"></div>
-                <div class="hamburger-line"></div>
-                <div class="hamburger-line"></div>
-            </div>
+            <button class="mobile-menu-toggle" id="mobileToggle">
+                <span></span><span></span><span></span>
+            </button>
         </nav>
-        <div class="mobile-nav">
+
+        <div class="mobile-nav" id="mobileNav">
             <a href="/">الرئيسية</a>
             <a href="/news">الأخبار</a>
             <a href="/articles">المقالات</a>
             <a href="/names">شجرة العائلة</a>
-            {% if user and user.role == "admin" %}
-            <a href="/admin">الإدارة</a>
-            {% endif %}
+            <a href="/about">عن العائلة</a>
+            {% if user and user.role == "admin" %}<a href="/admin">الإدارة</a>{% endif %}
             {% if user %}
-            <a href="/profile">صفحتي الشخصية</a>
-             <a href="/auth/logout" style="color:#ff6b6b;">تسجيل الخروج</a>
+                <a href="/profile">صفحتي الشخصية</a>
+                <a href="/auth/logout" class="logout">تسجيل الخروج</a>
             {% else %}
-            <a href="/auth/login">تسجيل الدخول</a>
+                <a href="/auth/login">تسجيل الدخول</a>
             {% endif %}
         </div>
-    </header>  
+    </header>
 
-    <main>
-        {% block content %}{% endblock %}
-    </main>
-     <!-- Footer -->
+    <main>{% block content %}{% endblock %}</main>
+
     <footer>
-        <div class="footer-content">
+        <div class="container">
             <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#">Terms of Service</a>
-                <a href="#">Documentation</a>
-                <!-- Add external links -->
-    			      <a href="https://github.com/" target="_blank" rel="noopener">GitHub</a>
+                <a href="#">سياسة الخصوصية</a>
+                <a href="#">شروط الاستخدام</a>
+                <a href="/about">عن الموقع</a>
             </div>
             <div class="footer-copyright">
-                <p>&copy; 2025 Glass Interface.. جميع الحقوق محفوظة.</p>
+                © 2025 عائلة الحوطية • جميع الحقوق محفوظة
             </div>
-            <div class="footer-design">
-                <a href="#">Quantum Framework</a>
-            </div>
+            <div style="margin-top:12px;color:#10b981;font-weight:600;">صُنع بـ ❤ بواسطة engcof الخالد</div>
         </div>
-    </footer>      
-   
-    <!-- إضافة ملفات JavaScript مشتركة هنا -->
+    </footer>
+  <!-- إضافة ملفات JavaScript مشتركة هنا -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
-    <!-- الحل السحري الأخير - يشتغل مهما حصل -->
+     <!-- الحل السحري الأخير - يشتغل مهما حصل -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const btn = document.getElementById("modernUserBtn");
-    const menu = document.getElementById("modernDropdown");
+    const btn = document.getElementById("userBtn");
+    const menu = document.getElementById("userDropdown");
 
     if (btn && menu) {
         btn.addEventListener("click", e => {
@@ -135,5 +104,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 </script>
+   
 </body>
 </html>

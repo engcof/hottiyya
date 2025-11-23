@@ -1,4 +1,5 @@
 import os
+import markupsafe
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -6,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from core.templates import templates
 
 # استيراد الراوترات
 from routers import auth, admin, family, articles, news, permissions
@@ -19,8 +21,6 @@ from security.csrf import generate_csrf_token
 # Lifespan: تشغيل init_database مرة واحدة عند بدء التطبيق
 # =========================================
 
-
-
 # =========================================
 # # إعداد التطبيق        
 # =========================================
@@ -30,7 +30,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-templates = Jinja2Templates(directory="templates")
 
 # =========================================
 # Middleware

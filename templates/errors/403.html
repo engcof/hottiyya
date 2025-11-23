@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}غير مصرح{% endblock %}
+{% block content %}
+<section class="error-section">
+    <div class="container text-center">
+        <h1>ممنوع الدخول</h1>
+        <p>{{ message }}</p>
+        <a href="/names" class="submit-btn">عودة إلى شجرة العائلة</a>
+    </div>
+</section>
+{% endblock %}

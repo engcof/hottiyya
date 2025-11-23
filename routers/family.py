@@ -1,5 +1,4 @@
-# app/routes/family.py → النسخة النهائية المُراجعة والمُحسّنة
-from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
+from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from services.family_service import get_full_name
 from security.csrf import generate_csrf_token, verify_csrf_token
@@ -7,20 +6,52 @@ from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 from fastapi.templating import Jinja2Templates
 from utils.permissions import has_permission
-from security.session import set_cache_headers
+from security.session import set_cache_headers, get_current_user
+from typing import Optional
 import subprocess
 import shutil
 import os
-from dotenv import load_dotenv  # لو بتستخدم .env محليًا
+from dotenv import load_dotenv
+from core.templates import templates
 
-load_dotenv()  # اختياري لو بتستخدم .env في التطوير
-
-IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "fallback_password_only_for_local")
+load_dotenv()
+IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
 
 router = APIRouter(prefix="/names", tags=["family"])
-templates = Jinja2Templates(directory="templates")
+
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+# ====================== مساعد الصلاحيات (الأقوى) ======================
+def require_permission(perm: str):
+    def decorator(func):
+        async def wrapper(request: Request, *args, **kwargs):
+            user = request.session.get("user")
+            if not user:
+                return RedirectResponse("/auth/login")
+
+            # الأدمن عنده كل الصلاحيات
+            if user.get("role") == "admin":
+                request.state.user = user
+                return await func(request, *args, **kwargs)
+
+            # تحقق الصلاحية العادية
+            if not has_permission(user.get("id"), perm):
+                return templates.TemplateResponse("errors/403.html", {
+                    "request": request,
+                    "message": "عذرًا، ليس لديك صلاحية لتنفيذ هذا الإجراء."
+                }, status_code=403)
+
+            # دايمًا حط اليوزر في state
+            request.state.user = user
+            return await func(request, *args, **kwargs)
+
+        # لازم تكون جوا الـ decorator
+        wrapper.__name__ = func.__name__
+        wrapper.__doc__ = func.__doc__
+        return wrapper
+    return decorator
 
 def can(user: dict, perm: str) -> bool:
     if not user:
@@ -28,7 +59,6 @@ def can(user: dict, perm: str) -> bool:
     if user.get("role") == "admin":
         return True
     return bool(user.get("id") and has_permission(user.get("id"), perm))
-
 # ====================== قائمة الأعضاء ======================
 @router.get("/", response_class=HTMLResponse)
 async def show_names(request: Request, page: int = 1, q: str = None):
@@ -101,24 +131,17 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                     "full_name": display_name,
                     "nick_name": nick_name.strip() if nick_name else None
                 })
-
             total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
 
     response = templates.TemplateResponse("family/names.html", {
-        "request": request,
-        "user": user,
-        "members": members,
-        "page": page,
-        "total_pages": total_pages,
-        "has_prev": page > 1,
-        "has_next": page < total_pages,
-        "q": q,
-        "can_add": can_add,
-        "can_edit": can_edit,
-        "can_delete": can_delete
+        "request": request,"user": user,"members": members,
+        "page": page,"total_pages": total_pages,"has_prev": page > 1,
+        "has_next": page < total_pages,"q": q,
+        "can_add": can_add, "can_edit": can_edit, "can_delete": can_delete
     })
     set_cache_headers(response)
     return response
+   
 # ====================== تفاصيل العضو ======================
 @router.get("/details/{code}", response_class=HTMLResponse)
 async def name_details(request: Request, code: str):
@@ -171,20 +194,16 @@ async def name_details(request: Request, code: str):
     set_cache_headers(response)
     return response
 
-# باقي الكود (إضافة، تعديل، حذف) → **ممتاز وما يحتاجش تعديل**
-
-# ====================== إضافة عضو ======================
+# ====================== إضافة عضو جديد ======================
 @router.get("/add", response_class=HTMLResponse)
 async def add_name_form(request: Request):
     user = request.session.get("user")
     if not user or not can(user, "add_member"):
         return RedirectResponse("/names")
-
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
-
     response = templates.TemplateResponse("family/add_name.html", {
-        "request": request, "user": user, "error": None, "csrf_token": csrf_token
+        "request": request, "user": user, "csrf_token": csrf_token, "error": None
     })
     set_cache_headers(response)
     return response
@@ -193,19 +212,19 @@ async def add_name_form(request: Request):
 async def add_name(
     request: Request,
     code: str = Form(...), name: str = Form(...),
-    f_code: str = Form(None), m_code: str = Form(None),
-    w_code: str = Form(None), h_code: str = Form(None),
-    relation: str = Form(None), level: int = Form(None),
-    nick_name: str = Form(None), gender: str = Form(None),
-    d_o_b: str = Form(None), d_o_d: str = Form(None),
-    email: str = Form(None), phone: str = Form(None),
-    address: str = Form(None), p_o_b: str = Form(None),
-    status: str = Form(None), picture: UploadFile = File(None)
-):
+    f_code: Optional[str] = Form(None), m_code: Optional[str] = Form(None),
+    w_code: Optional[str] = Form(None), h_code: Optional[str] = Form(None),
+    relation: Optional[str] = Form(None), level: Optional[int] = Form(None),
+    nick_name: Optional[str] = Form(None), gender: Optional[str] = Form(None),
+    d_o_b: Optional[str] = Form(None), d_o_d: Optional[str] = Form(None),
+    email: Optional[str] = Form(None), phone: Optional[str] = Form(None),
+    address: Optional[str] = Form(None), p_o_b: Optional[str] = Form(None),
+    status: Optional[str] = Form(None),
+    picture: Optional[UploadFile] = File(None)
+): 
     user = request.session.get("user")
     if not user or not can(user, "add_member"):
         return RedirectResponse("/names")
-
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
@@ -231,18 +250,15 @@ async def add_name(
     success = None
 
     # التحقق من الحقول الإجبارية
-    if not code or not name:
-        error = "الكود والاسم مطلوبان!"
-    elif level is None:
-        error = "يجب إدخال المستوى (level)!"
+    if not code or not name or level is None:
+        error = "الكود والاسم والمستوى مطلوبة!"
     else:
         try:
             with get_db_context() as conn:
                 with conn.cursor() as cur:
-                    # التحقق من تكرار الكود
                     cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code,))
                     if cur.fetchone():
-                        error = "الكود مستخدم مسبقاً!"
+                        error = "الكود مستخدم مسبقًا!"
                     else:
                         # إضافة العضو
                         cur.execute("""
@@ -257,46 +273,32 @@ async def add_name(
                         """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
 
                         if picture and picture.filename:
-                            pic_path = os.path.join(UPLOAD_DIR, f"{code}_{picture.filename}")
+                            safe_filename = f"{code}_{picture.filename.replace(' ', '_')}"
+                            pic_path = os.path.join(UPLOAD_DIR, safe_filename)
                             with open(pic_path, "wb") as f:
                                 shutil.copyfileobj(picture.file, f)
                             cur.execute("""
-                                INSERT INTO family_picture (code_pic, pic_path) 
-                                VALUES (%s, %s) ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
+                                INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
+                                ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
                             """, (code, pic_path, pic_path))
 
                         conn.commit()
-                        success = f"تم إضافة {name} بنجاح!"
-
-                        # تصفير النموذج بعد النجاح
-                        code = name = f_code = m_code = w_code = h_code = relation = nick_name = ""
-                        level = gender = d_o_b = d_o_d = email = phone = address = p_o_b = status = None
-
+                        return RedirectResponse("/names", status_code=303)
         except Exception as e:
-            error = "حدث خطأ أثناء الحفظ، تأكد من البيانات وحاول مرة أخرى"
+            error = "حدث خطأ أثناء الإضافة، تأكد من البيانات"
 
     # تحديث CSRF دائمًا
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
     return templates.TemplateResponse("family/add_name.html", {
-        "request": request,
-        "user": user,
-        "error": error,
-        "success": success,
-        "csrf_token": csrf_token,
+        "request": request,"user": user, "error": error,"success": success, "csrf_token": csrf_token,
         # إعادة تمرير القيم لو في خطأ
-        "form_data": {
-            "code": code, "name": name, "f_code": f_code, "m_code": m_code,
-            "w_code": w_code, "h_code": h_code, "relation": relation,
-            "level": level, "nick_name": nick_name, "gender": gender,
-            "d_o_b": d_o_b, "d_o_d": d_o_d, "email": email,
-            "phone": phone, "address": address, "p_o_b": p_o_b, "status": status
-        } if error else None
+        "form_data": {k: v for k, v in locals().items() if k in [
+            "code", "name", "f_code", "m_code", "w_code", "h_code", "relation", "level",
+            "nick_name", "gender", "d_o_b", "d_o_d", "email", "phone", "address", "p_o_b", "status"
+        ]}
     })
-
-
-
 
 # ====================== تعديل عضو ======================
 @router.get("/edit/{code}", response_class=HTMLResponse)
@@ -334,10 +336,10 @@ async def edit_name_form(request: Request, code: str):
     set_cache_headers(response)
     return response
 
-
 @router.post("/edit/{code}")
-async def update_name(request: Request, code: str,
-                      name: str = Form(...), f_code: str = Form(None), m_code: str = Form(None),
+async def update_name(request: Request, 
+                      code: str, name: str = Form(...), 
+                      f_code: str = Form(None), m_code: str = Form(None),
                       w_code: str = Form(None), h_code: str = Form(None),
                       relation: str = Form(None), level: int = Form(None),
                       nick_name: str = Form(None), gender: str = Form(None),
@@ -345,7 +347,7 @@ async def update_name(request: Request, code: str,
                       email: str = Form(None), phone: str = Form(None),
                       address: str = Form(None), p_o_b: str = Form(None),
                       status: str = Form(None), picture: UploadFile = File(None)):
-
+    
     user = request.session.get("user")
     if not user or not can(user, "edit_member"):
         return RedirectResponse("/names")
@@ -425,48 +427,39 @@ async def update_name(request: Request, code: str,
             "csrf_token": csrf_token, "error": "فشل في حفظ التعديلات، تأكد من البيانات"
         })
 
-
 # ====================== حذف عضو ======================
 @router.post("/delete/{code}")
+@require_permission("delete_member")
 async def delete_name(request: Request, code: str):
     user = request.session.get("user")
     if not user or not can(user, "delete_member"):
         return RedirectResponse("/names")
-
     with get_db_context() as conn:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM family_picture WHERE code_pic = %s", (code,))
             cur.execute("DELETE FROM family_info WHERE code_info = %s", (code,))
             cur.execute("DELETE FROM family_name WHERE code = %s", (code,))
             conn.commit()
-
     return RedirectResponse("/names", status_code=303)
 
-
-# في app/routes/family.py أو في main.py
-
-
-# صفحة الاستيراد (للأدمن بس)
+# ====================== استيراد البيانات (أدمن فقط) ======================
 @router.get("/import-data", response_class=HTMLResponse)
 async def import_page(request: Request):
     user = request.session.get("user")
-    if not user or user.get("role") != "admin":
-        return RedirectResponse("/names")
-    
-    return templates.TemplateResponse("family/import_data.html", {
-        "request": request, "user": user, "message": None
-    })
+    if user.get("role") != "admin":
+        raise HTTPException(status_code=403)
+    return templates.TemplateResponse("family/import_data.html", {"request": request, "user": user})
 
-# استلام الملف وتنفيذ الاستيراد
+
 @router.post("/import-data")
 async def import_data(
     request: Request,
     dump_file: UploadFile = File(...),
-    password: str = Form(...)
+    password: str = Form(...),
 ):
     user = request.session.get("user")
-    if not user or user.get("role") != "admin" or password != os.getenv("IMPORT_PASSWORD"):
-        return RedirectResponse("/names")
+    if not user or user.get("role") != "admin" or password != IMPORT_PASSWORD:
+        raise HTTPException(status_code=403, detail="كلمة المرور غير صحيحة أو ليس لديك صلاحية")
 
     if not dump_file.filename.lower().endswith(('.dump', '.sql')):
         return templates.TemplateResponse("family/import_data.html", {

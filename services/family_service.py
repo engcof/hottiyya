@@ -38,10 +38,6 @@ def get_full_name(code: str, max_length: int = None, include_nick: bool = True) 
 
     return full_name
 
-
-
-
-
 def get_member_with_details(code: str) -> Dict:
     with get_db_context() as conn:
         with conn.cursor() as cur:

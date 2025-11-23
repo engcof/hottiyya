@@ -6,11 +6,12 @@ from psycopg2.extras import RealDictCursor
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.permissions import has_permission  # ← أضف هذا
 from security.session import set_cache_headers
+from core.templates import templates
 import shutil
 import os
 
 router = APIRouter(prefix="/news", tags=["news"])
-templates = Jinja2Templates(directory="templates")
+
 UPLOAD_DIR = "static/uploads/news"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 

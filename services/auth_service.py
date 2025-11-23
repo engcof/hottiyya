@@ -11,9 +11,6 @@ def get_user(condition: str, param: tuple):
             return cursor.fetchone()
 
 
-
-
-
 def get_current_user(request: Request) -> Optional[dict]:
     """إرجاع المستخدم المسجل كـ dict أو None"""
     return request.session.get("user")  # يحتوي: username - role

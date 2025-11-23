@@ -5,10 +5,11 @@ from security.hash import check_password
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token, verify_csrf_token
 from services.auth_service import get_user
+from core.templates import templates
 
 
 router = APIRouter(prefix="/auth")
-templates = Jinja2Templates(directory="templates")  # الجذر
+#templates = Jinja2Templates(directory="templates")  # الجذر
 
 # ------------------------------
 # GET /login

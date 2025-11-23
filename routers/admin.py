@@ -9,11 +9,13 @@ from security.session import set_cache_headers
 from psycopg2.extras import RealDictCursor
 from security.hash import hash_password
 from postgresql import get_db_context
+from core.templates import templates
 
 # routers/admin.py
 
 router = APIRouter(prefix="/admin", tags=["admin"])
-templates = Jinja2Templates(directory="templates")
+
+
 
 @router.get("/", response_class=HTMLResponse)
 async def admin_page(request: Request, page: int = 1):

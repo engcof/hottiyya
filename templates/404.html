@@ -1,0 +1,15 @@
+cat > templates/404.html << 'EOF'
+{% extends "base.html" %}
+{% block title %}404 - الصفحة غير موجودة{% endblock %}
+{% block content %}
+<section style="min-height:80vh;display:flex;align-items:center;justify-content:center;background:var(--bg-color)">
+  <div style="text-align:center;padding:40px;background:var(--card-bg);border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.3)">
+    <h1 style="font-size:100px;margin:0;color:#e74c3c">404</h1>
+    <p style="font-size:24px;color:var(--text-color)">الصفحة اللي بتدور عليها مش موجودة يا بطل</p>
+    <a href="/" style="margin-top:20px;display:inline-block;padding:12px 30px;background:var(--primary);color:white;border-radius:50px;text-decoration:none">
+      العودة للرئيسية
+    </a>
+  </div>
+</section>
+{% endblock %}
+EOF

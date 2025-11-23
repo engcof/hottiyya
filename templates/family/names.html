@@ -1,88 +1,76 @@
 {% extends "base.html" %}
-{% block title %}الأسماء العائلية{% endblock %}
+{% block title %}شجرة العائلة - الأسماء العائلية{% endblock %}
 
 {% block content %}
-<!-- المحتوى الرئيسي -->
-<section class="family-section">
-    <div class="family-content">
+<section class="family-tree-section">
+    <div class="container">
+        <!-- العنوان + زر الإضافة -->
         <div class="section-header">
-            <h1>شجرة العائلة</h1>   
-        </div> 
-        <div class="contact-form glass">
-             <div class="form-actions">
+            <h1 class="page-title">شجرة العائلة</h1>
             {% if can_add %}
-            <a href="/names/add" class="submit-btn">إضافة عضو جديد</a>
+            <a href="/names/add" class="btn-add-member">
+                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                إضافة عضو جديد
+            </a>
             {% endif %}
-            </div>
-            <div class="form-actions">
-                <form method="get" action="/names">
-                    <div class="contact-form glass">
-                        <div class="form-group">
-                        <input type="text" name="q" value="{{ q or '' }}" placeholder="ابحث بالكود أو الاسم..." />
-                        </div>
-                        <button type="submit" class="submit-btn">بحث</button>
+        </div>
+
+        <!-- شريط البحث -->
+        <div class="search-bar glass">
+            <form method="get" action="/names" class="search-form">
+                <input type="text" name="q" value="{{ q or '' }}" placeholder="ابحث بالكود أو الاسم..." autocomplete="off">
+                <button type="submit" class="search-btn">
+                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    بحث
+                </button>
+            </form>
+            {% if q %}
+            <a href="/names" class="clear-search">إلغاء البحث</a>
+            {% endif %}
+        </div>
+
+        <!-- جدول الأعضاء (بطاقات على الموبايل، جدول على الكمبيوتر) -->
+        <div class="members-list">
+            {% for m in members %}
+            <div class="member-card glass">
+                <div class="member-info">
+                    <div class="member-code"><code>{{ m.code }}</code></div>
+                    <div class="member-name"><strong>{{ m.full_name }}</strong></div>
+                    <div class="member-nickname">
+                        {% if m.nick_name %}
+                        <span class="nickname-badge">{{ m.nick_name }}</span>
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
                     </div>
-                </form>
-                {% if q %}
-                <a href="/names" class="clear-search">إلغاء البحث</a>
-                {% endif %}
-            </div>
-            <div class="table-container">
-                <table class="family-table">
-                    <thead>
-                        <tr>
-                            <th>الكود</th>
-                            <th>الاسم الكامل</th>
-                            <th>اللقب</th>
-                            <th class="text-center">الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for m in members %}
-                        <tr>
-                            <td><code>{{ m.code }}</code></td>
-                            <td class="full-name"><strong>{{ m.full_name }}</strong></td>
-                            <td>
-                                {% if m.nick_name %}
-                                    <span class="nickname-badge">{{ m.nick_name }}</span>
-                                {% else %}
-                                <span class="text-muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td class="actions">
-                                 <div class="form-actions">
-                                <a href="/names/details/{{ m.code }}" class="submit-btn">تفاصيل</a>
-                                
-                                {% if can_edit %}
-                                <a href="/names/edit/{{ m.code }}" class="submit-btn">تعديل</a>
-                                {% endif %}
-                                
-                                {% if can_delete %}
-                                <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;"
-                                    onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
-                                    <button type="submit" class="submit-btn"> حذف</button>
-                                </form>
-                                {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-     
-                <!-- أزرار التصفح -->
-                <div class="pagination">
-                    {% if has_prev %}
-                    <a href="/names?page={{ page - 1 }}" class="btn">السابق</a>
+                </div>
+                <div class="member-actions">
+                    <a href="/names/details/{{ m.code }}" class="btn-action btn-view">تفاصيل</a>
+                    {% if can_edit %}
+                    <a href="/names/edit/{{ m.code }}" class="btn-action btn-edit">تعديل</a>
                     {% endif %}
-                    <span>الصفحة {{ page }} من {{ total_pages }}</span>
-                    {% if has_next %}
-                    <a href="/names?page={{ page + 1 }}" class="btn">التالي</a>
+                    {% if can_delete %}
+                    <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
+                        <button type="submit" class="btn-action btn-delete">حذف</button>
+                    </form>
                     {% endif %}
                 </div>
-       
             </div>
+            {% endfor %}
         </div>
-   </div>
+
+        <!-- التصفح بين الصفحات -->
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if has_prev %}
+            <a href="/names?page={{ page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="btn-pagination">السابق</a>
+            {% endif %}
+            <span class="page-info">الصفحة {{ page }} من {{ total_pages }}</span>
+            {% if has_next %}
+            <a href="/names?page={{ page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="btn-pagination">التالي</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
 </section>
 {% endblock %}
