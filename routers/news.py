@@ -43,23 +43,31 @@ async def list_news(request: Request):
             cur.execute("SELECT * FROM news ORDER BY created_at DESC")
             news = cur.fetchall()
     
-    return templates.TemplateResponse("news/list.html", {
+    response = templates.TemplateResponse("news/list.html", {
         "request": request,
         "user": user,
         "news": news,
         "can_add": can_add
     })
+    set_cache_headers(response)
+    return response
 
 # routers/news.py → أضف أو استبدل المسار ده
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_news(request: Request, id: int):
     user = request.session.get("user")
+    # === الحل السحري: حدد الصلاحيات هنا ===
+    can_edit = check_permission(request, "edit_news")
+    can_delete = check_permission(request, "delete_news")        
+
     with get_db_context() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM news WHERE id = %s", (id,))
             item = cur.fetchone()
             if not item:
                 raise HTTPException(404, "الخبر غير موجود")
+            
+    
 
     # أضف CSRF للحذف
     csrf_token = request.session.get("csrf_token")
@@ -67,12 +75,16 @@ async def view_news(request: Request, id: int):
         csrf_token = generate_csrf_token()
         request.session["csrf_token"] = csrf_token
 
-    return templates.TemplateResponse("news/detail.html", {
+    response = templates.TemplateResponse("news/detail.html", {
         "request": request,
         "user": user,
         "item": item,
+        "can_edit": can_edit,      
+        "can_delete": can_delete,  
         "csrf_token": csrf_token
     })
+    set_cache_headers(response)
+    return response
 
 # === إضافة خبر ===
 @router.get("/add", response_class=HTMLResponse)
@@ -82,11 +94,13 @@ async def add_news_form(request: Request):
 
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
-    return templates.TemplateResponse("news/add.html", {
+    response = templates.TemplateResponse("news/add.html", {
         "request": request,
         "user": request.session.get("user"),
         "csrf_token": csrf_token
     })
+    set_cache_headers(response)
+    return response
 
 @router.post("/add")
 async def add_news(
@@ -137,13 +151,14 @@ async def edit_news_form(request: Request, id: int):
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
-    return templates.TemplateResponse("news/edit.html", {
+    response = templates.TemplateResponse("news/edit.html", {
         "request": request,
         "user": user,
         "item": item,
         "csrf_token": csrf_token
     })
-
+    set_cache_headers(response)
+    return response
 
 @router.post("/edit/{id:int}")
 async def update_news(

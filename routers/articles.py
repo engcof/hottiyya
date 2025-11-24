@@ -2,7 +2,6 @@
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from psycopg2.extras import RealDictCursor
-
 from security.session import set_cache_headers
 from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
@@ -71,47 +70,56 @@ async def list_articles(request: Request, page: int = 1):
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_article(request: Request, id: int):
     user = request.session.get("user")
+    
+    # الصلاحيات أولاً
     can_edit = can(user, "edit_article")
     can_delete = can(user, "delete_article")
-    can_comment = user is not None  # أي مستخدم مسجل دخول يقدر يعلق
+    can_comment = user is not None
 
     with get_db_context() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # جلب المقال
+            # جيب المقال مع كل الحقول بوضوح
             cur.execute("""
-                SELECT a.*, u.username 
-                FROM articles a 
-                JOIN users u ON a.author_id = u.id 
+                SELECT 
+                    a.id,
+                    a.title,
+                    COALESCE(a.content, '') as content,
+                    a.image_url,
+                    a.created_at,
+                    u.username
+                FROM articles a
+                JOIN users u ON a.author_id = u.id
                 WHERE a.id = %s
             """, (id,))
             article = cur.fetchone()
+
             if not article:
                 raise HTTPException(404, "المقال غير موجود")
 
-            # جلب التعليقات
+            # جيب التعليقات
             cur.execute("""
-                SELECT c.*, u.username 
-                FROM comments c 
-                JOIN users u ON c.user_id = u.id 
-                WHERE c.article_id = %s 
+                SELECT c.*, u.username
+                FROM comments c
+                JOIN users u ON c.user_id = u.id
+                WHERE c.article_id = %s
                 ORDER BY c.created_at DESC
             """, (id,))
             comments = cur.fetchall()
 
-    # CSRF للتعليق والحذف
-    csrf_token = request.session.get("csrf_token") or generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+            # تأكد من الـ CSRF
+            csrf_token = request.session.get("csrf_token") or generate_csrf_token()
+            request.session["csrf_token"] = csrf_token
 
-    return templates.TemplateResponse("articles/detail.html", {
-        "request": request,
-        "user": user,
-        "article": article,
-        "comments": comments,
-        "csrf_token": csrf_token,
-        "can_edit": can_edit,
-        "can_delete": can_delete,
-        "can_comment": can_comment
-    })
+            return templates.TemplateResponse("articles/detail.html", {
+                "request": request,
+                "user": user,
+                "article": article,
+                "comments": comments,
+                "csrf_token": csrf_token,
+                "can_edit": can_edit,
+                "can_delete": can_delete,
+                "can_comment": can_comment
+            })
 
 # === إضافة مقال ===
 @router.get("/add", response_class=HTMLResponse)

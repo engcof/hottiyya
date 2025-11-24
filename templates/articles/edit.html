@@ -2,36 +2,48 @@
 {% block title %}تعديل: {{ article.title }}{% endblock %}
 
 {% block content %}
-<section class="add-article">
+<section class="add-news-page">
     <div class="container">
-        <h1 class="page-title">تعديل المقال</h1>
-        <form method="post" action="/articles/edit/{{ article.id }}" enctype="multipart/form-data" class="glass-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            
-            <div class="form-group">
-                <label>العنوان</label>
-                <input type="text" name="title" value="{{ article.title }}" required>
-            </div>
-            
-            <div class="form-group">
-                <label>المحتوى</label>
-                <textarea name="content" rows="15" required>{{ article.content }}</textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>تغيير الصورة (اتركه فارغًا إذا لا تريد التغيير)</label>
-                {% if article.image_url %}
-                <p>الصورة الحالية:</p>
-                <img src="{{ article.image_url }}" style="max-height:200px; border-radius:12px; margin:10px 0;">
-                {% endif %}
-                <input type="file" name="image" accept="image/*">
-            </div>
-            
-            <div class="form-actions">
-                <button type="submit" class="btn-success">حفظ التعديلات</button>
-                <a href="/articles/{{ article.id }}" class="btn-secondary">إلغاء</a>
-            </div>
-        </form>
+        <!-- العنوان الملكي -->
+        <div class="page-header">
+            <h1 class="page-title">تعديل المقال</h1>
+        </div>
+        <!-- النموذج الفاخر -->
+        <div class="form-container">
+            <form method="post" action="/articles/edit/{{ article.id }}" enctype="multipart/form-data" class="news-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <div class="form-group">
+                    <label>العنوان</label>
+                    <input type="text" name="title" value="{{ article.title }}" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>المحتوى</label>
+                    <textarea name="content" rows="15" required>{{ article.content }}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>تغيير الصورة (اتركه فارغًا إذا لا تريد التغيير)</label>
+                    {% if article.image_url %}
+                    <p>الصورة الحالية:</p>
+                    <img src="{{ article.image_url }}" style="max-height:200px; border-radius:12px; margin:10px 0;">
+                    {% endif %}
+                    <input type="file" name="image" accept="image/*">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">
+                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg> 
+                        حفظ التعديلات
+                    </button>
+                    <a href="/articles/{{ article.id }}" class="btn-cancel">إلغاء</a>
+                </div>
+            </form>
+        </div>    
     </div>
 </section>
 {% endblock %}

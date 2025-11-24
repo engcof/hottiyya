@@ -1,33 +1,102 @@
 {% extends "base.html" %}
-{% block title %}إضافة خبر{% endblock %}
+{% block title %}إضافة خبر جديد - الأخبار الحوطية{% endblock %}
 
 {% block content %}
-<section class="add-news">
+<section class="add-news-page">
     <div class="container">
-        <h1>إضافة خبر جديد</h1>
-        <form method="post" action="/news/add" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div class="form-group">
-                <label>العنوان</label>
-                <input type="text" name="title" required>
-            </div>
-            <div class="form-group">
-                <label>المحتوى</label>
-                <textarea name="content" rows="6" required></textarea>
-            </div>
-            <div class="form-group">
-                <label>الكاتب</label>
-                <input type="text" name="author" value="{{ user.username }}" required>
-            </div>
-            <div class="form-group">
-                <label>صورة الخبر (اختياري)</label>
-                <input type="file" name="image" accept="image/*">
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="btn-success">نشر الخبر</button>
-                <a href="/news" class="btn-secondary">رجوع</a>
-            </div>
-        </form>
+        <!-- العنوان الملكي -->
+        <div class="page-header">
+            <h1 class="page-title">إضافة خبر جديد</h1>
+         
+        </div>
+
+        <!-- النموذج الفاخر -->
+        <div class="form-container">
+            <form method="post" action="/news/add" enctype="multipart/form-data" class="news-form" id="newsForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <!-- العنوان -->
+                <div class="form-group">
+                    <label for="title">عنوان الخبر <span class="required">*</span></label>
+                    <input 
+                        type="text" 
+                        id="title" 
+                        name="title" 
+                        placeholder="اكتب عنوانًا جذابًا وواضحًا..." 
+                        required 
+                        autocomplete="off"
+                    >
+                </div>
+
+                <!-- المحتوى -->
+                <div class="form-group">
+                    <label for="content">نص الخبر <span class="required">*</span></label>
+                    <textarea 
+                        id="content" 
+                        name="content" 
+                        rows="10" 
+                        placeholder="اكتب تفاصيل الخبر هنا... يمكنك استخدام السطور الجديدة للفقرات" 
+                        required
+                    ></textarea>
+                </div>
+
+                <!-- الكاتب (تلقائي من الجلسة) -->
+                <div class="form-group">
+                    <label for="author">الكاتب</label>
+                    <input 
+                        type="text" 
+                        id="author" 
+                        name="author" 
+                        value="{{ user.username or 'غير معروف' }}" 
+                        readonly 
+                        class="readonly-input"
+                    >
+                    <small>سيتم تسجيل الخبر باسم: <strong>{{ user.username }}</strong></small>
+                </div>
+
+                <!-- رفع الصورة -->
+                <div class="form-group">
+                    <label for="image">صورة الخبر (اختياري)</label>
+                    <div class="file-upload-wrapper">
+                        <input 
+                            type="file" 
+                            id="image" 
+                            name="image" 
+                            accept="image/*" 
+                            class="file-input"
+                        >
+                        <label for="image" class="file-label">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <span class="file-text">اختر صورة...</span>
+                            <span class="file-name">لم يتم اختيار ملف</span>
+                        </label>
+                    </div>
+                    <small>الصيغ المسموحة: JPG, PNG, GIF • الحجم الأقصى: 5MB</small>
+                </div>
+
+                <!-- معاينة الصورة -->
+                <div class="image-preview" id="previewContainer" style="display:none;">
+                    <p>الصورة المختارة:</p>
+                    <img id="previewImg" src="" alt="معاينة الصورة">
+                    <button type="button" class="remove-img" id="removeImg">إزالة</button>
+                </div>
+
+                <!-- الأزرار -->
+                <div class="form-actions">
+                    <button type="submit" class="btn-submit">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        نشر الخبر الآن
+                    </button>
+                    <a href="/news" class="btn-cancel">إلغاء</a>
+                </div>
+            </form>
+        </div>
     </div>
 </section>
 {% endblock %}

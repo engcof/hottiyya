@@ -2,35 +2,46 @@
 {% block title %}كتابة مقال جديد{% endblock %}
 
 {% block content %}
-<section class="family-section">
-    <div class="family-content">
-        <h1 class="page-title">كتابة مقال جديد</h1>
-        
-        <form method="post" action="/articles/add" enctype="multipart/form-data" class="edit-form">
-            
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<section class="add-news-page">
+    <div class="container">
+         <!-- العنوان الملكي -->
+        <div class="page-header">
+            <h1 class="page-title">كتابة مقال جديد</h1>
+        </div>
+        <!-- النموذج الفاخر -->
+        <div class="form-container">
+            <form method="post" action="/articles/add" enctype="multipart/form-data" class="news-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-             <div class="form-group">
-                <label>عنوان المقال <span class="required">*</span></label>
-                <input type="text" name="title" required placeholder="أدخل عنوانًا جذابًا...">
-            </div>
+                <div class="form-group">
+                    <label>عنوان المقال <span class="required">*</span></label>
+                    <input type="text" name="title" required autocomplete="off" placeholder="أدخل عنوانًا جذابًا...">
+                </div>
 
-            <div class="form-group">
-                <label>محتوى المقال <span class="required">*</span></label>
-                <textarea name="content" rows="12" required placeholder="اكتب مقالك هنا..."></textarea>
-            </div>
+                <div class="form-group">
+                    <label>محتوى المقال <span class="required">*</span></label>
+                    <textarea name="content" rows="12" required  placeholder="اكتب مقالك هنا..."></textarea>
+                </div>
 
-            <div class="form-group">
-                <label>صورة المقال (اختياري)</label>
-                <input type="file" name="image" accept="image/*">
-                <small>يمكنك رفع صورة لتظهر أعلى المقال</small>
-            </div>
+                <!-- الكاتب (تلقائي من الجلسة) -->
+                <div class="form-group">
+                    <label for="author">الكاتب</label>
+                    <input type="text" name="author" value="{{ user.username or 'غير معروف' }}" readonly class="readonly-input">
+                    <small>سيتم تسجيل المقال باسم: <strong>{{ user.username }}</strong></small>
+                </div>
 
-            <div class="form-actions">
-                <button type="submit" class="submit-btn">نشر المقال</button>
-                <a href="/articles" class="submit-btn">رجوع</a>
-            </div>
-        </form>
+                <div class="form-group">
+                    <label>صورة المقال (اختياري)</label>
+                    <input type="file" name="image" accept="image/*">
+                    <small>يمكنك رفع صورة لتظهر أعلى المقال</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="submit-btn">نشر المقال</button>
+                    <a href="/articles" class="submit-btn">رجوع</a>
+                </div>
+            </form>
+        </div>
     </div>
 </section>
 {% endblock %}

@@ -27,7 +27,7 @@
                 <form action="/articles/delete/{{ article.id }}" method="post" style="display:inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn-delete"
-                            onclick="return confirm('متأكد 100% من حذف المقال نهائيًا؟');">
+                            onclick="return confirm('متأكد 100% من حذف المقال نهائيًا؟ لا رجعة!');">
                         <svg viewBox="0 0 24 24" width="18" height="18">
                             <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
@@ -38,9 +38,9 @@
             </div>
         </div>
 
-        <!-- المقال نفسه -->
-        <article class="article-card single glass-strong">
-            <!-- صورة المقال -->
+        <!-- المقال -->
+        <article class="article-card single">
+            <!-- صورة الغلاف -->
             {% if article.image_url %}
             <div class="article-cover">
                 <img src="{{ article.image_url }}" alt="{{ article.title }}" loading="lazy">
@@ -48,7 +48,7 @@
             {% endif %}
 
             <!-- العنوان والمعلومات -->
-            <header class="article-header">
+            <div class="article-header">
                 <h1 class="article-title">{{ article.title }}</h1>
                 <div class="article-meta">
                     <div class="author-info">
@@ -65,22 +65,21 @@
                         <span class="time">• {{ article.created_at.strftime('%I:%M %p') }}</span>
                     </div>
                 </div>
-            </header>
+            </div>
 
-            <!-- محتوى المقال -->
+            <!-- المحتوى -->
             <div class="article-content">
                 {{ article.content | newline_to_br | safe }}
             </div>
         </article>
 
-        <!-- قسم التعليقات -->
+        <!-- التعليقات -->
         <section class="comments-section glass" id="comments">
             <h2 class="section-title">
                 التعليقات
                 <span class="count">({{ comments|length }})</span>
             </h2>
 
-            <!-- إضافة تعليق جديد -->
             {% if can_comment %}
             <div class="add-comment-card">
                 <form action="/articles/{{ article.id }}/comment" method="post" class="comment-form">
@@ -99,14 +98,10 @@
             </div>
             {% else %}
             <div class="login-prompt glass">
-                <p>
-                    <a href="/auth/login?next={{ request.path }}" class="login-link">سجّل الدخول</a>
-                    لتتمكن من إضافة تعليق
-                </p>
+                <p><a href="/auth/login?next={{ request.path }}" class="login-link">سجّل الدخول</a> لتتمكن من التعليق</p>
             </div>
             {% endif %}
 
-            <!-- قائمة التعليقات -->
             {% if comments %}
             <div class="comments-list">
                 {% for c in comments %}
@@ -114,17 +109,13 @@
                     <div class="comment-header">
                         <div class="comment-author">
                             <strong>{{ c.username }}</strong>
-                            <span class="comment-date">
-                                {{ c.created_at.strftime('%d/%m/%Y في %I:%M %p') }}
-                            </span>
+                            <span class="comment-date">{{ c.created_at.strftime('%d/%m/%Y في %I:%M %p') }}</span>
                         </div>
-                        {% if user and (user.role == "admin" or user.id == c.user_id or has_permission(user.id, "delete_comment")) %}
+                        {% if user and (user.role == "admin" or user.id == c.user_id or (user.id and has_permission(user.id, "delete_comment"))) %}
                         <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <button type="submit" class="btn-delete-comment" title="حذف التعليق"
-                                    onclick="return confirm('متأكد من حذف التعليق؟');">
-                                حذف
-                            </button>
+                                    onclick="return confirm('متأكد من حذف التعليق؟');">حذف</button>
                         </form>
                         {% endif %}
                     </div>
@@ -146,13 +137,14 @@
 
 {% block scripts %}
 <script>
-    // عداد الأحرف في التعليق
+document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.querySelector('textarea[name="content"]');
     if (textarea) {
         const counter = document.querySelector('.char-counter');
         textarea.addEventListener('input', () => {
-            counter.textContent = `${textarea.value.length}/1000`;
+            counter.textContent = textarea.value.length + '/1000';
         });
     }
+});
 </script>
 {% endblock %}

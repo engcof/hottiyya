@@ -1,44 +1,97 @@
 {% extends "base.html" %}
-{% block title %}{{ item.title }}{% endblock %}
+{% block title %}{{ item.title }} - الأخبار{% endblock %}
 
 {% block content %}
-<section class="news-detail">
+<section class="news-detail-page">
     <div class="container">
-        <h1>{{ item.title }}</h1>
-        <p class="meta">بواسطة {{ item.author }} • {{ item.created_at.strftime('%Y-%m-%d') }}</p>
 
-        {% if item.image_url %}
-        <img src="{{ item.image_url }}" alt="{{ item.title }}" class="detail-img">
-        {% endif %}
+        <!-- رابط الرجوع الأنيق -->
+        <a href="/news" class="back-link">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            رجوع إلى الأخبار
+        </a>
 
-        {% if item.video_url %}
-        <div class="video-container">
-            <video controls>
-                <source src="{{ item.video_url }}" type="video/mp4">
-                المتصفح لا يدعم الفيديو.
-            </video>
-        </div>
-        {% endif %}
+        <article class="news-article">
 
-        <div class="content">
-            {{ item.content | replace('\n', '<br>') | safe }}
-        </div>
+            <!-- العنوان الملكي -->
+            <div class="article-header">
+                <h1 class="article-title">{{ item.title }}</h1>
+                
+                <div class="article-meta">
+                    <span class="meta-author">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        {{ item.author }}
+                    </span>
+                    <span class="meta-date">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                        </svg>
+                        {{ item.created_at.strftime('%d %B %Y') }}
+                    </span>
+                   <!-- تم إلغاء عرض تاريخ التحديث مؤقتًا لأن الحقل غير موجود -->
+                </div>
+            </div>
 
-       <div class="actions">
-            <a href="/news" class="btn-secondary">رجوع إلى الأخبار</a>
-
-           {% if can_edit %}
-            <a href="/news/edit/{{ item.id }}" class="btn-edit">تعديل</a>
+            <!-- الصورة البارزة -->
+            {% if item.image_url %}
+            <div class="featured-image">
+                <img src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy">
+            </div>
             {% endif %}
-            {% if can_delete %}
-            <form action="/news/delete/{{ item.id }}" method="post" style="display:inline;" 
-                onsubmit="return confirm('متأكد من الحذف؟');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" class="btn-danger">حذف</button>
-            </form>
+
+            <!-- الفيديو إذا موجود -->
+            {% if item.video_url %}
+            <div class="video-wrapper">
+                <video controls preload="metadata" poster="{{ item.image_url or '' }}">
+                    <source src="{{ item.video_url }}" type="video/mp4">
+                    المتصفح لا يدعم تشغيل الفيديو.
+                </video>
+            </div>
             {% endif %}
-           
-        </div>
+
+            <!-- محتوى الخبر -->
+            <div class="article-content">
+                {{ item.content | replace('\n', '<br>') | safe }}
+            </div>
+
+            <!-- أزرار الإجراءات (للإدمن والمدير) -->
+            {% if can_edit or can_delete %}
+            <div class="article-actions">
+                {% if can_edit %}
+                <a href="/news/edit/{{ item.id }}" class="btn-edit">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                    تعديل الخبر
+                </a>
+                {% endif %}
+
+                {% if can_delete %}
+                <form action="/news/delete/{{ item.id }}" method="post" style="display:inline;"
+                      onsubmit="return confirm('هل أنت متأكد من حذف هذا الخبر نهائيًا؟');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn-delete">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3-3h8"></path>
+                        </svg>
+                        حذف الخبر
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </article>
     </div>
 </section>
 {% endblock %}
