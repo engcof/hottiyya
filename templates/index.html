@@ -11,26 +11,43 @@
     <h2 class="bismillah">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</h2>
     <div class="bismillah-line"></div>
 </div>
-<!-- ==================== شريط الإحصائيات الملكي (أول حاجة بعد البسملة) ==================== -->
-<div class="online-stats">
-    <div class="container" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; font-size: 1.1rem; padding: 12px 0;">
-        <div style="text-align: center;">
-            <strong style="color: #60a5fa; font-size: 1.1rem;">الزوار اليوم</strong><br>
-            <span style="font-size: 2.2rem; font-weight: bold; color: #60a5fa;">{{ today_visitors }}</span>
+<!-- شريط الإحصائيات الملكي - القائمة المنسدلة على اليمين تمامًا -->
+<div class="royal-stats">
+    <div class="stats-inner">
+        <div class="stat">
+            <span class="num" style="color:#10b981">{{ today_visitors }}</span>
+            <span class="label">اليوم</span>
         </div>
-        <div style="text-align: center;">
-            <strong style="color: #34d399; font-size: 1.1rem;">إجمالي الزوار</strong><br>
-            <span style="font-size: 2.2rem; font-weight: bold; color: #34d399;">{{ total_visitors }}</span>
+        <div class="separator">•</div>
+        <div class="stat">
+            <span class="num" style="color:#3b82f6">{{ total_visitors }}</span>
+            <span class="label">الإجمالي</span>
         </div>
-        <div style="text-align: center;">
-            <strong style="color: #f59e0b; font-size: 1.1rem;">أونلاين الآن</strong><br>
-            <span style="font-size: 2.2rem; font-weight: bold; color: #f59e0b;">{{ online_count }}</span>
-            {% if online_users %}
-            <div style="margin-top: 10px; font-size: 0.95rem;">
+        <div class="separator">•</div>
+
+        <!-- الأونلاين مع قائمة منسدلة على اليمين -->
+        <div class="stat online-stat">
+            <div class="online-wrapper">
+                <span class="num" style="color:#f59e0b">{{ online_count }}</span>
+                <span class="label">أونلاين</span>
+
+                {% if online_count > 0 %}
+                <button class="online-toggle" id="onlineToggle" title="عرض المستخدمين أونلاين">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="15 6 9 12 15 18"></polyline> <!-- سهم يسار للعرب -->
+                    </svg>
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- القائمة المنسدلة تطلع على اليمين -->
+            {% if online_count > 0 %}
+            <div class="online-list" id="onlineList">
                 {% for u in online_users %}
-                <span style="background: rgba(251,191,36,0.25); color: white; padding: 6px 14px; border-radius: 30px; margin: 3px; display: inline-block; font-weight: 600;">
-                    {{ u.username }}
-                </span>
+                <div class="online-item">
+                    <span class="status-dot"></span>
+                    <span class="username">{{ u.username }}</span>
+                </div>
                 {% endfor %}
             </div>
             {% endif %}

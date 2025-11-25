@@ -7,8 +7,17 @@ from postgresql import get_db_context
 def log_visit(request: Request, user: dict | None = None):
     session_id = request.session.get("session_id")
     if not session_id:
+        import uuid
         session_id = str(uuid.uuid4())
         request.session["session_id"] = session_id
+
+    # الحل السحري: لو المستخدم خرج → نحط username = None
+    actual_user = None
+    actual_username = None
+    if user and user.get("id"):  # لو مسجل دخول فعلاً
+        actual_user = user.get("id")
+        actual_username = user.get("username")
+    # لو مش مسجل → نخلي username فارغ (مش "زائر مجهول")
 
     path = request.url.path
     ip = request.client.host
@@ -19,14 +28,9 @@ def log_visit(request: Request, user: dict | None = None):
             cur.execute("""
                 INSERT INTO visits (session_id, user_id, username, ip, user_agent, path)
                 VALUES (%s, %s, %s, %s, %s, %s)
-            """, (
-                session_id,
-                user.get("id") if user else None,
-                user.get("username") if user else None,
-                ip,
-                ua,
-                path
-            ))
+                ON CONFLICT (session_id) DO UPDATE 
+                SET timestamp = NOW(), username = EXCLUDED.username, user_id = EXCLUDED.user_id
+            """, (session_id, actual_user, actual_username, ip, ua, path))
             conn.commit()
 
 def get_total_visitors() -> int:

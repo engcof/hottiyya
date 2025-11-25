@@ -59,11 +59,26 @@ def init_database():
                 )
             ''')
             print("تم إنشاء جدول visits لتتبع الزوار")
+           # الحل الملكي النهائي لحل التكرارات
+            try:
+                cur.execute('''
+                    DELETE FROM visits a USING (
+                        SELECT MIN(id) as keep_id, session_id
+                        FROM visits 
+                        GROUP BY session_id 
+                        HAVING COUNT(*) > 1
+                    ) b
+                    WHERE a.session_id = b.session_id AND a.id != b.keep_id;
+                ''')
+                print("تم حذف التكرارات بنجاح")
+            except Exception as e:
+                print(f"تحذير: ما فيش تكرارات أو حصل خطأ بسيط: {e}")
 
-            # إضافة فهرس للأداء الملكي (مهم جدًا)
-            cur.execute('CREATE INDEX IF NOT EXISTS idx_visits_session ON visits(session_id)')
+            # دلوقتي نضيف الفهرس الفريد بأمان
+            cur.execute('CREATE UNIQUE INDEX IF NOT EXISTS uniq_session_id ON visits(session_id)')
             cur.execute('CREATE INDEX IF NOT EXISTS idx_visits_timestamp ON visits(timestamp DESC)')
-            print("تم إضافة الفهرس لأداء فائق السرعة")  
+            print("تم إضافة الفهرس الفريد والأداء - الآن كل شيء ملكي خالد")
+
         except Exception as e:
             print(f"خطأ غير متوقع أثناء التحديث: {e}")
             raise

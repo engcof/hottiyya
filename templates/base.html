@@ -87,5 +87,16 @@
     </footer>
     <!-- إضافة ملفات JavaScript مشتركة هنا -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
+    <script>
+document.getElementById('onlineToggle')?.addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.getElementById('onlineList').classList.toggle('show');
+});
+
+// إغلاق القائمة لما تضغط بره
+document.addEventListener('click', function() {
+    document.getElementById('onlineList')?.classList.remove('show');
+});
+</script>
 </body>
 </html>
