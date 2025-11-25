@@ -2,27 +2,56 @@
 {% block title %}عائلة الحوطية{% endblock %}
 
 {% block content %}
-<!-- بسم الله الرحمن الرحيم - مسافة أقل -->
+
+
+
+<!-- بسم الله الرحمن الرحيم -->
 <div class="bismillah-container">
     <div class="bismillah-line"></div>
     <h2 class="bismillah">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</h2>
     <div class="bismillah-line"></div>
 </div>
-
+<!-- ==================== شريط الإحصائيات الملكي (أول حاجة بعد البسملة) ==================== -->
+<div class="online-stats">
+    <div class="container" style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; font-size: 1.1rem; padding: 12px 0;">
+        <div style="text-align: center;">
+            <strong style="color: #60a5fa; font-size: 1.1rem;">الزوار اليوم</strong><br>
+            <span style="font-size: 2.2rem; font-weight: bold; color: #60a5fa;">{{ today_visitors }}</span>
+        </div>
+        <div style="text-align: center;">
+            <strong style="color: #34d399; font-size: 1.1rem;">إجمالي الزوار</strong><br>
+            <span style="font-size: 2.2rem; font-weight: bold; color: #34d399;">{{ total_visitors }}</span>
+        </div>
+        <div style="text-align: center;">
+            <strong style="color: #f59e0b; font-size: 1.1rem;">أونلاين الآن</strong><br>
+            <span style="font-size: 2.2rem; font-weight: bold; color: #f59e0b;">{{ online_count }}</span>
+            {% if online_users %}
+            <div style="margin-top: 10px; font-size: 0.95rem;">
+                {% for u in online_users %}
+                <span style="background: rgba(251,191,36,0.25); color: white; padding: 6px 14px; border-radius: 30px; margin: 3px; display: inline-block; font-weight: 600;">
+                    {{ u.username }}
+                </span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<!-- نهاية شريط الإحصائيات -->
+<!-- باقي المحتوى كما هو -->
 <section class="hero-section">
     <div class="hero-grid">
-        <!-- كارد الشعار - قصير ومناسب -->
+        <!-- كارد الشعار -->
         <div class="logo-card glass">
             <div class="logo-wrapper">
                 <img src="/static/uploads/Hottiyya1.jpg" alt="شعار عائلة الحوطية" class="hero-logo">
             </div>
         </div>
-
-        <!-- كارد المعلومات - قصير ومناسب -->
+        <!-- كارد المعلومات -->
         <div class="info-card glass">
             <h1 class="hero-title">الحوطية</h1>
             <p class="hero-text">
-                قبيلة الحوطية، تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي. 
+                قبيلة الحوطية، تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي.
                 سجلت تاريخها في خدمة المجتمع والدين منذ قرون.
             </p>
             <a href="/about" class="hero-btn">اقرأ المزيد</a>
@@ -30,17 +59,19 @@
     </div>
 </section>
 
-<!-- آخر خبر - أنيق وبارز -->
+<!-- آخر خبر -->
 <section class="latest-update">
     <div class="container">
         <div class="update-card glass">
             <span class="badge">أحدث إعلان</span>
             <h3>تم إطلاق منصة عائلة الحوطية الرقمية رسميًا!</h3>
             <p>
-                بفضل الله ثم بجهود الاسرة الكريمة، أصبح لعائلتنا الآن منصة رقمية متكاملة تجمع الأجيال وتحفظ التراث إلى الأبد.
+                بفضل الله ثم بجهود الأسرة الكريمة، أصبح لعائلتنا الآن منصة رقمية متكاملة تجمع الأجيال وتحفظ التراث إلى الأبد.
             </p>
             <small>21 نوفمبر 2025</small>
         </div>
     </div>
 </section>
+
 {% endblock %}
+

@@ -1,13 +1,13 @@
 import os
-import markupsafe
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from core.templates import templates
+from postgresql import init_database
+from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 
 # استيراد الراوترات
 from routers import auth, admin, family, articles, news, permissions
@@ -16,57 +16,86 @@ from routers import auth, admin, family, articles, news, permissions
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token
 
+# =========================================
+# Lifespan: تشغيل init_database مرة واحدة
+# =========================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("جاري تهيئة قاعدة البيانات...")
+    init_database()
+    print("تم الإقلاع بنجاح!")
+    yield
 
 # =========================================
-# Lifespan: تشغيل init_database مرة واحدة عند بدء التطبيق
-# =========================================
-
-# =========================================
-# # إعداد التطبيق        
+# إعداد التطبيق
 # =========================================
 app = FastAPI(
     title="عائلة الحوطية الرقمية",
     description="منصة عائلية متكاملة",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
+# 3. Analytics Middleware (بعد SessionMiddleware!)
+@app.middleware("http")
+async def analytics_middleware(request: Request, call_next):
+    # تجاهل static و favicon
+    if request.url.path.startswith("/static") or request.url.path in ("/favicon.ico", "/robots.txt"):
+        return await call_next(request)
 
+    # الآن session شغال 100%
+    user = request.session.get("user")
+
+    # توليد session_id لو مش موجود
+    if "session_id" not in request.session:
+        import uuid
+        request.session["session_id"] = str(uuid.uuid4())
+
+    try:
+        log_visit(request, user)
+    except Exception as e:
+        print(f"تحذير: فشل تسجيل الزيارة: {e}")
+
+    response = await call_next(request)
+    return response
 
 # =========================================
-# Middleware
+# Middleware - الترتيب مهم جدًا!
 # =========================================
+
+# 1. SessionMiddleware (لازم يكون الأول)
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SECRET_KEY", "super-secret-key-change-in-production"),
     session_cookie="family_session",
     max_age=60 * 60 * 24 * 30,  # 30 يوم
     same_site="lax",
-    https_only=True
+    https_only=False  # ← مهم: False على المحلي، True على Render (نحلها بطريقة ذكية تحت)
 )
 
+# 2. CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://render.com"],  # في الإنتاج غيّرها للدومين الحقيقي
+    allow_origins=["*"],  # أو حط دومينك الحقيقي: ["https://hottiyya.onrender.com"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # =========================================
 # Static Files
 # =========================================
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-
 # =========================================
 # تضمين الراوترات
 # =========================================
 app.include_router(auth.router)
 app.include_router(admin.router)
-app.include_router(family.router)      # /names
-app.include_router(articles.router)    # /articles
+app.include_router(family.router)
+app.include_router(articles.router)
 app.include_router(news.router)
-app.include_router(permissions.router)  # إذا كان عندك راوتر للصلاحيات
-
+app.include_router(permissions.router)
 
 # =========================================
 # الصفحة الرئيسية
@@ -76,7 +105,11 @@ async def home(request: Request):
     user = request.session.get("user")
     response = templates.TemplateResponse("index.html", {
         "request": request,
-        "user": user
+        "user": user,
+        "today_visitors": get_today_visitors(),
+        "total_visitors": get_total_visitors(),
+        "online_count": get_online_count(),
+        "online_users": get_online_users()[:8],
     })
     set_cache_headers(response)
     return response
@@ -84,27 +117,23 @@ async def home(request: Request):
 @app.get("/about", response_class=HTMLResponse)
 async def about_page(request: Request):
     user = request.session.get("user")
-    response = templates.TemplateResponse("/about.html", {
+    response = templates.TemplateResponse("about.html", {
         "request": request,
         "user": user
     })
     set_cache_headers(response)
     return response
 
-
 # =========================================
-# صفحة الملف الشخصي + تغيير كلمة السر
+# الملف الشخصي
 # =========================================
 @app.get("/profile", response_class=HTMLResponse)
 async def profile_page(request: Request):
     user = request.session.get("user")
     if not user:
         return RedirectResponse("/auth/login")
-
-    # توليد CSRF لتغيير كلمة السر
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
-
     response = templates.TemplateResponse("profile.html", {
         "request": request,
         "user": user,
@@ -112,7 +141,6 @@ async def profile_page(request: Request):
     })
     set_cache_headers(response)
     return response
-
 
 @app.post("/profile/change-password")
 async def change_password(request: Request):
@@ -151,7 +179,6 @@ async def change_password(request: Request):
                     conn.commit()
                     success = True
 
-    # تحديث CSRF بعد الإرسال
     new_csrf = generate_csrf_token()
     request.session["csrf_token"] = new_csrf
 
@@ -163,21 +190,20 @@ async def change_password(request: Request):
         "csrf_token": new_csrf
     })
 
-
 # =========================================
-# صفحة 404 مخصصة (اختياري)
+# 404
 # =========================================
 @app.exception_handler(404)
 async def not_found(request: Request, exc):
     return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
-
 # =========================================
-# تشغيل التطبيق (للتطوير فقط)
+# تشغيل التطبيق
 # =========================================
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
 
 # uvicorn main:app --reload
 

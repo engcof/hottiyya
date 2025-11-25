@@ -44,30 +44,26 @@ def init_database():
         try:
             print("جاري تحديث قاعدة البيانات...")
 
-            # 1. إذا كان العمود type موجود → نغيّر اسمه إلى relation
-            #     إذا ما كانش موجود → نتجاهل الخطأ ونكمل
-            try:
-                cur.execute('ALTER TABLE family_name RENAME COLUMN type TO relation;')
-                print("تم تغيير اسم العمود: type → relation")
-            except psycopg2.errors.UndefinedColumn:
-                print("العمود 'type' غير موجود (تم تغييره مسبقًا أو ما وُجد أصلاً) → تم التخطي")
-            except Exception as e:
-                print(f"تحذير: مشكلة في RENAME (ربما تم التغيير من قبل): {e}")
-
-            # 2. إضافة nick_name إذا ما كانش موجود
-            cur.execute('ALTER TABLE family_name ADD COLUMN IF NOT EXISTS nick_name TEXT;')
-            print("تم التأكد من وجود عمود nick_name")
-
-            # 3. إضافة status في family_info إذا ما كانش موجود
+            
+            # أضف هذا الكود في آخر دالة init_database() قبل الـ print الأخير
             cur.execute('''
-                ALTER TABLE family_info 
-                ADD COLUMN IF NOT EXISTS status TEXT 
-                CHECK (status IN ('حي', 'حية', 'متوفي', 'متوفية'))
+                CREATE TABLE IF NOT EXISTS visits (
+                    id SERIAL PRIMARY KEY,
+                    session_id TEXT NOT NULL,
+                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    username TEXT,
+                    ip TEXT,
+                    user_agent TEXT,
+                    path TEXT,
+                    timestamp TIMESTAMPTZ DEFAULT NOW()
+                )
             ''')
-            print("تم التأكد من وجود عمود status مع القيود")
+            print("تم إنشاء جدول visits لتتبع الزوار")
 
-            print("تم تحديث قاعدة البيانات بنجاح!")
-
+            # إضافة فهرس للأداء الملكي (مهم جدًا)
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_visits_session ON visits(session_id)')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_visits_timestamp ON visits(timestamp DESC)')
+            print("تم إضافة الفهرس لأداء فائق السرعة")  
         except Exception as e:
             print(f"خطأ غير متوقع أثناء التحديث: {e}")
             raise
