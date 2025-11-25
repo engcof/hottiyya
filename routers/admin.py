@@ -1,6 +1,5 @@
 # routers/admin.py
 from fastapi import APIRouter, Request, Depends, HTTPException, Form
-from fastapi.templating import Jinja2Templates
 from postgresql import get_db_context
 from services.auth_service import get_current_user
 from security.csrf import generate_csrf_token, verify_csrf_token
@@ -8,7 +7,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from security.session import set_cache_headers
 from psycopg2.extras import RealDictCursor
 from security.hash import hash_password
-from postgresql import get_db_context
 from core.templates import templates
 
 # routers/admin.py
@@ -205,11 +203,6 @@ async def delete_user(
             "csrf_token": request.session.get("csrf_token"),
             "error": str(e)
         })
-    
-    
-    
-   
-
     return RedirectResponse(url="/admin", status_code=303)
 
 @router.post("/change_password")

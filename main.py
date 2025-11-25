@@ -65,7 +65,7 @@ app.include_router(admin.router)
 app.include_router(family.router)      # /names
 app.include_router(articles.router)    # /articles
 app.include_router(news.router)
-# app.include_router(permissions.router)  # إذا كان عندك راوتر للصلاحيات
+app.include_router(permissions.router)  # إذا كان عندك راوتر للصلاحيات
 
 
 # =========================================

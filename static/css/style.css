@@ -1851,6 +1851,33 @@ footer {
     cursor: pointer;
 }
 
+/* Inline Editing في جدول الصلاحيات - ملكي وسريع */
+.inline-edit-form {
+    display: inline;
+}
+
+.inline-input {
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+    font-size: 0.95rem;
+    width: 180px;
+    transition: all 0.3s ease;
+}
+
+.inline-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
+
+.actions-cell {
+    text-align: center;
+    padding: 12px 8px !important;
+}
+
 /* ===== موبايل ===== */
 @media (max-width: 768px) {
     header {padding: 12px 20px; }

@@ -1,9 +1,46 @@
-.env
+# Python Cache
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
+
+# Logs
+logs/
+logs/*
+
+# Uploads (اختياري - لو مش عايز ترفع الصور على Git)
+static/uploads/*
+!static/uploads/default-avatar.png    # احتفظ بالافتراضي لو حابب
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
 .DS_Store
+Thumbs.db
+*.log
+.env
 test.py
 app
 app.log
 store
+
+# Database (لو فيه ملفات محلية)
+*.db
+*.sqlite3
