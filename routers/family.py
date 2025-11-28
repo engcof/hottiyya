@@ -4,13 +4,13 @@ from services.family_service import get_full_name
 from security.csrf import generate_csrf_token, verify_csrf_token
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
-from fastapi.templating import Jinja2Templates
 from utils.permissions import has_permission
-from security.session import set_cache_headers, get_current_user
+from security.session import set_cache_headers
 from typing import Optional
 import subprocess
 import shutil
 import os
+import re
 from dotenv import load_dotenv
 from core.templates import templates
 
@@ -22,43 +22,14 @@ router = APIRouter(prefix="/names", tags=["family"])
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-
 # ====================== مساعد الصلاحيات (الأقوى) ======================
-def require_permission(perm: str):
-    def decorator(func):
-        async def wrapper(request: Request, *args, **kwargs):
-            user = request.session.get("user")
-            if not user:
-                return RedirectResponse("/auth/login")
-
-            # الأدمن عنده كل الصلاحيات
-            if user.get("role") == "admin":
-                request.state.user = user
-                return await func(request, *args, **kwargs)
-
-            # تحقق الصلاحية العادية
-            if not has_permission(user.get("id"), perm):
-                return templates.TemplateResponse("errors/403.html", {
-                    "request": request,
-                    "message": "عذرًا، ليس لديك صلاحية لتنفيذ هذا الإجراء."
-                }, status_code=403)
-
-            # دايمًا حط اليوزر في state
-            request.state.user = user
-            return await func(request, *args, **kwargs)
-
-        # لازم تكون جوا الـ decorator
-        wrapper.__name__ = func.__name__
-        wrapper.__doc__ = func.__doc__
-        return wrapper
-    return decorator
-
 def can(user: dict, perm: str) -> bool:
     if not user:
         return False
     if user.get("role") == "admin":
         return True
     return bool(user.get("id") and has_permission(user.get("id"), perm))
+
 # ====================== قائمة الأعضاء ======================
 @router.get("/", response_class=HTMLResponse)
 async def show_names(request: Request, page: int = 1, q: str = None):
@@ -70,7 +41,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
     can_edit = can(user, "edit_member")
     can_delete = can(user, "delete_member")
 
-    ITEMS_PER_PAGE = 18
+    ITEMS_PER_PAGE = 24
     offset = (page - 1) * ITEMS_PER_PAGE
     members = []
     total_pages = 1
@@ -86,7 +57,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                 cur.execute("""
                     SELECT code, name, nick_name 
                     FROM family_name 
-                    WHERE level > 0
+                    WHERE level >= 2
                     ORDER BY name
                 """)
                 all_members = cur.fetchall()
@@ -114,7 +85,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                 cur.execute("""
                     SELECT code, name, nick_name 
                     FROM family_name 
-                    WHERE level > 0
+                    WHERE level >= 2
                     ORDER BY name 
                     LIMIT %s OFFSET %s
                 """, (ITEMS_PER_PAGE, offset))
@@ -221,26 +192,27 @@ async def add_name(
     address: Optional[str] = Form(None), p_o_b: Optional[str] = Form(None),
     status: Optional[str] = Form(None),
     picture: Optional[UploadFile] = File(None)
-): 
+):
     user = request.session.get("user")
     if not user or not can(user, "add_member"):
         return RedirectResponse("/names")
+
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
-    # تنظيف البيانات
-    code = code.strip()
+    # تنظيف أولي
+    code = code.strip().upper()
     name = name.strip()
-    f_code = f_code.strip() if f_code else None
-    m_code = m_code.strip() if m_code else None
-    w_code = w_code.strip() if w_code else None
-    h_code = h_code.strip() if h_code else None
+    f_code = f_code.strip().upper() if f_code else None
+    m_code = m_code.strip().upper() if m_code else None
+    w_code = w_code.strip().upper() if w_code else None
+    h_code = h_code.strip().upper() if h_code else None
     relation = relation.strip() if relation else None
     nick_name = nick_name.strip() if nick_name else None
     gender = gender.strip() if gender else None
     d_o_b = d_o_b.strip() if d_o_b else None
     d_o_d = d_o_d.strip() if d_o_d else None
-    email = email.strip() if email else None
+    email = email.strip().lower() if email else None
     phone = phone.strip() if phone else None
     address = address.strip() if address else None
     p_o_b = p_o_b.strip() if p_o_b else None
@@ -249,55 +221,176 @@ async def add_name(
     error = None
     success = None
 
-    # التحقق من الحقول الإجبارية
-    if not code or not name or level is None:
-        error = "الكود والاسم والمستوى مطلوبة!"
-    else:
+    # ================================
+    # 1. الكود: A0-000-001 فقط (لا يوجد شيء بعد الشرطة الثانية)
+    # ================================
+    if not re.fullmatch(r"[A-Z]\d{0,3}-\d{3}-\d{3}", code):
+        error = "صيغة الكود غير صحيحة!<br>الصيغة الصحيحة: <strong>A0-000-001</strong> أو <strong>Z99-999-999</strong>"
+
+    # ================================
+    # 2. الاسم: حروف عربية + مسافات فقط (ممنوع أرقام أو رموز)
+    # ================================
+    elif not re.fullmatch(r"[\u0600-\u06FF\s]+", name):
+        error = "الاسم يجب أن يحتوي على حروف عربية فقط (ممنوع الأرقام والرموز)"
+
+    # ================================
+    # 3. المستوى
+    # ================================
+    elif level is None or level < 1:
+        error = "المستوى مطلوب ويجب أن يكون رقم موجب"
+
+    # ================================
+    # 4. اللقب (إذا وُجد)
+    # ================================
+    elif nick_name and not re.fullmatch(r"[\u0600-\u06FF\s]+", nick_name):
+        error = "اللقب يجب أن يكون حروف عربية فقط (مثل: أبو أحمد، أم علي)"
+
+    # ================================
+    # 5. مكان الميلاد (إذا وُجد)
+    # ================================
+    elif p_o_b and (p_o_b[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", p_o_b)):
+        error = "مكان الميلاد لا يجب أن يبدأ برمز أو رقم (مثال صحيح: الرياض، صنعاء، القاهرة)"
+
+    # ================================
+    # 6. العنوان (إذا وُجد)
+    # ================================
+    elif address and (address[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", address)):
+        error = "العنوان لا يجب أن يبدأ برمز أو رقم (ابدأ بالحي أو المدينة)"
+
+    # ================================
+    # 7. الإيميل (إذا وُجد)
+    # ================================
+    elif email and not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email):
+        error = "البريد الإلكتروني غير صالح (مثال: name@example.com)"
+
+    # ================================
+    # 8. الهاتف (إذا وُجد)
+    # ================================
+    elif phone and not re.fullmatch(r"[\d\s\-\+\(\)]{8,20}", phone):
+        error = "رقم الهاتف غير صالح (استخدم أرقام، مسافات، +، -، () فقط)"
+
+    # ================================
+    # 9. التواريخ (لا تكون في المستقبل + تاريخ الوفاة بعد الميلاد)
+    # ================================
+    from datetime import date
+    today = date.today()
+
+    if d_o_b:
+        try:
+            dob = date.fromisoformat(d_o_b)
+            if dob > today:
+                error = "تاريخ الميلاد لا يمكن أن يكون في المستقبل"
+        except ValueError:
+            error = "تاريخ الميلاد غير صالح"
+
+    if not error and d_o_d:
+        try:
+            dod = date.fromisoformat(d_o_d)
+            if dod > today:
+                error = "تاريخ الوفاة لا يمكن أن يكون في المستقبل"
+            if d_o_b and dod < date.fromisoformat(d_o_b):
+                error = "تاريخ الوفاة لا يمكن أن يكون قبل تاريخ الميلاد"
+        except ValueError:
+            error = "تاريخ الوفاة غير صالح"
+
+    # ================================
+    # 10. كود الأب/الأم/الزوج/الزوجة (إن وُجد يجب نفس صيغة الكود الرئيسي)
+    # ================================
+    parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
+    if f_code and not re.fullmatch(parent_pattern, f_code):
+        error = f"كود الأب غير صحيح (مثال: {code.split('-')[0]}0-000-001)"
+    elif m_code and not re.fullmatch(parent_pattern, m_code):
+        error = "كود الأم غير صحيح"
+    elif h_code and not re.fullmatch(parent_pattern, h_code):
+        error = "كود الزوج غير صحيح"
+    elif w_code and not re.fullmatch(parent_pattern, w_code):
+        error = "كود الزوجة غير صحيح"
+
+    # ================================
+    # 11. تحقق من تكرار الكود في قاعدة البيانات
+    # ================================
+    elif not error:
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code,))
+                if cur.fetchone():
+                    error = "هذا الكود مستخدم من قبل! اختر كودًا آخر."
+
+    # ================================
+    # 12. رفع الصورة (نوع الملف فقط)
+    # ================================
+    if not error and picture and picture.filename:
+        allowed = {'.jpg', '.jpeg', '.png', '.webp'}
+        ext = os.path.splitext(picture.filename)[1].lower()
+        if ext not in allowed:
+            error = "نوع الصورة غير مدعوم! استخدم: JPG، PNG، WebP فقط"
+
+    # ================================
+    # إذا كل شيء تمام → احفظ
+    # ================================
+    if not error:
         try:
             with get_db_context() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code,))
-                    if cur.fetchone():
-                        error = "الكود مستخدم مسبقًا!"
-                    else:
-                        # إضافة العضو
+                    cur.execute("""
+                        INSERT INTO family_name 
+                        (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name))
+
+                    cur.execute("""
+                        INSERT INTO family_info 
+                        (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (code_info) DO NOTHING
+                    """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
+
+                    if picture and picture.filename:
+                        safe_filename = f"{code}{ext}"
+                        pic_path = os.path.join(UPLOAD_DIR, safe_filename)
+                        with open(pic_path, "wb") as f:
+                            shutil.copyfileobj(picture.file, f)
                         cur.execute("""
-                            INSERT INTO family_name (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """, (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name))
+                            INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
+                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
+                        """, (code, pic_path, pic_path))
 
-                        cur.execute("""
-                            INSERT INTO family_info (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                            ON CONFLICT (code_info) DO NOTHING
-                        """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
+                    conn.commit()
+                    success = f"تم حفظ {name} بنجاح!"
 
-                        if picture and picture.filename:
-                            safe_filename = f"{code}_{picture.filename.replace(' ', '_')}"
-                            pic_path = os.path.join(UPLOAD_DIR, safe_filename)
-                            with open(pic_path, "wb") as f:
-                                shutil.copyfileobj(picture.file, f)
-                            cur.execute("""
-                                INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
-                                ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
-                            """, (code, pic_path, pic_path))
+                    # تفريغ النموذج بعد النجاح
+                    code = name = f_code = m_code = w_code = h_code = relation = nick_name = ""
+                    level = gender = d_o_b = d_o_d = email = phone = address = p_o_b = status = None
 
-                        conn.commit()
-                        return RedirectResponse("/names", status_code=303)
         except Exception as e:
-            error = "حدث خطأ أثناء الإضافة، تأكد من البيانات"
+            error = "حدث خطأ أثناء الحفظ. حاول مرة أخرى."
 
-    # تحديث CSRF دائمًا
+    # إرجاع الصفحة دائمًا
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
     return templates.TemplateResponse("family/add_name.html", {
-        "request": request,"user": user, "error": error,"success": success, "csrf_token": csrf_token,
-        # إعادة تمرير القيم لو في خطأ
-        "form_data": {k: v for k, v in locals().items() if k in [
-            "code", "name", "f_code", "m_code", "w_code", "h_code", "relation", "level",
-            "nick_name", "gender", "d_o_b", "d_o_d", "email", "phone", "address", "p_o_b", "status"
-        ]}
+        "request": request, "user": user, "csrf_token": csrf_token,
+        "error": error, "success": success,
+        "form_data": {
+            "code": code if error else "",
+            "name": name if error else "",
+            "f_code": f_code if error else "",
+            "m_code": m_code if error else "",
+            "w_code": w_code if error else "",
+            "h_code": h_code if error else "",
+            "relation": relation or "",
+            "level": str(level) if level and error else "",
+            "nick_name": nick_name or "",
+            "gender": gender or "",
+            "d_o_b": d_o_b or "",
+            "d_o_d": d_o_d or "",
+            "email": email or "",
+            "phone": phone or "",
+            "address": address or "",
+            "p_o_b": p_o_b or "",
+            "status": status or "",
+        }
     })
 
 # ====================== تعديل عضو ======================
@@ -429,7 +522,6 @@ async def update_name(request: Request,
 
 # ====================== حذف عضو ======================
 @router.post("/delete/{code}")
-@require_permission("delete_member")
 async def delete_name(request: Request, code: str):
     user = request.session.get("user")
     if not user or not can(user, "delete_member"):
@@ -449,7 +541,6 @@ async def import_page(request: Request):
     if user.get("role") != "admin":
         raise HTTPException(status_code=403)
     return templates.TemplateResponse("family/import_data.html", {"request": request, "user": user})
-
 
 @router.post("/import-data")
 async def import_data(

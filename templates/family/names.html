@@ -63,11 +63,11 @@
         {% if total_pages > 1 %}
         <div class="pagination">
             {% if has_prev %}
-            <a href="/names?page={{ page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="btn-pagination">السابق</a>
+            <a href="/names?page={{ page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">السابق</a>
             {% endif %}
             <span class="page-info">الصفحة {{ page }} من {{ total_pages }}</span>
             {% if has_next %}
-            <a href="/names?page={{ page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="btn-pagination">التالي</a>
+            <a href="/names?page={{ page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">التالي</a>
             {% endif %}
         </div>
         {% endif %}

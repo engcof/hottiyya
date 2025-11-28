@@ -33,7 +33,7 @@ app = FastAPI(
     title="عائلة الحوطية الرقمية",
     description="منصة عائلية متكاملة",
     version="1.0.0",
-    lifespan=lifespan
+   
 )
 # 3. Analytics Middleware (بعد SessionMiddleware!)
 @app.middleware("http")

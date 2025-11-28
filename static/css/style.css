@@ -1712,10 +1712,10 @@ footer {
     font-size: 1.2rem;
 }
 .btn-action {
-    padding: 10px 18px;
+    padding: 10px 12px;
     border-radius: 50px;
     font-size: 0.9rem;
-    font-weight: 600;
+    font-weight: 400;
     text-decoration: none;
     transition: var(--transition);
 }

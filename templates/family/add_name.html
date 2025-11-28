@@ -8,17 +8,34 @@
                 <h1 class="form-title">إضافة عضو جديد</h1>
                 <p class="form-subtitle">أدخل بيانات العضو بدقة ليتم إضافته إلى شجرة العائلة</p>
             </div>
-
             <!-- رسائل النجاح أو الخطأ -->
             {% if success %}
-            <div class="alert success">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            <div class="alert success" id="success-alert">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
                 <span><strong>تم بنجاح!</strong> {{ success }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
             </div>
+
+            <script>
+                // إخفاء الرسالة تلقائيًا بعد 5 ثواني
+                setTimeout(() => {
+                    const alert = document.getElementById('success-alert');
+                    if (alert) {
+                        alert.style.transition = 'opacity 0.6s ease';
+                        alert.style.opacity = '0';
+                        setTimeout(() => alert.remove(), 600);
+                    }
+                }, 5000);
+            </script>
             {% endif %}
+
             {% if error %}
             <div class="alert error">
-                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
                 <span><strong>خطأ:</strong> {{ error }}</span>
             </div>
             {% endif %}
