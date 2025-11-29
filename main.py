@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import uuid
 from urllib.parse import urlparse
@@ -69,7 +70,6 @@ async def analytics_middleware(request: Request, call_next):
 # =========================================
 # Middleware - الترتيب مهم جدًا!
 # =========================================
-
 # 1. SessionMiddleware (لازم يكون الأول)
 app.add_middleware(
     SessionMiddleware,
@@ -197,6 +197,26 @@ async def change_password(request: Request):
         "success": success,
         "csrf_token": new_csrf
     })
+
+# === DEBUG ROUTE (آمن جدًا – هتستخدمه مرة واحدة بس) ===
+@app.get("/debug/db-count")
+async def debug_db_count():
+    from postgresql import get_db_context
+    try:
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM family_name")
+                total = cur.fetchone()[0]
+                cur.execute("SELECT id, code, name FROM family_name ORDER BY id DESC LIMIT 10")
+                latest = [dict(row) for row in cur.fetchall()]
+        return {
+            "total_names_in_db": total,
+            "latest_10_names": latest,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 
 # =========================================
 # 404
