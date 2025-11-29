@@ -708,7 +708,7 @@ async def export_data(request: Request, password: str = ""):
         raise HTTPException(status_code=500, detail="DATABASE_URL مش موجود")
 
     # ملف بصيغة .dump (الأفضل للنسخ الكاملة)
-    export_path = f"/tmp/عائلة_حطية_كاملة_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dump"
+    export_path = f"/home/engcof/render-backup/عائلة_حطية_كاملة_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dump"
 
     try:
         cmd = [
