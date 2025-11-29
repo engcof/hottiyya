@@ -26,6 +26,18 @@
         <div style="margin-top: 20px;">
             <a href="/names" class="submit-btn secondary">العودة للقائمة</a>
         </div>
+        <div style="margin-top: 30px; padding: 20px; background: #e8f5e8; border-radius: 12px; text-align: center;">
+            <h3 style="color: #0b6b0b;">تصدير الداتا الحالية من الموقع</h3>
+            <p>احفظ نسخة حديثة من قاعدة البيانات على جهازك في أي وقت</p>
+            
+            <form method="get" action="/names/export-data" style="display: inline;">
+                <input type="password" name="password" placeholder="كلمة المرور" required 
+                    style="padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid #0b6b0b;">
+                <button type="submit" style="padding: 10px 20px; background: #0b6b0b; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                    تحميل الداتا الحالية (SQL)
+                </button>
+            </form>
+        </div>
     </div>
 </section>
 {% endblock %}

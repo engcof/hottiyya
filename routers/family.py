@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from services.family_service import get_full_name
@@ -8,12 +9,14 @@ from utils.permissions import has_permission
 from security.session import set_cache_headers
 from typing import Optional
 import subprocess
+from fastapi.responses import FileResponse
 import shutil
 import signal
 import os
 import re
 from dotenv import load_dotenv
 from core.templates import templates
+
 
 load_dotenv()
 IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
@@ -535,6 +538,8 @@ async def delete_name(request: Request, code: str):
             conn.commit()
     return RedirectResponse("/names", status_code=303)
 
+
+
 # ====================== استيراد البيانات (أدمن فقط) ======================
 @router.get("/import-data", response_class=HTMLResponse)
 async def import_page(request: Request):
@@ -608,3 +613,57 @@ async def import_data(
         "message": message
     })
 
+
+# ====================== تصدير البيانات (أدمن فقط) ======================
+
+@router.get("/export-data")
+async def export_data(request: Request, password: str = ""):
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin" or password != IMPORT_PASSWORD:
+        raise HTTPException(status_code=403, detail="كلمة المرور غير صحيحة أو ليس لديك صلاحية")
+
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        raise HTTPException(status_code=500, detail="DATABASE_URL مش موجود")
+
+    # ملف بصيغة .dump (الأفضل للنسخ الكاملة)
+    export_path = f"/tmp/عائلة_حطية_كاملة_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dump"
+
+    try:
+        cmd = [
+            "pg_dump",
+            "--verbose",
+            "--no-owner",
+            "--no-acl",
+            "--format=custom",          # صيغة .dump (أفضل وأصغر حجمًا)
+            "--file", export_path,
+            database_url
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=600  # 10 دقايق كفاية حتى لو 100 ألف سجل
+        )
+
+        if result.returncode != 0:
+            raise Exception(f"pg_dump فشل: {result.stderr[-1500:]}")
+
+        if not os.path.exists(export_path) or os.path.getsize(export_path) < 50000:
+            raise Exception("الملف صغير جدًا أو فاضي")
+
+        return FileResponse(
+            path=export_path,
+            filename=f"عائلة_حطية_كاملة_الداتابيز_{datetime.now().strftime('%Y%m%d_%H%M')}.dump",
+            media_type="application/octet-stream"
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"فشل التصدير: {str(e)}")
+    finally:
+        if os.path.exists(export_path):
+            try:
+                os.remove(export_path)
+            except:
+                pass            
