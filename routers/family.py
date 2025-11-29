@@ -9,6 +9,7 @@ from security.session import set_cache_headers
 from typing import Optional
 import subprocess
 import shutil
+import signal
 import os
 import re
 from dotenv import load_dotenv
@@ -572,39 +573,34 @@ async def import_data(
 
     message = ""
     try:
-        database_url = os.getenv("DATABASE_URL")  # ← ده دلوقتي Internal URL بالكامل
+        database_url = os.getenv("DATABASE_URL")
 
-        if file_path.endswith('.dump'):
-            cmd = [
-                "pg_restore",
-                "--verbose",
-                "--no-owner",
-                "--no-acl",
-                "--dbname", database_url,
-                file_path
-            ]
-        else:  # .sql
-            cmd = ["psql", database_url, "-f", file_path]
+        # إعطاء وقت كافي جدًا (10 دقايق)
+        cmd = ["pg_restore", "--verbose", "--clean", "--if-exists", "--no-owner", "--no-acl", 
+            "--dbname", database_url, file_path] if file_path.endswith('.dump') \
+            else ["psql", database_url, "-f", file_path]
 
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=120  # ثانيتين كفاية حتى لو الداتا كبيرة
+            timeout=600  # من 120 → 600
         )
 
         if result.returncode == 0:
             message = "تم استيراد البيانات بنجاح! العائلة كلها موجودة الآن"
         else:
-            message = f"فشل الاستيراد:<br><pre>{result.stderr.replace(chr(10), '<br>')[-1000:]}</pre>"
+            message = f"فشل الاستيراد:<br><pre>{result.stderr.replace(chr(10), '<br>')[-1500:]}</pre>"
 
     except subprocess.TimeoutExpired:
-        message = "انتهت المهلة! الملف كبير جدًا أو في مشكلة في الاتصال"
+        message = "انتهت المهلة! لكن عادةً بيكون الاستيراد اكتمل جزئيًا. جرب تاني أو قسم الملف."
     except Exception as e:
-        message = f"خطأ غير متوقع: {str(e)}"
+        message = f"خطأ: {str(e)}"
     finally:
         if os.path.exists(file_path):
-            os.remove(file_path)
+            os.remove(file_path)    
+    
+   
 
     return templates.TemplateResponse("family/import_data.html", {
         "request": request,
