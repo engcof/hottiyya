@@ -14,7 +14,8 @@ def get_db_context():
         dbname = os.getenv("DB_NAME")
         user = os.getenv("DB_USER")
         password = os.getenv("DB_PASSWORD")
-        
+        port = os.getenv("DB_PORT", "5432")
+
         if not all([host, dbname, user, password]):
             raise ValueError("متغيرات قاعدة البيانات مفقودة!")
 
@@ -23,8 +24,8 @@ def get_db_context():
             dbname=dbname,
             user=user,
             password=password,
-            port="5432",
-            sslmode="require"
+            port=port,
+            sslmode="require" if os.getenv("DATABASE_URL") else "prefer"
         )
         yield conn
     except Exception as e:
@@ -35,17 +36,14 @@ def get_db_context():
         if conn and not conn.closed:
             conn.close()
 
-
 def init_database():
     with get_db_context() as conn:
         conn.autocommit = True
         cur = conn.cursor()
-
         try:
             print("جاري تحديث قاعدة البيانات...")
 
-            
-            # أضف هذا الكود في آخر دالة init_database() قبل الـ print الأخير
+            # جدول الزيارات - مع الفهرس الفريد من البداية
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS visits (
                     id SERIAL PRIMARY KEY,
@@ -58,27 +56,24 @@ def init_database():
                     timestamp TIMESTAMPTZ DEFAULT NOW()
                 )
             ''')
-            print("تم إنشاء جدول visits لتتبع الزوار")
-           # الحل الملكي النهائي لحل التكرارات
-            try:
-                cur.execute('''
-                    DELETE FROM visits a USING (
-                        SELECT MIN(id) as keep_id, session_id
-                        FROM visits 
-                        GROUP BY session_id 
-                        HAVING COUNT(*) > 1
-                    ) b
-                    WHERE a.session_id = b.session_id AND a.id != b.keep_id;
-                ''')
-                print("تم حذف التكرارات بنجاح")
-            except Exception as e:
-                print(f"تحذير: ما فيش تكرارات أو حصل خطأ بسيط: {e}")
 
-            # دلوقتي نضيف الفهرس الفريد بأمان
+            # حذف التكرارات القديمة (آمن تمامًا)
+            cur.execute('''
+                DELETE FROM visits a USING (
+                    SELECT MIN(id) as keep_id, session_id
+                    FROM visits
+                    GROUP BY session_id
+                    HAVING COUNT(*) > 1
+                ) b
+                WHERE a.session_id = b.session_id AND a.id != b.keep_id;
+            ''')
+
+            # الفهرس الفريد الملكي - الحل النهائي
             cur.execute('CREATE UNIQUE INDEX IF NOT EXISTS uniq_session_id ON visits(session_id)')
             cur.execute('CREATE INDEX IF NOT EXISTS idx_visits_timestamp ON visits(timestamp DESC)')
-            print("تم إضافة الفهرس الفريد والأداء - الآن كل شيء ملكي خالد")
+
+            print("تم إنشاء/تحديث جدول visits + الفهرس الفريد بنجاح - لا تحذيرات بعد اليوم!")
 
         except Exception as e:
-            print(f"خطأ غير متوقع أثناء التحديث: {e}")
+            print(f"خطأ أثناء تهيئة قاعدة البيانات: {e}")
             raise

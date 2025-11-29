@@ -4,74 +4,78 @@ from datetime import datetime, timedelta
 from fastapi import Request
 from postgresql import get_db_context
 
+
 def log_visit(request: Request, user: dict | None = None):
+    """تسجيل الزيارة بطريقة آمنة وسريعة مع ON CONFLICT"""
     session_id = request.session.get("session_id")
     if not session_id:
-        import uuid
         session_id = str(uuid.uuid4())
         request.session["session_id"] = session_id
 
-    # الحل السحري: لو المستخدم خرج → نحط username = None
-    actual_user = None
-    actual_username = None
-    if user and user.get("id"):  # لو مسجل دخول فعلاً
-        actual_user = user.get("id")
-        actual_username = user.get("username")
-    # لو مش مسجل → نخلي username فارغ (مش "زائر مجهول")
+    user_id = user.get("id") if user and user.get("id") else None
+    username = user.get("username") if user and user.get("username") else None
 
-    path = request.url.path
     ip = request.client.host
-    ua = request.headers.get("user-agent", "unknown")
+    path = request.url.path
+    user_agent = request.headers.get("user-agent", "unknown")
 
-    with get_db_context() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO visits (session_id, user_id, username, ip, user_agent, path)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (session_id) DO UPDATE 
-                SET timestamp = NOW(), username = EXCLUDED.username, user_id = EXCLUDED.user_id
-            """, (session_id, actual_user, actual_username, ip, ua, path))
+    try:
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO visits (
+                        session_id, user_id, username, ip, user_agent, path
+                    ) VALUES (%s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (session_id) DO UPDATE SET
+                        timestamp = NOW(),
+                        user_id = EXCLUDED.user_id,
+                        username = EXCLUDED.username,
+                        ip = EXCLUDED.ip,
+                        path = EXCLUDED.path
+                """, (session_id, user_id, username, ip, user_agent, path))
             conn.commit()
+    except Exception as e:
+        # فقط في أول تشغيل أو لو الـ index لسه ما اتعملش
+        if "uniq_session_id" in str(e) or "ON CONFLICT" in str(e):
+            print(f"تحذير مؤقت (أول مرة فقط): {e}")
+        else:
+            print(f"خطأ غير متوقع في log_visit: {e}")
+
 
 def get_total_visitors() -> int:
     with get_db_context() as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT COUNT(DISTINCT session_id) FROM visits")
-            result = cur.fetchone()[0]
-            return result or 0
+            return cur.fetchone()[0] or 0
+
 
 def get_today_visitors() -> int:
     today = datetime.now().date()
     with get_db_context() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
-                SELECT COUNT(DISTINCT session_id) FROM visits
-                WHERE DATE(timestamp) = %s
-            """, (today,))
-            result = cur.fetchone()[0]
-            return result or 0
+            cur.execute("SELECT COUNT(DISTINCT session_id) FROM visits WHERE DATE(timestamp) = %s", (today,))
+            return cur.fetchone()[0] or 0
+
 
 def get_online_users() -> list[dict]:
-    """اللي دخلوا في آخر 10 دقايق"""
     threshold = datetime.now() - timedelta(minutes=10)
     with get_db_context() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                SELECT DISTINCT ON (session_id) 
-                       session_id, username, timestamp
-                FROM visits 
+                SELECT DISTINCT ON (session_id) username, timestamp
+                FROM visits
                 WHERE timestamp > %s
                 ORDER BY session_id, timestamp DESC
             """, (threshold,))
             rows = cur.fetchall()
+            return [
+                {
+                    "username": row[0] or "زائر مجهول",
+                    "last_seen": row[1].strftime("%H:%M")
+                }
+                for row in rows
+            ]
 
-    return [
-        {
-            "username": row[1] or "زائر مجهول",
-            "last_seen": row[2].strftime("%H:%M:%S")
-        }
-        for row in rows
-    ]
 
 def get_online_count() -> int:
     return len(get_online_users())

@@ -1,4 +1,6 @@
 import os
+import uuid
+from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -11,10 +13,21 @@ from services.analytics import log_visit, get_total_visitors, get_today_visitors
 
 # استيراد الراوترات
 from routers import auth, admin, family, articles, news, permissions
-
+from dotenv import load_dotenv
 # استيراد الدوال المهمة
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token
+
+load_dotenv()
+# إضافة هذا الكود بعد load_dotenv()
+if os.getenv("DATABASE_URL"):
+    # Render يبعت DATABASE_URL → نحوله للمتغيرات اللي postgresql.py بيفهمها
+    db = urlparse(os.getenv("DATABASE_URL"))
+    os.environ["DB_HOST"] = db.hostname
+    os.environ["DB_NAME"] = db.path[1:]
+    os.environ["DB_USER"] = db.username
+    os.environ["DB_PASSWORD"] = db.password
+    os.environ["DB_PORT"] = str(db.port or 5432)
 
 # =========================================
 # Lifespan: تشغيل init_database مرة واحدة
@@ -33,31 +46,26 @@ app = FastAPI(
     title="عائلة الحوطية الرقمية",
     description="منصة عائلية متكاملة",
     version="1.0.0",
-   
+    lifespan=lifespan,
 )
-# 3. Analytics Middleware (بعد SessionMiddleware!)
+# Middleware التحليلات (محدث)
 @app.middleware("http")
 async def analytics_middleware(request: Request, call_next):
-    # تجاهل static و favicon
     if request.url.path.startswith("/static") or request.url.path in ("/favicon.ico", "/robots.txt"):
         return await call_next(request)
 
-    # الآن session شغال 100%
     user = request.session.get("user")
 
-    # توليد session_id لو مش موجود
     if "session_id" not in request.session:
-        import uuid
         request.session["session_id"] = str(uuid.uuid4())
 
     try:
         log_visit(request, user)
     except Exception as e:
-        print(f"تحذير: فشل تسجيل الزيارة: {e}")
+        print(f"تحذير مؤقت في log_visit: {e}")
 
     response = await call_next(request)
     return response
-
 # =========================================
 # Middleware - الترتيب مهم جدًا!
 # =========================================
