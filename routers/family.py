@@ -6,6 +6,7 @@ from security.csrf import generate_csrf_token, verify_csrf_token
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 from utils.permissions import has_permission
+from utils.normalize import normalize_arabic
 from security.session import set_cache_headers
 from typing import Optional
 import subprocess
@@ -34,6 +35,11 @@ def can(user: dict, perm: str) -> bool:
         return True
     return bool(user.get("id") and has_permission(user.get("id"), perm))
 
+
+def to_tsquery_safe(phrase: str):
+    words = [w for w in phrase.split() if w.strip()]
+    return " & ".join([f"{w}:*" for w in words])
+
 # ====================== قائمة الأعضاء ======================
 @router.get("/", response_class=HTMLResponse)
 async def show_names(request: Request, page: int = 1, q: str = None):
@@ -41,51 +47,110 @@ async def show_names(request: Request, page: int = 1, q: str = None):
     if not user:
         return RedirectResponse("/auth/login")
 
-    can_add = can(user, "add_member")
-    can_edit = can(user, "edit_member")
+    can_add    = can(user, "add_member")
+    can_edit   = can(user, "edit_member")
     can_delete = can(user, "delete_member")
 
     ITEMS_PER_PAGE = 24
     offset = (page - 1) * ITEMS_PER_PAGE
+
     members = []
-    total_pages = 1
     total = 0
 
     with get_db_context() as conn:
         with conn.cursor() as cur:
 
             if q and q.strip():
-                # ====== وضع البحث ======
-                keywords = [kw.strip() for kw in q.strip().split() if kw.strip()]
+                phrase = q.strip()
 
-                cur.execute("""
-                    SELECT code, name, nick_name 
-                    FROM family_name 
-                    WHERE level >= 2
-                    ORDER BY name
-                """)
-                all_members = cur.fetchall()
+                # -----------------------
+                # 1) البحث بالكود
+                # -----------------------
+                if "-" in phrase:
+                    cur.execute("""
+                        SELECT code, full_name, nick_name
+                        FROM family_search
+                        WHERE code ILIKE %s
+                        ORDER BY code
+                        LIMIT %s OFFSET %s
+                    """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
+                    rows = cur.fetchall()
 
-                filtered = []
-                for code, name, nick_name in all_members:
-                    full_name = get_full_name(code, max_length=None, include_nick=False).lower()
-                    nickname_str = (nick_name or "").lower()
-                    code_str = code.lower()
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM family_search
+                        WHERE code ILIKE %s
+                    """, (f"%{phrase}%",))
+                    total = cur.fetchone()[0]
 
-                    if all(kw.lower() in full_name or kw.lower() in nickname_str or kw.lower() in code_str for kw in keywords):
-                        filtered.append((code, name, nick_name))
+                # -----------------------
+                # 2) البحث باللقب
+                # -----------------------
+                elif len(phrase.split()) == 1:
+                    cur.execute("""
+                        SELECT code, full_name, nick_name
+                        FROM family_search
+                        WHERE nick_name ILIKE %s
+                        ORDER BY full_name
+                        LIMIT %s OFFSET %s
+                    """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
+                    rows = cur.fetchall()
 
-                # ترتيب حسب عدد الكلمات المتطابقة
-                filtered.sort(key=lambda x: sum(
-                    kw.lower() in get_full_name(x[0], max_length=None, include_nick=False).lower()
-                    for kw in keywords
-                ), reverse=True)
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM family_search
+                        WHERE nick_name ILIKE %s
+                    """, (f"%{phrase}%",))
+                    total = cur.fetchone()[0]
 
-                total = len(filtered)
-                rows = filtered[offset:offset + ITEMS_PER_PAGE]
+                # -----------------------
+                # 3) البحث بجملة كاملة (Full Text Search)
+                # -----------------------
+                else:
+                    clean_phrase = " ".join(phrase.split())
+                    normalized_input = normalize_arabic(clean_phrase)
+                    
+                    cur.execute("""
+                        SELECT code, full_name, nick_name
+                        FROM family_search
+                        WHERE normalized_full_name ILIKE %s
+                        ORDER BY full_name
+                        LIMIT %s OFFSET %s
+                    """, (f"%{normalized_input}%", ITEMS_PER_PAGE, offset))
+
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM family_search
+                        WHERE normalized_full_name ILIKE %s
+                    """, (f"%{normalized_input}%",))
+
+                    # --- البحث بجملة كاملة بنفس الترتيب فقط ---
+                    clean_phrase = " ".join(phrase.split())  # إزالة المسافات الزائدة
+
+                    cur.execute("""
+                        SELECT code, full_name, nick_name
+                        FROM family_search
+                        WHERE full_name ILIKE %s
+                        ORDER BY full_name
+                        LIMIT %s OFFSET %s
+                    """, (f"%{clean_phrase}%", ITEMS_PER_PAGE, offset))
+
+                    rows = cur.fetchall()
+
+                    cur.execute("""
+                        SELECT COUNT(*)
+                        FROM family_search
+                        WHERE full_name ILIKE %s
+                    """, (f"%{clean_phrase}%",))
+
+                    total = cur.fetchone()[0]
+
+                   
+
+                    
 
             else:
-                # ====== بدون بحث ======
+                # بدون بحث
                 cur.execute("""
                     SELECT code, name, nick_name 
                     FROM family_name 
@@ -95,27 +160,43 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                 """, (ITEMS_PER_PAGE, offset))
                 rows = cur.fetchall()
 
-                cur.execute("SELECT COUNT(*) FROM family_name WHERE level > 0")
+                cur.execute("SELECT COUNT(*) FROM family_name WHERE level >= 2")
                 total = cur.fetchone()[0]
-
-            # ====== بناء القائمة النهائية (هنا المفتاح!) ======
+            members = []
+            # بناء القائمة النهائية
             for code, name, nick_name in rows:
+                # جلب الاسم الكامل (حسب الدالة الموجودة لديك)
                 display_name = get_full_name(code, max_length=7, include_nick=False)
+                
+                # تنظيف الاسم من التشكيل
+                clean_display_name = normalize_arabic(display_name)
+                clean_nick_name = normalize_arabic(nick_name.strip()) if nick_name else None
+
                 members.append({
                     "code": code,
-                    "full_name": display_name,
-                    "nick_name": nick_name.strip() if nick_name else None
+                    "full_name": clean_display_name,
+                    "nick_name": clean_nick_name
                 })
-            total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+
+            members.sort(key=lambda x: x["full_name"])
+    total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
 
     response = templates.TemplateResponse("family/names.html", {
-        "request": request,"user": user,"members": members,
-        "page": page,"total_pages": total_pages,"has_prev": page > 1,
-        "has_next": page < total_pages,"q": q,
-        "can_add": can_add, "can_edit": can_edit, "can_delete": can_delete
+        "request": request,
+        "user": user,
+        "members": members,
+        "page": page,
+        "total_pages": total_pages,
+        "has_prev": page > 1,
+        "has_next": page < total_pages,
+        "q": q,
+        "can_add": can_add,
+        "can_edit": can_edit,
+        "can_delete": can_delete
     })
     set_cache_headers(response)
     return response
+
    
 # ====================== تفاصيل العضو ======================
 @router.get("/details/{code}", response_class=HTMLResponse)
