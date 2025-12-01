@@ -35,7 +35,6 @@ def can(user: dict, perm: str) -> bool:
         return True
     return bool(user.get("id") and has_permission(user.get("id"), perm))
 
-
 def to_tsquery_safe(phrase: str):
     words = [w for w in phrase.split() if w.strip()]
     return " & ".join([f"{w}:*" for w in words])
@@ -143,11 +142,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                         WHERE full_name ILIKE %s
                     """, (f"%{clean_phrase}%",))
 
-                    total = cur.fetchone()[0]
-
-                   
-
-                    
+                    total = cur.fetchone()[0]   
 
             else:
                 # بدون بحث
@@ -197,7 +192,6 @@ async def show_names(request: Request, page: int = 1, q: str = None):
     set_cache_headers(response)
     return response
 
-   
 # ====================== تفاصيل العضو ======================
 @router.get("/details/{code}", response_class=HTMLResponse)
 async def name_details(request: Request, code: str):
@@ -619,8 +613,6 @@ async def delete_name(request: Request, code: str):
             conn.commit()
     return RedirectResponse("/names", status_code=303)
 
-
-
 # ====================== استيراد البيانات (أدمن فقط) ======================
 @router.get("/import-data", response_class=HTMLResponse)
 async def import_page(request: Request):
@@ -687,16 +679,13 @@ async def import_data(
             os.remove(file_path)    
     
    
-
     return templates.TemplateResponse("family/import_data.html", {
         "request": request,
         "user": user,
         "message": message
     })
 
-
 # ====================== تصدير البيانات (أدمن فقط) ======================
-
 @router.get("/export-data")
 async def export_data(request: Request, password: str = ""):
     user = request.session.get("user")
