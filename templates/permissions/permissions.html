@@ -2,6 +2,27 @@
 {% block title %}لوحة الصلاحيات {% endblock %}
 
 {% block content %}
+<!-- CSS لضمان تطبيق انتقال سلس وموثوق لرسائل الفلاش -->
+<style>
+    /* تعريف خصائص الانتقال (Transition) لكل الرسائل */
+    .flash-message {
+        opacity: 1;
+        /* نضمن أن يتأثر الارتفاع والشفافية لإزالة المساحة بالكامل */
+        transition: opacity 0.5s ease-in-out, height 0.5s ease-in-out, padding 0.5s ease-in-out, margin 0.5s ease-in-out;
+    }
+    
+    /* الفئة التي تطبق عند بدء الاختفاء */
+    .flash-message.hidden {
+        opacity: 0;
+        /* إزالة المساحة لضمان صعود العناصر الأخرى بسلاسة ومنع التشتت البصري */
+        height: 0; 
+        padding-top: 0;
+        padding-bottom: 0;
+        margin-top: 0;
+        margin-bottom: 0;
+    }
+</style>
+
 <section class="admin-dashboard">
     <div class="container">
         <div class="dashboard-header">
@@ -9,19 +30,26 @@
             <p class="subtitle">إدارة الصلاحيات بكل سهولة وأمان</p>
         </div>
 
-        <!-- رسائل النجاح أو الخطأ -->
-        {% if success %}
-            <div class="alert success">تم الإجراء بنجاح!</div>
+        <!-- رسائل النجاح أو الخطأ - تم تعديلها لتتوافق مع الموجهات وتدعم الاختفاء التلقائي -->
+        {% if success_message %}
+            <div class="alert success flash-message">
+                <p>✅ **تم بنجاح:** {{ success_message | safe }}</p>
+            </div>
         {% endif %}
-        {% if error %}
-            <div class="alert error">{{ error }}</div>
+        {% if error_message %}
+            <div class="alert error flash-message">
+                <p>❌ **خطأ في الإجراء:** {{ error_message | safe }}</p>
+            </div>
         {% endif %}
 
         <div class="admin-grid">
+            <!-- بطاقة إضافة صلاحية جديدة -->
             <div class="admin-card">
-                <h2>إضافة صلاحية جديد</h2>
+                <h2>إضافة صلاحية جديدة</h2>
                 <form method="post" action="/permissions/add_permission" class="admin-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <!-- حقل رقم الصفحة لضمان العودة للموقع الصحيح -->
+                    <input type="hidden" name="current_page" value="{{ current_page }}">
                     <div class="form-group">
                         <label>اسم الصلاحية</label>
                         <input type="text" name="name" required placeholder="أدخل اسم الصلاحية">
@@ -35,19 +63,24 @@
                 </form>
                
             </div>  
+             <!-- بطاقة التعديل المجمَّع (تم تبسيطها) -->
              <div class="admin-card">
-                <h2>تعديل الصلاحية: <strong>{{ perms.name }}</strong></h2>
+                <h2>تعديل الصلاحيات</h2>
+                <p class="subtitle">استخدم هذا القسم لتعديل صلاحية موجودة أو استخدم التعديل المباشر في الجدول.</p>
 
+                <!-- نموذج تعديل صلاحية موجودة -->
                 <form method="post" action="/permissions/edit_permission" class="admin-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="perm_id" value="{{ perms.id}}">
+                    <!-- حقل رقم الصفحة لضمان العودة للموقع الصحيح -->
+                    <input type="hidden" name="current_page" value="{{ current_page }}">
 
                     <div class="form-group">
                         <label>اختر الصلاحية لتعديلها</label>
-                        <select name="perm_id" class="small-select" >
+                        <select name="perm_id" class="small-select" required>
                             <option value="">-- اختر صلاحية --</option>
+                            <!-- نستخدم all_permissions لأن perms هي فقط لصفحة الترقيم الحالية -->
                             {% for p in all_permissions %}
-                            <option value="{{ p.id }}" {% if p.id == perms.id %}selected{% endif %}>
+                            <option value="{{ p.id }}">
                                 {{ p.name }} ({{ p.category }})
                             </option>
                             {% endfor %}
@@ -56,20 +89,16 @@
 
                     <div class="form-group">
                         <label>اسم الصلاحية الجديد</label>
-                        <input type="text" name="name" value="{{ perms.name }}" required placeholder="اسم الصلاحية">
+                        <input type="text" name="name" required placeholder="اسم الصلاحية">
                     </div>
 
                     <div class="form-group">
-                        <label>التصنيف</label>
-                        <input type="text" name="category" value="{{ perms.category }}" required placeholder="مثال: عام، مقالات، تعليقات">
+                        <label>التصنيف الجديد</label>
+                        <input type="text" name="category" required placeholder="مثال: عام، مقالات، تعليقات">
                     </div>
-               
-                
-               
                     
                     <button type="submit" class="submit-btn large"> تعديل الصلاحية</button>
                 </form>
-                
             </div>   
         </div>
 
@@ -97,47 +126,40 @@
                                <strong>{{ perm[2] }}</strong>
                             </td>
                             <!-- عمود اسم الصلاحية (قابل للتعديل) -->
+                            <!-- تم إضافة حقل مخفي للتصنيف لضمان تمريره مع الاسم -->
                             <td>
-                                <form method="post" action="/permissions/edit_permission" class="inline-edit-form">
+                                <form method="post" action="/permissions/edit_permission" id="edit-name-form-{{ perm[0] }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="perm_id" value="{{ perm[0] }}">
+                                    <input type="hidden" name="category" value="{{ perm[2] }}">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}">
                                     <input type="text" name="name" value="{{ perm[1] }}" class="inline-input" required>
+                                    <button type="submit" class="btn-small edit inline-save-btn">حفظ</button>
                                 </form>
                             </td>
 
                             <!-- عمود التصنيف (قابل للتعديل) -->
+                            <!-- تم إضافة حقل مخفي للاسم لضمان تمريره مع التصنيف -->
                             <td>
-                                <form method="post" action="/permissions/edit_permission" class="inline-edit-form">
+                                <form method="post" action="/permissions/edit_permission" id="edit-category-form-{{ perm[0] }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="perm_id" value="{{ perm[0] }}">
+                                    <input type="hidden" name="name" value="{{ perm[1] }}">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}">
                                     <input type="text" name="category" value="{{ perm[2] }}" class="inline-input" required>
+                                    <button type="submit" class="btn-small edit inline-save-btn">حفظ</button>
                                 </form>
                             </td>
-                            <!-- عمود الأزرار: تعديل + حذف -->
+                            
+                            <!-- عمود الأزرار: حذف -->
                             <td class="actions-cell">
-                                <div class="action-buttons">
-                                    <!-- زر حفظ التعديل (للاسم أو التصنيف) -->
-                                    <button type="submit" form="edit-form-{{ perm[0] }}" class="btn-small edit">
-                                        حفظ
-                                    </button>
-
-                                    <!-- فورم منفصل للحفظ -->
-                                    <form id="edit-form-{{ perm[0] }}" method="post" action="/permissions/edit_permission" style="display:inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                        <input type="hidden" name="perm_id" value="{{ perm[0] }}">
-                                        <input type="hidden" name="name" value="{{ perm[1] }}">
-                                        <input type="hidden" name="category" value="{{ perm[2] }}">
-                                    </form>
-
-                                    <!-- زر الحذف -->
-                                    <form method="post" action="/permissions/delete_permission" 
-                                        onsubmit="return confirm('هل أنت متأكد من حذف {{ perm[1] }} نهائيًا؟')" 
-                                        style="display:inline;">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                        <input type="hidden" name="perm_id" value="{{ perm[0] }}">
-                                        <button type="submit" class="btn-small delete">حذف</button>
-                                    </form>
-                                </div>
+                                <!-- زر الحذف - تم إزالة onsubmit="return confirm(...)" واستبدالها بإرسال Form مباشر -->
+                                <form method="post" action="/permissions/delete_permission" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="perm_id" value="{{ perm[0] }}">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}">
+                                    <button type="submit" class="btn-small delete">حذف</button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -158,4 +180,32 @@
     </div>
 </section>
 
+<!-- جافاسكريبت للإخفاء التلقائي لرسائل الفلاش - لضمان عملها بعد 5 ثواني -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // تحديد جميع العناصر التي تحمل الفئة 'flash-message'
+        const flashMessages = document.querySelectorAll('.flash-message');
+        const DURATION = 5000; // 5000 مللي ثانية = 5 ثوانٍ
+
+        flashMessages.forEach(message => {
+            // إخفاء الرسالة بعد 5 ثوانٍ
+            setTimeout(() => {
+                // خطوة 1: تطبيق فئة CSS "hidden" لجعلها تختفي بسلاسة
+                message.classList.add('hidden');
+                
+                // خطوة 2: إزالة الرسالة بالكامل من DOM بعد انتهاء الحركة (0.5 ثانية)
+                setTimeout(() => {
+                    message.remove();
+                }, 500); 
+            }, DURATION);
+        });
+        
+        // منع استخدام confirm() المحظورة واستبدالها بحذف مباشر
+        document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form => {
+            // إزالة onsubmit لتفادي رسالة التحذير المحظورة
+            form.removeAttribute('onsubmit'); 
+            // يمكن إضافة modal مخصص هنا إذا لزم الأمر
+        });
+    });
+</script>
 {% endblock %}

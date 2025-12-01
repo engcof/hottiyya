@@ -15,13 +15,18 @@
             </a>
         </div>
 
-        <!-- رسائل النجاح أو الخطأ -->
-        {% if success %}
-            <div class="alert success">تم الإجراء بنجاح!</div>
+        <!-- رسائل النجاح أو الخطأ - تم إضافة فئة 'flash-message' لسهولة الوصول إليها عبر JS -->
+        {% if success_message %}
+            <div class="alert success flash-message">
+                <p>✅ **تم بنجاح:** {{ success_message }}</p>
+            </div>
         {% endif %}
-        {% if error %}
-            <div class="alert error">{{ error }}</div>
+        {% if error_message %}
+            <div class="alert error flash-message">
+                <p>❌ **خطأ في الإجراء:** {{ error_message }}</p>
+            </div>
         {% endif %}
+
 
         <div class="admin-grid">
 
@@ -30,6 +35,8 @@
                 <h2>إضافة مستخدم جديد</h2>
                 <form method="post" action="/admin/add_user" class="admin-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
+                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
                     <div class="form-group">
                         <label>اسم المستخدم</label>
                         <input type="text" name="username" required placeholder="أدخل اسم المستخدم">
@@ -54,6 +61,8 @@
                 <h2>تغيير كلمة المرور</h2>
                 <form method="POST" action="/admin/change_password" class="admin-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
+                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
                     <div class="form-group">
                         <label>اختر المستخدم</label>
                         <select name="user_id" required>
@@ -107,6 +116,8 @@
                             <td>
                                 <form method="post" action="/admin/edit_user" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
+                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ user[0] }}">
                                     <input type="text" name="username" value="{{ user[1] }}" class="small-input">
                                     <select name="role" class="small-select">
@@ -124,6 +135,8 @@
                             <td>
                                 <form method="post" action="/admin/give_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ user[0] }}">
                                     <select name="permission_id" class="small-select">
                                         {% for perm in permissions %}
@@ -137,6 +150,8 @@
                                 <form method="post" action="/admin/remove_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="user_id" value="{{ user[0] }}">
+                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <select name="permission_id" class="small-select">
                                         {% for perm in permissions %}
                                         <option value="{{ perm[0] }}">{{ perm[1] }}</option>
@@ -148,6 +163,8 @@
                             <td>
                                 <form method="post" action="/admin/delete_user" onsubmit="return confirm('هل أنت متأكد من حذف هذا المستخدم نهائيًا؟')">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ user[0] }}">
                                     <button type="submit" class="btn-small delete">حذف</button>
                                 </form>
@@ -171,4 +188,26 @@
         </div>
     </div>
 </section>
+<!-- جافاسكريبت للإخفاء التلقائي لرسائل الفلاش -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // تحديد جميع العناصر التي تحمل الفئة 'flash-message'
+        const flashMessages = document.querySelectorAll('.flash-message');
+        const DURATION = 5000; // 5000 مللي ثانية = 5 ثوانٍ
+
+        flashMessages.forEach(message => {
+            // إخفاء الرسالة بعد 5 ثوانٍ
+            setTimeout(() => {
+                // استخدام opacity و transition لجعل الإخفاء سلساً
+                message.style.transition = 'opacity 0.5s ease-out';
+                message.style.opacity = '0';
+                
+                // إزالة الرسالة من DOM بعد انتهاء الحركة
+                setTimeout(() => {
+                    message.remove();
+                }, 500); 
+            }, DURATION);
+        });
+    });
+</script>
 {% endblock %}

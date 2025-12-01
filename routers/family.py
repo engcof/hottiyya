@@ -17,7 +17,7 @@ import os
 import re
 from dotenv import load_dotenv
 from core.templates import templates
-
+import html # تم إضافة استيراد html في البداية
 
 load_dotenv()
 IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
@@ -286,15 +286,15 @@ async def add_name(
     m_code = m_code.strip().upper() if m_code else None
     w_code = w_code.strip().upper() if w_code else None
     h_code = h_code.strip().upper() if h_code else None
-    relation = relation.strip() if relation else None
-    nick_name = nick_name.strip() if nick_name else None
+    relation = html.escape(relation.strip()) if relation else None
+    nick_name = nick_name.strip() if nick_name else None # محمي بالـ regex لاحقاً
     gender = gender.strip() if gender else None
     d_o_b = d_o_b.strip() if d_o_b else None
     d_o_d = d_o_d.strip() if d_o_d else None
     email = email.strip().lower() if email else None
     phone = phone.strip() if phone else None
-    address = address.strip() if address else None
-    p_o_b = p_o_b.strip() if p_o_b else None
+    address = html.escape(address.strip()) if address else None
+    p_o_b = html.escape(p_o_b.strip()) if p_o_b else None
     status = status.strip() if status else None
 
     error = None
@@ -513,7 +513,7 @@ async def update_name(request: Request,
                       code: str, name: str = Form(...), 
                       f_code: str = Form(None), m_code: str = Form(None),
                       w_code: str = Form(None), h_code: str = Form(None),
-                      relation: str = Form(None), level: int = Form(None),
+                      relation: str = Form(None), level: str = Form(None), # استقبل level كـ str للتحقق
                       nick_name: str = Form(None), gender: str = Form(None),
                       d_o_b: str = Form(None), d_o_d: str = Form(None),
                       email: str = Form(None), phone: str = Form(None),
@@ -527,77 +527,171 @@ async def update_name(request: Request,
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
-    # تنظيف البيانات (نفس اللي فوق)
+    error = None
+    level_int = None # المتغير الجديد للتحقق من المستوى
+    
+    # === 1. التنظيف وتطبيق الـ XSS (استخدم html.escape) ===
+    
+    # تنظيف وتطبيق XSS للحقول غير المقيدة بالـ Regex
     name = name.strip()
-    f_code = f_code.strip() if f_code else None
-    m_code = m_code.strip() if m_code else None
-    w_code = w_code.strip() if w_code else None
-    h_code = h_code.strip() if h_code else None
-    relation = relation.strip() if relation else None
+    f_code = f_code.strip().upper() if f_code else None
+    m_code = m_code.strip().upper() if m_code else None
+    w_code = w_code.strip().upper() if w_code else None
+    h_code = h_code.strip().upper() if h_code else None
+    relation = html.escape(relation.strip()) if relation else None
     nick_name = nick_name.strip() if nick_name else None
     gender = gender.strip() if gender else None
     d_o_b = d_o_b.strip() if d_o_b else None
     d_o_d = d_o_d.strip() if d_o_d else None
-    email = email.strip() if email else None
+    email = email.strip().lower() if email else None
     phone = phone.strip() if phone else None
-    address = address.strip() if address else None
-    p_o_b = p_o_b.strip() if p_o_b else None
+    address = html.escape(address.strip()) if address else None
+    p_o_b = html.escape(p_o_b.strip()) if p_o_b else None
     status = status.strip() if status else None
 
-    try:
-        with get_db_context() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    UPDATE family_name SET
-                    name=%s, f_code=%s, m_code=%s, w_code=%s, h_code=%s,
-                    relation=%s, level=%s, nick_name=%s
-                    WHERE code=%s
-                """, (name, f_code, m_code, w_code, h_code, relation, level, nick_name, code))
+    # === 2. التحقق من المدخلات (Input Validation) ===
+    
+    # 2.1. الاسم
+    if not re.fullmatch(r"[\u0600-\u06FF\s]+", name):
+        error = "الاسم يجب أن يحتوي على حروف عربية فقط (ممنوع الأرقام والرموز)"
 
-                cur.execute("SELECT 1 FROM family_info WHERE code_info = %s", (code,))
-                if cur.fetchone():
+    # 2.2. المستوى
+    if not error and level:
+        try:
+            level_int = int(level)
+            if level_int < 1:
+                error = "المستوى يجب أن يكون رقماً موجباً."
+        except ValueError:
+            error = "المستوى يجب أن يكون رقماً صحيحاً."
+    elif not error:
+        error = "المستوى مطلوب ولا يمكن أن يكون فارغاً."
+    
+    # 2.3. اللقب
+    if not error and nick_name and not re.fullmatch(r"[\u0600-\u06FF\s]+", nick_name):
+        error = "اللقب يجب أن يكون حروف عربية فقط (مثل: أبو أحمد، أم علي)"
+
+    # 2.4. مكان الميلاد (تجنب الرموز والأرقام في البداية)
+    elif not error and p_o_b and (p_o_b[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", p_o_b)):
+        error = "مكان الميلاد لا يجب أن يبدأ برمز أو رقم"
+
+    # 2.5. العنوان
+    elif not error and address and (address[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", address)):
+        error = "العنوان لا يجب أن يبدأ برمز أو رقم"
+
+    # 2.6. الإيميل
+    elif not error and email and not re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email):
+        error = "البريد الإلكتروني غير صالح (مثال: name@example.com)"
+
+    # 2.7. الهاتف
+    elif not error and phone and not re.fullmatch(r"[\d\s\-\+\(\)]{8,20}", phone):
+        error = "رقم الهاتف غير صالح (استخدم أرقام، مسافات، +، -، () فقط)"
+
+    # 2.8. التواريخ
+    from datetime import date
+    today = date.today()
+
+    if not error and d_o_b:
+        try:
+            dob = date.fromisoformat(d_o_b)
+            if dob > today:
+                error = "تاريخ الميلاد لا يمكن أن يكون في المستقبل"
+        except ValueError:
+            error = "تاريخ الميلاد غير صالح"
+
+    if not error and d_o_d:
+        try:
+            dod = date.fromisoformat(d_o_d)
+            if dod > today:
+                error = "تاريخ الوفاة لا يمكن أن يكون في المستقبل"
+            if d_o_b and dod < date.fromisoformat(d_o_b):
+                error = "تاريخ الوفاة لا يمكن أن يكون قبل تاريخ الميلاد"
+        except ValueError:
+            error = "تاريخ الوفاة غير صالح"
+
+    # 2.9. أكواد الأقارب (نفس صيغة الكود الرئيسي)
+    parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
+    if not error and f_code and not re.fullmatch(parent_pattern, f_code):
+        error = f"كود الأب غير صحيح"
+    elif not error and m_code and not re.fullmatch(parent_pattern, m_code):
+        error = "كود الأم غير صحيح"
+    elif not error and h_code and not re.fullmatch(parent_pattern, h_code):
+        error = "كود الزوج غير صحيح"
+    elif not error and w_code and not re.fullmatch(parent_pattern, w_code):
+        error = "كود الزوجة غير صحيح"
+
+    # 2.10. صورة (تحقق من النوع فقط)
+    if not error and picture and picture.filename:
+        allowed = {'.jpg', '.jpeg', '.png', '.webp'}
+        ext = os.path.splitext(picture.filename)[1].lower()
+        if ext not in allowed:
+            error = "نوع الصورة غير مدعوم! استخدم: JPG، PNG، WebP فقط"
+
+
+    # === 3. التنفيذ أو إرجاع الخطأ ===
+
+    if not error:
+        try:
+            with get_db_context() as conn:
+                with conn.cursor() as cur:
+                    # استخدم level_int بعد التحقق منه
                     cur.execute("""
-                        UPDATE family_info SET gender=%s, d_o_b=%s, d_o_d=%s, email=%s,
-                        phone=%s, address=%s, p_o_b=%s, status=%s WHERE code_info=%s
-                    """, (gender, d_o_b, d_o_d, email, phone, address, p_o_b, status, code))
-                else:
-                    cur.execute("""
-                        INSERT INTO family_info (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
+                        UPDATE family_name SET
+                        name=%s, f_code=%s, m_code=%s, w_code=%s, h_code=%s,
+                        relation=%s, level=%s, nick_name=%s
+                        WHERE code=%s
+                    """, (name, f_code, m_code, w_code, h_code, relation, level_int, nick_name, code))
 
-                if picture and picture.filename:
-                    pic_path = os.path.join(UPLOAD_DIR, picture.filename)
-                    with open(pic_path, "wb") as f:
-                        shutil.copyfileobj(picture.file, f)
-                    cur.execute("""
-                        INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
-                        ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
-                    """, (code, pic_path, pic_path))
+                    cur.execute("SELECT 1 FROM family_info WHERE code_info = %s", (code,))
+                    if cur.fetchone():
+                        cur.execute("""
+                            UPDATE family_info SET gender=%s, d_o_b=%s, d_o_d=%s, email=%s,
+                            phone=%s, address=%s, p_o_b=%s, status=%s WHERE code_info=%s
+                        """, (gender, d_o_b, d_o_d, email, phone, address, p_o_b, status, code))
+                    else:
+                        cur.execute("""
+                            INSERT INTO family_info (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
 
-                conn.commit()
-        return RedirectResponse("/names", status_code=303)
+                    if picture and picture.filename:
+                        # يجب التأكد من استخدام ext الصحيح من عملية التحقق في 2.10
+                        ext = os.path.splitext(picture.filename)[1].lower()
+                        safe_filename = f"{code}{ext}"
+                        pic_path = os.path.join(UPLOAD_DIR, safe_filename)
+                        with open(pic_path, "wb") as f:
+                            shutil.copyfileobj(picture.file, f)
+                        cur.execute("""
+                            INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
+                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
+                        """, (code, pic_path, pic_path))
 
-    except Exception as e:
-        # إرجاع الخطأ في نفس الصفحة
-        csrf_token = generate_csrf_token()
-        request.session["csrf_token"] = csrf_token
+                    conn.commit()
+            return RedirectResponse(f"/names/details/{code}", status_code=303)
 
-        with get_db_context() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
-                member = cur.fetchone() or {}
-                cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
-                info = cur.fetchone() or {}
-                cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
-                pic = cur.fetchone()
-                picture_url = pic["pic_path"] if pic else None
+        except Exception as e:
+            error = f"فشل في حفظ التعديلات: {e}. تأكد من البيانات."
+    
+    # في حالة وجود خطأ، يجب إعادة تحميل الصفحة مع البيانات المدخلة والخطأ
+    # إعادة جلب البيانات الأصلية للعرض الصحيح
+    csrf_token = generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
 
-        return templates.TemplateResponse("family/edit_name.html", {
-            "request": request, "user": user, "member": member, "info": info,
-            "picture_url": picture_url, "code": code, "full_name": get_full_name(code),
-            "csrf_token": csrf_token, "error": "فشل في حفظ التعديلات، تأكد من البيانات"
-        })
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
+            member = cur.fetchone() or {}
+            cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
+            info = cur.fetchone() or {}
+            cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
+            pic = cur.fetchone()
+            picture_url = pic["pic_path"] if pic else None
+    
+    # يتم هنا إرجاع النموذج مع الخطأ ليرى المستخدم أين أخطأ
+    return templates.TemplateResponse("family/edit_name.html", {
+        "request": request, "user": user, "member": member, "info": info,
+        "picture_url": picture_url, "code": code, "full_name": get_full_name(code),
+        "csrf_token": csrf_token, "error": error
+    })
 
 # ====================== حذف عضو ======================
 @router.post("/delete/{code}")
@@ -736,4 +830,5 @@ async def export_data(request: Request, password: str = ""):
             try:
                 os.remove(export_path)
             except:
-                pass            
+                pass
+  

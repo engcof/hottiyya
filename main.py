@@ -22,7 +22,7 @@ from security.rate_limit import initialize_rate_limiter, rate_limit_attempt, res
 
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
-from routers import auth, admin, family, articles, news, permissions
+from routers import auth, admin, family, articles, news, permissions, data
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -136,10 +136,10 @@ app.include_router(family.router)
 app.include_router(articles.router)
 app.include_router(news.router)
 app.include_router(permissions.router)
-
+app.include_router(data.router)
 # =========================================
-# الصفحة الرئيسية
-# =========================================
+# # الصفحة الرئيسية
+# # =========================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = request.session.get("user")

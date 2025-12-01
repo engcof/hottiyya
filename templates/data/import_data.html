@@ -11,7 +11,7 @@
         </div>
         {% endif %}
 
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" action="/data/import-data">
             <div class="form-group">
                 <label>ملف النسخة الاحتياطية (.dump أو .sql)</label>
                 <input type="file" name="dump_file" accept=".dump,.sql" required />
@@ -26,17 +26,18 @@
         <div style="margin-top: 20px;">
             <a href="/names" class="submit-btn secondary">العودة للقائمة</a>
         </div>
-        <div style="margin-top: 30px; padding: 20px; background: #e8f5e8; border-radius: 12px; text-align: center;">
-            <h3 style="color: #0b6b0b;">تصدير الداتا الحالية من الموقع</h3>
-            <p>احفظ نسخة حديثة من قاعدة البيانات على جهازك في أي وقت</p>
+         <!-- تصحيح نموذج التصدير ليستخدم POST و المسار الصحيح -->
+        <div class="export-box">
+            <h3>تصدير الداتا الحالية من الموقع</h3>
+            <p>احفظ نسخة حديثة من قاعدة البيانات على جهازك في أي وقت.</p>
             
-            <form method="get" action="/names/export-data" style="display: inline;">
-                <input type="password" name="password" placeholder="كلمة المرور" required 
-                    style="padding: 10px; font-size: 16px; border-radius: 8px; border: 1px solid #0b6b0b;">
-                <button type="submit" style="padding: 10px 20px; background: #0b6b0b; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
-                    تحميل الداتا الحالية (SQL)
-                </button>
+            <!-- تم تغيير method إلى POST و action إلى المسار الصحيح /data/export-data -->
+            <form method="post" action="/data/export-data" class="export-form">
+                <!-- هذا الإدخال هو كلمة المرور التي ترسل إلى دالة @router.post("/export-data") -->
+                <input type="password" name="password" placeholder="كلمة مرور الأدمن" required>
+                <button type="submit">تحميل الداتا الحالية (.dump)</button>
             </form>
+            <small style="display: block; margin-top: 10px; color: #004d40;">تتم عملية التصدير في الخلفية وقد تستغرق بعض الوقت.</small>
         </div>
     </div>
 </section>

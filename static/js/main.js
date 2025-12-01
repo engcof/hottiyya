@@ -1,6 +1,3 @@
-// static/js/main.js - النسخة النهائية والمثالية (مُنظّفة + مُعلّقة + مُحسّنة 100%)
-// لا تحتاج أي تعديل بعد اليوم - جاهزة للإطلاق الرسمي والخلود الأبدي
-
 document.addEventListener("DOMContentLoaded", function () {
 
     /* ==================== قائمة الموبايل (الهامبرجر) ==================== */
@@ -101,6 +98,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     /* ==================== تأكيد الحذف في كل الصفحات (حماية ملكية) ==================== */
+    // هذه الدالة تم تفعيلها لمنع استخدام alert/confirm الافتراضية المحظورة
+    // ولكن في هذا المشروع نحن نستخدم forms دون الحاجة لـ confirm حاليًا في admin.html
     document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form => {
         if (!form.dataset.confirmHooked) {
             form.addEventListener('submit', function (e) {
@@ -112,5 +111,6 @@ document.addEventListener("DOMContentLoaded", function () {
             form.dataset.confirmHooked = "true";
         }
     });
+
 
 });

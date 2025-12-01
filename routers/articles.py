@@ -1,4 +1,3 @@
-# routers/articles.py
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from psycopg2.extras import RealDictCursor
@@ -9,6 +8,8 @@ from utils.permissions import has_permission
 import shutil
 import os
 from core.templates import templates
+import html 
+import re # تم إضافة استيراد المكتبة للتحقق من الصيغة
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
@@ -130,8 +131,9 @@ async def add_article_form(request: Request):
     
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
+    # تمرير form_data فارغة مبدئيا لتجنب الأخطاء في القالب
     return templates.TemplateResponse("articles/add.html", {
-        "request": request, "user": user, "csrf_token": csrf_token
+        "request": request, "user": user, "csrf_token": csrf_token, "form_data": {}
     })
 
 @router.post("/add")
@@ -148,23 +150,84 @@ async def add_article(
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
+    # تطبيق html.escape لمنع XSS قبل الحفظ
+    title_stripped = title.strip()
+    content_stripped = content.strip()
+    title_safe = html.escape(title_stripped)
+    content_safe = html.escape(content_stripped)
+    
+    error = None
+
+    # التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
+    VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+    VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r]+"
+
+    # 1. التحقق من عدم فراغ العنوان والمحتوى
+    if not title_stripped:
+        error = "عنوان المقال مطلوب."
+    elif not content_stripped:
+        error = "محتوى المقال مطلوب."
+    
+    # 2. التحقق من نظافة العنوان 
+    elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
+        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+        
+    # 3. التحقق من نظافة المحتوى
+    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
+        error = "المقال يحتوي على رموز غير مسموح بها في المحتوى. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+
     image_url = None
     if image and image.filename:
-        filename = f"article_{id}_{image.filename}" if 'id' in locals() else image.filename
-        path = f"static/uploads/articles/{filename}"
-        os.makedirs("static/uploads/articles", exist_ok=True)
-        with open(path, "wb") as f:
-            shutil.copyfileobj(image.file, f)
-        image_url = f"/{path}"
+        # إذا كان هناك خطأ، لن يتم الرفع على أي حال، لكن نستمر في الفحص
+        pass
+        
+    if error:
+        # إرجاع الخطأ مع البيانات المدخلة سابقاً
+        csrf_token = generate_csrf_token()
+        request.session["csrf_token"] = csrf_token
+        return templates.TemplateResponse("articles/add.html", {
+            "request": request, "user": user, "csrf_token": csrf_token,
+            "error": error,
+            "form_data": {"title": title, "content": content} # تمرير البيانات غير النظيفة ليراها المستخدم
+        })
+        
+    # استكمال عملية الرفع والحفظ
+    if image and image.filename:
+        try:
+            with get_db_context() as conn:
+                with conn.cursor() as cur:
+                    # حفظ المقال أولاً للحصول على الـ id
+                    cur.execute("""
+                        INSERT INTO articles (title, content, author_id, image_url)
+                        VALUES (%s, %s, %s, %s) RETURNING id
+                    """, (title_safe, content_safe, user["id"], None)) # image_url = None مؤقتا
+                    article_id = cur.fetchone()[0]
+                    
+                    # حفظ الصورة الآن
+                    filename = f"article_{article_id}_{image.filename}"
+                    path = f"static/uploads/articles/{filename}"
+                    os.makedirs("static/uploads/articles", exist_ok=True)
+                    with open(path, "wb") as f:
+                        shutil.copyfileobj(image.file, f)
+                    image_url = f"/{path}"
+                    
+                    # تحديث رابط الصورة بعد الحفظ
+                    cur.execute("UPDATE articles SET image_url = %s WHERE id = %s", (image_url, article_id))
+                    conn.commit()
+        except Exception:
+            # معالجة فشل الحفظ
+            raise HTTPException(500, "فشل في حفظ المقال في قاعدة البيانات.")
 
-    with get_db_context() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO articles (title, content, author_id, image_url)
-                VALUES (%s, %s, %s, %s) RETURNING id
-            """, (title, content, user["id"], image_url))
-            article_id = cur.fetchone()[0]
-            conn.commit()
+    else:
+        # حفظ المقال بدون صورة
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO articles (title, content, author_id, image_url)
+                    VALUES (%s, %s, %s, %s) RETURNING id
+                """, (title_safe, content_safe, user["id"], None))
+                article_id = cur.fetchone()[0]
+                conn.commit()
 
     return RedirectResponse(f"/articles/{article_id}", status_code=303)
 
@@ -208,8 +271,66 @@ async def update_article(
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
-    image_url = form.get("image")
+    # تطبيق html.escape لمنع XSS قبل الحفظ
+    title_stripped = title.strip()
+    content_stripped = content.strip()
+    title_safe = html.escape(title_stripped)
+    content_safe = html.escape(content_stripped)
+    
+    error = None
+
+    # التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
+    VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+    VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r]+"
+
+
+    # 1. التحقق من عدم فراغ العنوان والمحتوى
+    if not title_stripped:
+        error = "عنوان المقال مطلوب."
+    elif not content_stripped:
+        error = "محتوى المقال مطلوب."
+    
+    # 2. التحقق من نظافة العنوان
+    elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
+        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+        
+    # 3. التحقق من نظافة المحتوى
+    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
+        error = "المقال يحتوي على رموز غير مسموح بها في المحتوى. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+
+
+    # في حالة وجود خطأ، يجب إعادة تحميل النموذج مع البيانات المدخلة
+    if error:
+        csrf_token = generate_csrf_token()
+        request.session["csrf_token"] = csrf_token
+        
+        # جلب البيانات الأصلية للمقال لاستخدامها في القالب
+        with get_db_context() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM articles WHERE id = %s", (id,))
+                article = cur.fetchone()
+                if not article:
+                    raise HTTPException(404, "المقال غير موجود أثناء التعديل.")
+        
+        # استبدال العنوان والمحتوى بالمدخلات الجديدة لعرض الخطأ
+        article['title'] = title
+        article['content'] = content
+
+        return templates.TemplateResponse("articles/edit.html", {
+            "request": request, "user": user, "article": article,
+            "csrf_token": csrf_token, "error": error
+        })
+
+    # استكمال عملية حفظ التعديلات
+    
     image_url = None
+    # محاولة الحصول على image_url القديمة أولاً في حال عدم وجود صورة جديدة
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT image_url FROM articles WHERE id = %s", (id,))
+            old_image = cur.fetchone()
+            if old_image:
+                image_url = old_image["image_url"]
 
     if image and image.filename:
         filename = f"article_{id}_{image.filename}"
@@ -217,22 +338,15 @@ async def update_article(
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb") as f:
             shutil.copyfileobj(image.file, f)
-        image_url = f"/{path}"
+        image_url = f"/{path}" # تحديث الرابط الجديد
 
     with get_db_context() as conn:
         with conn.cursor() as cur:
-            if image_url:
-                cur.execute("""
-                    UPDATE articles 
-                    SET title = %s, content = %s, image_url = %s 
-                    WHERE id = %s
-                """, (title, content, image_url, id))
-            else:
-                cur.execute("""
-                    UPDATE articles 
-                    SET title = %s, content = %s 
-                    WHERE id = %s
-                """, (title, content, id))
+            cur.execute("""
+                UPDATE articles 
+                SET title = %s, content = %s, image_url = %s 
+                WHERE id = %s
+            """, (title_safe, content_safe, image_url, id))
             conn.commit()
 
     return RedirectResponse(f"/articles/{id}", status_code=303)
@@ -262,12 +376,15 @@ async def add_comment(request: Request, id: int, content: str = Form(...)):
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
+    # تطبيق html.escape لمنع XSS قبل الحفظ
+    content_safe = html.escape(content)
+
     with get_db_context() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO comments (article_id, user_id, content)
                 VALUES (%s, %s, %s)
-            """, (id, user["id"], content))
+            """, (id, user["id"], content_safe)) # استخدام المتغير النظيف
             conn.commit()
 
     return RedirectResponse(f"/articles/{id}#comments", status_code=303)
@@ -306,5 +423,3 @@ async def delete_comment(request: Request, article_id: int, comment_id: int):
             conn.commit()
 
     return RedirectResponse(f"/articles/{article_id}#comments", status_code=303)
-
-

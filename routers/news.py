@@ -4,16 +4,24 @@ from fastapi.templating import Jinja2Templates
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permissions import has_permission  # ← أضف هذا
+from utils.permissions import has_permission
 from security.session import set_cache_headers
 from core.templates import templates
 import shutil
 import os
+import html # تم إضافة استيراد html
+import re   # تم إضافة استيراد re
 
 router = APIRouter(prefix="/news", tags=["news"])
 
 UPLOAD_DIR = "static/uploads/news"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+# التعبيرات النمطية للتحقق من نظافة المحتوى (عربي، إنجليزي، أرقام، علامات ترقيم شائعة)
+VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r]+"
+VALID_AUTHOR_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+
 
 def check_permission(request: Request, perm: str) -> bool:
     user = request.session.get("user")
@@ -97,7 +105,8 @@ async def add_news_form(request: Request):
     response = templates.TemplateResponse("news/add.html", {
         "request": request,
         "user": request.session.get("user"),
-        "csrf_token": csrf_token
+        "csrf_token": csrf_token,
+        "form_data": {} # إضافة form_data فارغة
     })
     set_cache_headers(response)
     return response
@@ -105,7 +114,6 @@ async def add_news_form(request: Request):
 @router.post("/add")
 async def add_news(
     request: Request,
-    form_data = Form(...),
     title: str = Form(...),
     content: str = Form(...),
     author: str = Form(...),
@@ -117,19 +125,64 @@ async def add_news(
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
+    # التنظيف والتحقق
+    title_stripped = title.strip()
+    content_stripped = content.strip()
+    author_stripped = author.strip()
+    
+    error = None
+
+    if not title_stripped:
+        error = "عنوان الخبر مطلوب."
+    elif not content_stripped:
+        error = "محتوى الخبر مطلوب."
+    elif not author_stripped:
+        error = "اسم الكاتب مطلوب."
+    
+    # التحقق من نظافة العنوان
+    elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
+        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+    # التحقق من نظافة المحتوى
+    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
+        error = "المحتوى يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+    # التحقق من نظافة الكاتب
+    elif not re.fullmatch(VALID_AUTHOR_REGEX, author_stripped):
+        error = "اسم الكاتب يحتوي على رموز غير مسموح بها."
+
+    # في حال وجود خطأ، نعيد المستخدم إلى نموذج الإضافة مع رسالة الخطأ وبياناته
+    if error:
+        csrf_token = generate_csrf_token()
+        request.session["csrf_token"] = csrf_token
+        return templates.TemplateResponse("news/add.html", {
+            "request": request,
+            "user": request.session.get("user"),
+            "csrf_token": csrf_token,
+            "error": error,
+            "form_data": {"title": title, "content": content, "author": author}
+        })
+
+
+    # تنظيف البيانات باستخدام html.escape لمنع XSS
+    title_safe = html.escape(title_stripped)
+    content_safe = html.escape(content_stripped)
+    author_safe = html.escape(author_stripped)
+
     image_url = None
     if image and image.filename:
-        image_url = f"/static/uploads/news/{image.filename}"
-        image_path = os.path.join(UPLOAD_DIR, image.filename)
+        # ملاحظة: من الأفضل استخدام UUID في اسم الملف لتجنب التكرار
+        filename = f"{os.path.basename(image.filename)}" # استخدام اسم الملف مباشرةً
+        image_path = os.path.join(UPLOAD_DIR, filename)
         with open(image_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
+        image_url = f"/static/uploads/news/{filename}"
+
 
     with get_db_context() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO news (title, content, author, image_url)
                 VALUES (%s, %s, %s, %s)
-            """, (title, content, author, image_url))
+            """, (title_safe, content_safe, author_safe, image_url))
             conn.commit()
 
     return RedirectResponse("/news", status_code=303)
@@ -164,7 +217,6 @@ async def edit_news_form(request: Request, id: int):
 async def update_news(
     request: Request,
     id: int,
-    form_data = Form(...),
     title: str = Form(...),
     content: str = Form(...),
     author: str = Form(...),
@@ -178,12 +230,79 @@ async def update_news(
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
+    # التنظيف والتحقق
+    title_stripped = title.strip()
+    content_stripped = content.strip()
+    author_stripped = author.strip()
+    
+    error = None
+
+    if not title_stripped:
+        error = "عنوان الخبر مطلوب."
+    elif not content_stripped:
+        error = "محتوى الخبر مطلوب."
+    elif not author_stripped:
+        error = "اسم الكاتب مطلوب."
+    
+    # التحقق من نظافة العنوان
+    elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
+        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+    # التحقق من نظافة المحتوى
+    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
+        error = "المحتوى يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+    # التحقق من نظافة الكاتب
+    elif not re.fullmatch(VALID_AUTHOR_REGEX, author_stripped):
+        error = "اسم الكاتب يحتوي على رموز غير مسموح بها."
+
+    # في حال وجود خطأ، نعيد المستخدم إلى نموذج التعديل مع رسالة الخطأ وبياناته
+    if error:
+        csrf_token = generate_csrf_token()
+        request.session["csrf_token"] = csrf_token
+        
+        with get_db_context() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM news WHERE id = %s", (id,))
+                item = cur.fetchone()
+                if not item:
+                    raise HTTPException(404, "الخبر غير موجود أثناء التعديل.")
+        
+        # تحديث الحقول بقيم الـ Form الجديدة لعرضها للمستخدم
+        item['title'] = title
+        item['content'] = content
+        item['author'] = author
+
+        return templates.TemplateResponse("news/edit.html", {
+            "request": request,
+            "user": request.session.get("user"),
+            "item": item,
+            "csrf_token": csrf_token,
+            "error": error
+        })
+
+
+    # تنظيف البيانات باستخدام html.escape لمنع XSS
+    title_safe = html.escape(title_stripped)
+    content_safe = html.escape(content_stripped)
+    author_safe = html.escape(author_stripped)
+
+
     image_url = None
+    # الحصول على رابط الصورة القديم في حال عدم رفع صورة جديدة
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT image_url FROM news WHERE id = %s", (id,))
+            old_image = cur.fetchone()
+            if old_image:
+                image_url = old_image["image_url"]
+
+    # التعامل مع رفع صورة جديدة
     if image and image.filename:
-        image_url = f"/static/uploads/news/{image.filename}"
-        image_path = os.path.join(UPLOAD_DIR, image.filename)
+        filename = f"{os.path.basename(image.filename)}"
+        image_path = os.path.join(UPLOAD_DIR, filename)
         with open(image_path, "wb") as f:
             shutil.copyfileobj(image.file, f)
+        image_url = f"/static/uploads/news/{filename}"
+
 
     with get_db_context() as conn:
         with conn.cursor() as cur:
@@ -191,15 +310,15 @@ async def update_news(
                 cur.execute("""
                     UPDATE news SET title=%s, content=%s, author=%s, image_url=%s
                     WHERE id=%s
-                """, (title, content, author, image_url, id))
+                """, (title_safe, content_safe, author_safe, image_url, id))
             else:
                 cur.execute("""
                     UPDATE news SET title=%s, content=%s, author=%s
                     WHERE id=%s
-                """, (title, content, author, id))
+                """, (title_safe, content_safe, author_safe, id))
             conn.commit()
 
-    return RedirectResponse("/news", status_code=303)
+    return RedirectResponse(f"/news/{id}", status_code=303)
 
 
 # === حذف الخبر ===
