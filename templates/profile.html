@@ -24,6 +24,7 @@
             {% endif %}
             <h4 class="mt-4">تغيير كلمة السر</h4>
             <form method="post" action="/profile/change-password" class="auth-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <div class="form-group">
                     <input type="password" name="current_password" placeholder="كلمة السر الحالية"  required>
                 </div>
