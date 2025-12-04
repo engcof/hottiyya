@@ -1,5 +1,3 @@
-
-# postgresql.py
 import os
 import psycopg2
 from contextlib import contextmanager
@@ -44,19 +42,7 @@ def init_database():
         conn.autocommit = True
         cur = conn.cursor()
         try:
-            print("🔍 فحص وجود جدول family_search...")
-
-            # ========================================
-            # إيقاف التهيئة إذا الجدول موجود مسبقاً
-            # ========================================
-            cur.execute("SELECT to_regclass('public.family_search');")
-            exists = cur.fetchone()[0]
-
-            if exists is not None:
-                print("⚠️ قاعدة البيانات مهيّأة مسبقاً — لن يتم إعادة الإنشاء.")
-                return
-
-            print("🟢 الجدول غير موجود — سيتم إنشاء قاعدة البيانات الآن...")
+            print("🟢 سيتم تحديث الدوال والجداول الآن لتطبيق التعديلات المطلوبة...")
 
             # ========================================
             # 1. إنشاء/تحديث دالة get_full_name
@@ -73,6 +59,7 @@ def init_database():
                     rec RECORD;
                     max_len INT := COALESCE(p_max_length, 999);
                     parts TEXT[] := '{}';
+                    name_part_processed TEXT; -- **جديد: لتبديل الفراغات**
                 BEGIN
                     FOR rec IN
                         WITH RECURSIVE tree AS (
@@ -86,10 +73,14 @@ def init_database():
                         )
                         SELECT name, nick_name FROM tree ORDER BY depth ASC
                     LOOP
+                        -- **التعديل الجديد:** إزالة الفراغات من الاسم المفرد قبل إضافته.
+                        -- هذا يضمن أن 'ابرا هيم' يصبح 'ابراهيم' و 'عبد الرحمن' يصبح 'عبدالرحمن'.
+                        name_part_processed := regexp_replace(rec.name, '\s+', '', 'g');
+
                         IF p_include_nick AND rec.nick_name IS NOT NULL AND rec.nick_name != '' THEN
                             parts := parts || rec.nick_name;
                         ELSE
-                            parts := parts || rec.name;
+                            parts := parts || name_part_processed; -- استخدام الاسم المعالج
                         END IF;
                     END LOOP;
 
@@ -108,7 +99,7 @@ def init_database():
                 CREATE OR REPLACE FUNCTION normalize_arabic(text)
                 RETURNS text AS $$
                 SELECT translate(
-                    regexp_replace(lower($1), '[ًٌٍَُِّْـ]', '', 'g'),
+                    regexp_replace(lower($1), '[ًٌٍَُِّْـ]', '', 'g'),
                     'أإآىؤئ',
                     'اايايي'
                 );
@@ -122,7 +113,7 @@ def init_database():
             cur.execute('DROP FUNCTION IF EXISTS refresh_family_search();')
 
             # ========================================
-            # إنشاء جدول family_search الجديد
+            # إنشاء جدول family_search الجديد (يتم حذفه وإعادة إنشائه لتطبيق التغيير)
             # ========================================
             cur.execute('DROP TABLE IF EXISTS family_search;')
             cur.execute('''
@@ -226,4 +217,3 @@ def init_database():
         except Exception as e:
             print(f"❌ خطأ أثناء التهيئة: {e}")
             raise
-

@@ -67,6 +67,29 @@ async def list_articles(request: Request, page: int = 1):
     set_cache_headers(response)
     return response
 
+# === 🌟 التوجيه إلى أحدث مقال (مسار ثابت) 🌟 ===
+@router.get("/latest")
+async def latest_article_redirect():
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # 1. جلب ID أحدث مقال فقط
+            cur.execute("""
+                SELECT id 
+                FROM articles 
+                ORDER BY created_at DESC 
+                LIMIT 1
+            """)
+            latest = cur.fetchone()
+            
+            if not latest:
+                # إذا لم يكن هناك مقالات، وجههم إلى صفحة قائمة المقالات
+                # نستخدم 303 Redirect لضمان أن المتصفح سيستخدم GET
+                return RedirectResponse("/articles", status_code=303)
+                
+            # 2. التوجيه إلى صفحة المقال الفعلي باستخدام ID
+            return RedirectResponse(f"/articles/{latest['id']}", status_code=303)
+
+
 # === عرض مقال + التعليقات ===
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_article(request: Request, id: int):

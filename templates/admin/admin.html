@@ -7,7 +7,7 @@
         <div class="dashboard-header">
             <h1 class="page-title">لوحة التحكم الإدارية</h1>
             <p class="subtitle">إدارة المستخدمين والصلاحيات بكل سهولة وأمان</p>
-             <a href="/permissions" class="btn-add-article">
+             <a href="/permissions" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                 </svg>
@@ -104,11 +104,18 @@
                             <td>
                                 <span class="role-badge {{ user[2] }}">{{ user[2] | title }}</span>
                             </td>
-                            <td>
+                           <td>
                                 {% if user_permissions[user[0]] %}
-                                    {% for perm in user_permissions[user[0]] %}
-                                    <span class="perm-tag">{{ perm }}</span>
-                                    {% endfor %}
+                                <details class="permissions-dropdown">
+                                    <summary class="permissions-summary">
+                                        {{ user_permissions[user[0]]|length }} صلاحية
+                                    </summary>
+                                    <div class="permission-list-content">
+                                        {% for perm in user_permissions[user[0]] %}
+                                        <span class="perm-tag">{{ perm }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </details>
                                 {% else %}
                                     <em>لا توجد صلاحيات</em>
                                 {% endif %}

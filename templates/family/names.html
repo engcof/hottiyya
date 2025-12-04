@@ -8,7 +8,7 @@
         <div class="section-header">
             <h1 class="page-title">شجرة العائلة</h1>
             {% if can_add %}
-            <a href="/names/add" class="btn-add-member">
+            <a href="/names/add" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 إضافة عضو جديد
             </a>
@@ -44,14 +44,14 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="member-actions">
-                    <a href="/names/details/{{ m.code }}" class="btn-action btn-view">تفاصيل</a>
+                <div class="member-f-actions">
+                    <a href="/names/details/{{ m.code }}" class="btn-f-action btn-f-view">تفاصيل</a>
                     {% if can_edit %}
-                    <a href="/names/edit/{{ m.code }}" class="btn-action btn-edit">تعديل</a>
+                    <a href="/names/edit/{{ m.code }}" class="btn-f-action btn-f-edit">تعديل</a>
                     {% endif %}
                     {% if can_delete %}
                     <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
-                        <button type="submit" class="btn-action btn-delete">حذف</button>
+                        <button type="submit" class="btn-f-action btn-f-delete">حذف</button>
                     </form>
                     {% endif %}
                 </div>

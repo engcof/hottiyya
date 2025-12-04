@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}الأخبار - عائلة الحوطية{% endblock %}
+{% block title %}الأخبار {% endblock %}
 
 {% block content %}
 <section class="news-page">
@@ -13,7 +13,7 @@
         <!-- زر إضافة خبر (للإدمن والمدير فقط) -->
         {% if can_add %}
         <div class="add-news-wrapper">
-            <a href="/news/add" class="btn-add-news">
+            <a href="/news/add" class="btn-add">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="12" y1="5" x2="12" y2="19"></line>
                     <line x1="5" y1="12" x2="19" y2="12"></line>

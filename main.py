@@ -143,6 +143,11 @@ app.include_router(data.router)
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = request.session.get("user")
+    with get_db_context() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # جلب العنوان لأحدث مقال لعرضه في الشريط المتحرك
+            cur.execute("SELECT title FROM articles ORDER BY created_at DESC LIMIT 1")
+            latest_article_title = cur.fetchone()
     response = templates.TemplateResponse("index.html", {
         "request": request,
         "user": user,
@@ -150,6 +155,7 @@ async def home(request: Request):
         "total_visitors": get_total_visitors(),
         "online_count": get_online_count(),
         "online_users": get_online_users()[:18], # تم تحديثه لـ 18 حسب ملفك
+        "latest_article_title": latest_article_title['title'] if latest_article_title else 'لا توجد مقالات بعد',
     })
     set_cache_headers(response)
     return response
@@ -211,11 +217,12 @@ async def change_password(request: Request):
     confirm_password = form.get("confirm_password")
     csrf_token = form.get("csrf_token")
 
+   
+    stored_csrf_token = request.session.get("csrf_token")
     error = None
     success = False
     # نطاق رموز أوسع للمطابقة
     SYMBOL_START_PATTERN = r"^[-\s_\.\@\#\!\$\%\^\&\*\(\)\{\}\[\]\<\>]" 
-
     # 2. التحقق من CSRF
     try:
         verify_csrf_token(request, csrf_token)

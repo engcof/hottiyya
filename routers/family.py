@@ -58,13 +58,12 @@ async def show_names(request: Request, page: int = 1, q: str = None):
 
     with get_db_context() as conn:
         with conn.cursor() as cur:
-
             if q and q.strip():
                 phrase = q.strip()
 
                 # -----------------------
                 # 1) البحث بالكود
-                # -----------------------
+                # ----------------------
                 if "-" in phrase:
                     cur.execute("""
                         SELECT code, full_name, nick_name
@@ -74,7 +73,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                         LIMIT %s OFFSET %s
                     """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
                     rows = cur.fetchall()
-
+                    
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
@@ -94,7 +93,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                         LIMIT %s OFFSET %s
                     """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
                     rows = cur.fetchall()
-
+                    
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
@@ -115,13 +114,13 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                         WHERE normalized_full_name ILIKE %s
                         ORDER BY full_name
                         LIMIT %s OFFSET %s
-                    """, (f"%{normalized_input}%", ITEMS_PER_PAGE, offset))
+                         """, (f"%{normalized_input}%", ITEMS_PER_PAGE, offset))
 
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
                         WHERE normalized_full_name ILIKE %s
-                    """, (f"%{normalized_input}%",))
+                        """, (f"%{normalized_input}%",))
 
                     # --- البحث بجملة كاملة بنفس الترتيب فقط ---
                     clean_phrase = " ".join(phrase.split())  # إزالة المسافات الزائدة
@@ -133,15 +132,13 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                         ORDER BY full_name
                         LIMIT %s OFFSET %s
                     """, (f"%{clean_phrase}%", ITEMS_PER_PAGE, offset))
-
                     rows = cur.fetchall()
-
+                    
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
                         WHERE full_name ILIKE %s
                     """, (f"%{clean_phrase}%",))
-
                     total = cur.fetchone()[0]   
 
             else:
@@ -158,6 +155,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                 cur.execute("SELECT COUNT(*) FROM family_name WHERE level >= 2")
                 total = cur.fetchone()[0]
             members = []
+            
             # بناء القائمة النهائية
             for code, name, nick_name in rows:
                 # جلب الاسم الكامل (حسب الدالة الموجودة لديك)
@@ -626,9 +624,7 @@ async def update_name(request: Request,
         if ext not in allowed:
             error = "نوع الصورة غير مدعوم! استخدم: JPG، PNG، WebP فقط"
 
-
     # === 3. التنفيذ أو إرجاع الخطأ ===
-
     if not error:
         try:
             with get_db_context() as conn:
@@ -704,6 +700,7 @@ async def delete_name(request: Request, code: str):
             cur.execute("DELETE FROM family_picture WHERE code_pic = %s", (code,))
             cur.execute("DELETE FROM family_info WHERE code_info = %s", (code,))
             cur.execute("DELETE FROM family_name WHERE code = %s", (code,))
+            cur.execute("DELETE FROM family_search WHERE code = %s", (code,))
             conn.commit()
     return RedirectResponse("/names", status_code=303)
 
