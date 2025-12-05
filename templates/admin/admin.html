@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}لوحة الإدارة - عائلة الحوطية{% endblock %}
+{% block title %}لوحة الإدارة {% endblock %}
 
 {% block content %}
 <section class="admin-dashboard">
     <div class="container">
         <div class="dashboard-header">
             <h1 class="page-title">لوحة التحكم الإدارية</h1>
-            <p class="subtitle">إدارة المستخدمين والصلاحيات بكل سهولة وأمان</p>
+            <p class="subtitle">إدارة المستخدمين والصلاحيات </p>
              <a href="/permissions" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -193,6 +193,40 @@
                 {% endif %}
             </div>
         </div>
+    </div>
+</section>
+<section class="admin-history-section my-5">
+    <h2>سجل نشاط تسجيل الدخول (آخر 50)</h2>
+    
+    <div class="alert alert-info">
+        <p>يتم عرض آخر نشاط للمستخدمين الذين قاموا بتسجيل الدخول. يتم تنظيف هذه السجلات تلقائيًا بعد 7 أيام.</p>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="data-table log-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>اسم المستخدم</th>
+                    <th>آخر نشاط (التاريخ)</th>
+                    <th>آخر نشاط (الوقت)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in login_history %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><span class="username-tag">{{ log.username }}</span></td>
+                    <td>{{ log.timestamp.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center">لا يوجد سجل نشاط للمستخدمين المسجلين حاليًا.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>
 <!-- جافاسكريبت للإخفاء التلقائي لرسائل الفلاش -->

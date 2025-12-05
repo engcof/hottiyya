@@ -4,13 +4,13 @@ from datetime import datetime, timedelta
 from fastapi import Request
 from postgresql import get_db_context
 
-
 def log_visit(request: Request, user: dict | None = None):
-    """تسجيل الزيارة بطريقة آمنة وسريعة مع ON CONFLICT"""
+    """تسجيل الزيارة بطريقة آمنة وسريعة مع ON CONFLICT وتحديث الإجمالي."""
     session_id = request.session.get("session_id")
     if not session_id:
         session_id = str(uuid.uuid4())
         request.session["session_id"] = session_id
+
 
     user_id = user.get("id") if user and user.get("id") else None
     username = user.get("username") if user and user.get("username") else None
@@ -22,6 +22,7 @@ def log_visit(request: Request, user: dict | None = None):
     try:
         with get_db_context() as conn:
             with conn.cursor() as cur:
+                # 1. محاولة إدراج/تحديث الجلسة
                 cur.execute("""
                     INSERT INTO visits (
                         session_id, user_id, username, ip, user_agent, path
@@ -32,7 +33,20 @@ def log_visit(request: Request, user: dict | None = None):
                         username = EXCLUDED.username,
                         ip = EXCLUDED.ip,
                         path = EXCLUDED.path
+                    RETURNING xmax = 0;
                 """, (session_id, user_id, username, ip, user_agent, path))
+                
+                # RETURNING xmax = 0: يُرجع True إذا كان الصف جديدًا (INSERT)، و False إذا تم تحديثه (UPDATE)
+                is_new_session = cur.fetchone()[0]
+
+                # 2. تحديث العداد الإجمالي إذا كانت الجلسة جديدة
+                if is_new_session:
+                    cur.execute("""
+                        UPDATE stats_summary
+                        SET value = value + 1
+                        WHERE key = 'total_visitors_count';
+                    """)
+
             conn.commit()
     except Exception as e:
         # فقط في أول تشغيل أو لو الـ index لسه ما اتعملش
@@ -43,10 +57,12 @@ def log_visit(request: Request, user: dict | None = None):
 
 
 def get_total_visitors() -> int:
+    """جلب العدد الإجمالي الحقيقي من جدول stats_summary."""
     with get_db_context() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT COUNT(DISTINCT session_id) FROM visits")
-            return cur.fetchone()[0] or 0
+            cur.execute("SELECT value FROM stats_summary WHERE key = 'total_visitors_count'")
+            result = cur.fetchone()
+            return result[0] if result else 0
 
 
 def get_today_visitors() -> int:
@@ -79,3 +95,48 @@ def get_online_users() -> list[dict]:
 
 def get_online_count() -> int:
     return len(get_online_users())
+
+
+# =======================================================
+# دوال خاصة بصفحة الإدارة لمراقبة الدخول
+# =======================================================
+
+def get_logged_in_users_history(limit: int = 50) -> list[dict]:
+    """
+    جلب سجلات الدخول (حيث يكون user_id موجودًا) مع تاريخ ووقت آخر رؤية.
+    نستخدم DISTINCT ON (user_id) لضمان ظهور آخر سجل لكل مستخدم.
+    """
+    with get_db_context() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT ON (user_id) 
+                       username, timestamp, user_id
+                FROM visits
+                WHERE user_id IS NOT NULL AND user_id > 0
+                ORDER BY user_id, timestamp DESC
+                LIMIT %s
+            """, (limit,))
+            rows = cur.fetchall()
+            
+            # تحويل النتائج إلى قائمة قواميس مع تنسيق التاريخ
+            return [
+                {
+                    "username": row[0],
+                    "timestamp": row[1], # سنقوم بتنسيقها في قالب HTML
+                    "user_id": row[2]
+                }
+                for row in rows
+            ]
+
+
+def clean_visits_history(days: int = 7):
+    """حذف سجلات الزيارات والدخول التي مر عليها أكثر من (days) يوم."""
+    threshold_date = datetime.now() - timedelta(days=days)
+    try:
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM visits WHERE timestamp < %s", (threshold_date,))
+            conn.commit()
+            print(f"تم حذف سجلات الزيارات التي مر عليها أكثر من {days} أيام.")
+    except Exception as e:
+        print(f"خطأ أثناء حذف السجلات القديمة: {e}")

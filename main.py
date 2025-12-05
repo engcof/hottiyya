@@ -21,6 +21,7 @@ from security.hash import check_password, hash_password
 from security.rate_limit import initialize_rate_limiter, rate_limit_attempt, reset_attempts
 
 # استيراد الخدمات والراوترات
+
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 from routers import auth, admin, family, articles, news, permissions, data
 from dotenv import load_dotenv
@@ -154,7 +155,7 @@ async def home(request: Request):
         "today_visitors": get_today_visitors(),
         "total_visitors": get_total_visitors(),
         "online_count": get_online_count(),
-        "online_users": get_online_users()[:18], # تم تحديثه لـ 18 حسب ملفك
+        "online_users": get_online_users()[:18],
         "latest_article_title": latest_article_title['title'] if latest_article_title else 'لا توجد مقالات بعد',
     })
     set_cache_headers(response)

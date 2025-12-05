@@ -42,177 +42,51 @@ def init_database():
         conn.autocommit = True
         cur = conn.cursor()
         try:
-            print("🟢 سيتم تحديث الدوال والجداول الآن لتطبيق التعديلات المطلوبة...")
+            print("🟢 جاري التحقق من تهيئة قاعدة البيانات...")
 
-            # ========================================
-            # 1. إنشاء/تحديث دالة get_full_name
-            # ========================================
-            print("إنشاء دالة get_full_name في PostgreSQL...")
+            # =======================================================
+            # 1. إنشاء جدول stats_summary لتخزين الإجمالي الحقيقي (يُنفذ مرة واحدة)
+            # =======================================================
             cur.execute('''
-                CREATE OR REPLACE FUNCTION public.get_full_name(
-                    p_code TEXT,
-                    p_max_length INT DEFAULT NULL,
-                    p_include_nick BOOLEAN DEFAULT FALSE
-                ) RETURNS TEXT AS $$
-                DECLARE
-                    result TEXT := '';
-                    rec RECORD;
-                    max_len INT := COALESCE(p_max_length, 999);
-                    parts TEXT[] := '{}';
-                    name_part_processed TEXT; -- **جديد: لتبديل الفراغات**
-                BEGIN
-                    FOR rec IN
-                        WITH RECURSIVE tree AS (
-                            SELECT code, name, f_code, nick_name, 1 as depth
-                            FROM family_name WHERE code = p_code
-                            UNION ALL
-                            SELECT fn.code, fn.name, fn.f_code, fn.nick_name, t.depth + 1
-                            FROM family_name fn
-                            JOIN tree t ON fn.code = t.f_code
-                            WHERE t.depth < 20
-                        )
-                        SELECT name, nick_name FROM tree ORDER BY depth ASC
-                    LOOP
-                        -- **التعديل الجديد:** إزالة الفراغات من الاسم المفرد قبل إضافته.
-                        -- هذا يضمن أن 'ابرا هيم' يصبح 'ابراهيم' و 'عبد الرحمن' يصبح 'عبدالرحمن'.
-                        name_part_processed := regexp_replace(rec.name, '\s+', '', 'g');
-
-                        IF p_include_nick AND rec.nick_name IS NOT NULL AND rec.nick_name != '' THEN
-                            parts := parts || rec.nick_name;
-                        ELSE
-                            parts := parts || name_part_processed; -- استخدام الاسم المعالج
-                        END IF;
-                    END LOOP;
-
-                    result := array_to_string(parts, ' ');
-                    IF char_length(result) > max_len THEN
-                        result := left(result, max_len) || '...';
-                    END IF;
-
-                    RETURN result;
-                END;
-                $$ LANGUAGE plpgsql STABLE;
-            ''')
-
-            # normalize_arabic
-            cur.execute('''
-                CREATE OR REPLACE FUNCTION normalize_arabic(text)
-                RETURNS text AS $$
-                SELECT translate(
-                    regexp_replace(lower($1), '[ًٌٍَُِّْـ]', '', 'g'),
-                    'أإآىؤئ',
-                    'اايايي'
+                CREATE TABLE IF NOT EXISTS stats_summary (
+                    key TEXT PRIMARY KEY,
+                    value BIGINT NOT NULL DEFAULT 0
                 );
-                $$ LANGUAGE sql IMMUTABLE;
             ''')
-
-            # ========================================
-            # حذف Trigger والدالة المرتبطة (إذا موجودة)
-            # ========================================
-            cur.execute('DROP TRIGGER IF EXISTS trig_refresh_search ON family_name;')
-            cur.execute('DROP FUNCTION IF EXISTS refresh_family_search();')
-
-            # ========================================
-            # إنشاء جدول family_search الجديد (يتم حذفه وإعادة إنشائه لتطبيق التغيير)
-            # ========================================
-            cur.execute('DROP TABLE IF EXISTS family_search;')
-            cur.execute('''
-                CREATE TABLE family_search (
-                    code TEXT PRIMARY KEY,
-                    full_name TEXT NOT NULL,
-                    nick_name TEXT,
-                    search_text TEXT GENERATED ALWAYS AS (
-                        coalesce(full_name, '') || ' ' || coalesce(nick_name, '')
-                    ) STORED,
-                    updated_at TIMESTAMPTZ DEFAULT NOW()
-                )
-            ''')
-
+            print("✅ تم التحقق من جدول stats_summary")
+            
+            # تهيئة الصف الأساسي (لتخزين Total Visitors)
             cur.execute("""
-                CREATE INDEX idx_family_search_gin
-                ON family_search USING GIN (to_tsvector('arabic', search_text))
+                INSERT INTO stats_summary (key, value)
+                VALUES ('total_visitors_count', 0)
+                ON CONFLICT (key) DO NOTHING;
             """)
+            
+            # =======================================================
+            # 2. ترحيل البيانات: نسخ الإجمالي القديم إلى الجدول الجديد (مرة واحدة فقط)
+            # =======================================================
+            cur.execute("SELECT value FROM stats_summary WHERE key = 'total_visitors_count'")
+            current_total = cur.fetchone()[0] if cur.rowcount > 0 else 0
 
-            cur.execute('CREATE INDEX idx_family_search_name ON family_search(full_name)')
+            # نتحقق إذا كانت القيمة الحالية صفر (لم يتم الترحيل بعد)
+            if current_total == 0:
+                # *تنبيه: يجب التأكد أن جدول visits موجود بالفعل في القاعدة قبل هذا السطر*
+                print("⚠️ جاري ترحيل الإجمالي الحالي للزوار من جدول visits...")
+                
+                cur.execute("SELECT COUNT(DISTINCT session_id) FROM visits")
+                initial_total = cur.fetchone()[0] or 0
+                
+                if initial_total > 0:
+                    cur.execute("""
+                        UPDATE stats_summary
+                        SET value = %s
+                        WHERE key = 'total_visitors_count' AND value = 0;
+                    """, (initial_total,))
+                    print(f"✅ تم ترحيل {initial_total} زائر كإجمالي ابتدائي.")
+                else:
+                    print("◀️ جدول visits فارغ، الإجمالي الابتدائي هو صفر.")
 
-            cur.execute('''
-                ALTER TABLE family_search
-                ADD COLUMN full_name_normalized TEXT GENERATED ALWAYS AS (
-                    regexp_replace(full_name, '\s+', ' ', 'g')
-                ) STORED;
-            ''')
-
-            cur.execute('''
-                ALTER TABLE family_search
-                ADD COLUMN normalized_full_name TEXT;
-            ''')
-
-            cur.execute('''
-                UPDATE family_search
-                SET normalized_full_name = normalize_arabic(full_name);
-            ''')
-
-            cur.execute('''
-                CREATE OR REPLACE FUNCTION update_normalized_full_name()
-                RETURNS trigger AS $$
-                BEGIN
-                    NEW.normalized_full_name := normalize_arabic(NEW.full_name);
-                    RETURN NEW;
-                END;
-                $$ LANGUAGE plpgsql;
-            ''')
-
-            cur.execute('''
-                CREATE TRIGGER trg_normalized_fullname
-                BEFORE INSERT OR UPDATE ON family_search
-                FOR EACH ROW
-                EXECUTE FUNCTION update_normalized_full_name();
-            ''')
-
-            # ========================================
-            # دالة و trigger للتحديث التلقائي عند تعديل family_name
-            # ========================================
-            cur.execute('''
-                CREATE OR REPLACE FUNCTION refresh_family_search() RETURNS trigger AS $$
-                BEGIN
-                    INSERT INTO family_search (code, full_name, nick_name)
-                    VALUES (
-                        NEW.code,
-                        public.get_full_name(NEW.code, NULL, FALSE),
-                        NEW.nick_name
-                    )
-                    ON CONFLICT (code) DO UPDATE SET
-                        full_name = EXCLUDED.full_name,
-                        nick_name = EXCLUDED.nick_name,
-                        updated_at = NOW();
-                    RETURN NEW;
-                END;
-                $$ LANGUAGE plpgsql;
-            ''')
-
-            cur.execute('''
-                CREATE TRIGGER trig_refresh_search
-                AFTER INSERT OR UPDATE OF name, f_code, m_code, h_code, w_code, nick_name
-                ON family_name
-                FOR EACH ROW
-                EXECUTE FUNCTION refresh_family_search();
-            ''')
-
-            # ========================================
-            # تعبئة الجدول لأول مرة
-            # ========================================
-            cur.execute('''
-                INSERT INTO family_search (code, full_name, nick_name)
-                SELECT 
-                    code,
-                    public.get_full_name(code, NULL, FALSE),
-                    nick_name
-                FROM family_name
-                WHERE level >= 0
-                ON CONFLICT (code) DO NOTHING
-            ''')
-
-            print("✅ تم إنشاء قاعدة البيانات بنجاح!")
+            print("✅ تم إنهاء التهيئة بنجاح!")
 
         except Exception as e:
             print(f"❌ خطأ أثناء التهيئة: {e}")

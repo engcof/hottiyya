@@ -27,53 +27,54 @@
 <main>
     <section class="hero-section">
         <div class="hero-content">
-            
             <h3 class="basmala">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</h3>
-            
             <h1 class="hero-title">الحوطية</h1>
-            
             <p class="hero-description">
                 قبيلة الحوطية، تتميز بأصالة النسب، كرم الأخلاق، والتكافل الاجتماعي. سجلت تاريخها في خدمة المجتمع والدين منذ قرون.
             </p>
-            
             <a href="/about" class="cta-button">اقرأ المزيد عن العائلة</a>
         </div>
-        
-        </section>
-    
-        <div class="stats-bar-integrated">
-            <div class="stats-inner">
-                <div class="stat">
-                    <span class="num" style="color:#10b981">{{ today_visitors }}</span>
-                    <span class="label">اليوم</span>
-                </div>
-                <div class="separator">•</div>
-                <div class="stat">
-                    <span class="num" style="color:#3b82f6">{{ total_visitors }}</span>
-                    <span class="label">الإجمالي</span>
-                </div>
-                <div class="separator">•</div>
-                
-                <div class="stat online-stat" style="position:relative;">
-                    <div class="online-wrapper">
-                        <span class="num" style="color:#f59e0b">{{ online_count }}</span>
-                        <span class="label">أونلاين</span>
-                        
-                        {% if online_count > 0 %}
-                        <button class="online-toggle" id="onlineToggle" title="عرض المستخدمين أونلاين">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                                <polyline points="15 6 9 12 15 18"></polyline>
-                            </svg>
-                        </button>
-                        {% endif %}
-                    </div>
-                   
-                </div>
+    </section>
+    <section class="stats-section stats-grid">
+        <div class="stat-card note-style today-stat">
+            <span class="num" style="color:#10b981">{{ today_visitors }}</span>
+            <span class="label">اليوم</span>
+        </div>
+
+        <div class="stat-card note-style total-stat">
+            <span class="num" style="color:#3b82f6">{{ total_visitors }}</span>
+            <span class="label">الإجمالي</span>
+        </div>
+
+        <div class="stat-card note-style online-stat">
+            <div class="online-top-line"> 
+                <span class="num" style="color:#f59e0b">{{ online_count }}</span>
+                {% if online_count > 0 %}
+                    <button class="online-toggle" id="onlineToggle" title="عرض المستخدمين أونلاين" aria-expanded="false" aria-controls="onlineList">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="15 6 9 12 15 18"></polyline>
+                        </svg>
+                    </button>
+                {% endif %}
+            </div>  
+            <span class="label">أونلاين</span>
+            <div id="onlineList" class="online-list">
+                {% if online_users %}
+                    {% for user in online_users %}
+                        <div class="online-user-item">
+                            <span class="status-dot"></span> 
+                            <span>{{ user.username }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="padding: 0 16px; color: var(--text-light);">لا يوجد مستخدمون حاليًا</div>
+                {% endif %}
             </div>
         </div>
+    </section>
     
-        <section class="latest-update">
-            <div class="container">
+    <section class="latest-update">
+        <div class="container">
                 <div class="update-card glass latest-announcement-card"> 
                     <span class="badge">أحدث إعلان</span>
                     <h3>تم إطلاق منصة عائلة الحوطية الرقمية رسميًا!</h3>
@@ -83,8 +84,8 @@
                     <small>21 نوفمبر 2025</small>
                 </div>
             </div>
-        </section>
-        <section class="latest-articles-grid">
+    </section>
+    <section class="latest-articles-grid">
         <div class="container">
             <h2 class="section-heading">أحدث المقالات المضافة</h2>
             
@@ -116,18 +117,8 @@
             
         </div>
     </section>
-    
+   
 </main>
-
-
-<div id="onlinePortal"></div>
-
-<script>
-document.getElementById('onlinePortal').innerHTML = `
-  <div class="online-list" id="onlineList" style="display:none; position:fixed; z-index:99999; background:var(--glass-strong); backdrop-filter:blur(20px); border:1px solid var(--border); border-radius:16px; padding:12px; min-width:200px; box-shadow:0 15px 40px rgba(0,0,0,0.22);">
-    ${document.querySelectorAll('.online-item').length ? [...document.querySelectorAll('.online-item')].map(item => item.outerHTML).join('') : '<div style="padding:8px 12px; color:var(--text-light);">لا يوجد مستخدمون أونلاين</div>'}
-  </div>
-`;
-document.getElementById('onlinePortal').appendChild(document.getElementById('onlineList'));
-</script>
+<div id="onlineDropdownPortal">
+</div>
 {% endblock %}

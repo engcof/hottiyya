@@ -58,12 +58,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
     /* ==================== قائمة المستخدمين أونلاين (مع fixed positioning) ==================== */
-        if (document.getElementById('onlineToggle')) {
+    if (document.getElementById('onlineToggle')) {
         const toggle = document.getElementById('onlineToggle');
         const list = document.getElementById('onlineList');
         const portal = document.getElementById('onlineDropdownPortal');
-
+        const originalParent = list.parentElement; // لحفظ الوالد الأصلي    
+    
         // إخفاء أولي
+        // ... (بقية تنسيقات الإخفاء الأولي كما هي)
         list.style.opacity = '0';
         list.style.visibility = 'hidden';
         list.style.pointerEvents = 'none';
@@ -71,22 +73,35 @@ document.addEventListener("DOMContentLoaded", function () {
         list.style.transform = 'translateY(-10px)';
 
         function show() {
-            const rect = toggle.getBoundingClientRect();
-            const left = rect.left + rect.width / 2 - list.offsetWidth / 2;
-            const top = rect.bottom + 10;
+        // نقل القائمة إلى البوابة
+        portal.appendChild(list); 
 
-            portal.style.left = Math.max(8, left) + 'px';
-            portal.style.top = top + 'px';
-            portal.style.pointerEvents = 'all';
+        const rect = toggle.getBoundingClientRect();
+        // مركزة القائمة تحت زر التبديل
+        const left = rect.left + rect.width / 2 - list.offsetWidth / 2;
+        const top = rect.bottom + 10;
 
-            list.style.opacity = '1';
-            list.style.visibility = 'visible';
-            list.style.pointerEvents = 'all';
-            list.style.transform = 'translateY(0)';
-            toggle.classList.add('active');
+        portal.style.left = Math.max(8, left) + 'px';
+        portal.style.top = top + 'px';
+        portal.style.pointerEvents = 'all';
+
+        list.style.opacity = '1';
+        list.style.visibility = 'visible';
+        list.style.pointerEvents = 'all';
+        list.style.transform = 'translateY(0)';
+        toggle.classList.add('active');
+
+        // إغلاق قائمة المستخدم إذا كانت مفتوحة
+        document.getElementById('userDropdown')?.classList.remove("show");
+        document.getElementById('userBtn')?.classList.remove("active");
         }
 
         function hide() {
+            // إعادة القائمة إلى مكانها الأصلي
+            if (originalParent) {
+                originalParent.appendChild(list);
+            }
+
             list.style.opacity = '0';
             list.style.visibility = 'hidden';
             list.style.pointerEvents = 'none';
@@ -102,6 +117,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         document.addEventListener('click', e => {
+            // إذا لم يتم النقر على الزر أو القائمة نفسها، قم بإخفائها
             if (!toggle.contains(e.target) && !list.contains(e.target)) hide();
         });
 
@@ -109,7 +125,13 @@ document.addEventListener("DOMContentLoaded", function () {
         window.addEventListener('scroll', () => {
             if (toggle.classList.contains('active')) show();
         });
+
+        // للتأكد من تحديث الموقع عند تغيير حجم الشاشة
+        window.addEventListener('resize', () => {
+            if (toggle.classList.contains('active')) show();
+        });
     }
+    
     /* ==================== إغلاق كل القوائم عند الضغط على ESC ==================== */
     document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") {

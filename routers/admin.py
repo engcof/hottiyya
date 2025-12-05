@@ -7,6 +7,7 @@ from security.session import set_cache_headers
 from psycopg2.extras import RealDictCursor
 from security.hash import hash_password
 from core.templates import templates
+from services.analytics import get_logged_in_users_history # استدعاء الدالة الجديدة
 import html
 import re
 
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/", response_class=HTMLResponse)
 async def admin_page(request: Request, page: int = 1):
+    login_history = get_logged_in_users_history(limit=50)
     usr = request.session.get("user")
     user = get_current_user(request)
     if not user or user.get("role") != "admin":
@@ -71,6 +73,7 @@ async def admin_page(request: Request, page: int = 1):
         "user_permissions": user_permissions,
         "current_page": page,
         "total_pages": total_pages,
+        "login_history": login_history,
         "error_message": error_message,     # تم تمرير رسالة الخطأ
         "success_message": success_message   # تم تمرير رسالة النجاح
     })
@@ -210,7 +213,6 @@ async def edit_user(
     except Exception as e:
         request.session["error_message"] = f"فشل في تعديل المستخدم: {str(e)}"
         return RedirectResponse(url=f"/admin?page={current_page}", status_code=303)
-
 
 # حذف مستخدم
 @router.post("/delete_user")

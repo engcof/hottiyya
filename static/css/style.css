@@ -111,7 +111,7 @@ nav {
   color: var(--accent);
   font-weight:600;
 }
-/* === منطقة المستخدم === */
+/*  منطقة المستخدم  */
 .user-area {
     position: relative;
     z-index: 9999;
@@ -222,7 +222,7 @@ nav {
     background: #fee2e2;
     color: #991b1b;
 }
-/* === Mobile Menu === */
+/*  Mobile Menu  */
 .mobile-menu-toggle { 
     display:none; 
     flex-direction:column; 
@@ -286,7 +286,7 @@ main {
   margin: 0 auto;
   padding: 0 20px;
 }
-/* === Footer === */
+/*  Footer  */
 footer { 
     background:#0f172a; 
     color:#94a3b8; 
@@ -360,7 +360,7 @@ footer {
 .ticker-separator {
     color: #d1d5db;
 }
-/* === تعريف الحركة (Keyframes) === */
+/*  تعريف الحركة (Keyframes)  */
 @keyframes ticker-scroll {
     0% {
         transform: translateX(100%); /* يبدأ من خارج الشاشة (اليمين) */
@@ -369,7 +369,7 @@ footer {
         transform: translateX(-100%); /* ينتهي إلى خارج الشاشة (اليسار) */
     }
 }
-/* === التنسيقات الجديدة للـ Hero Section === */
+/*  التنسيقات الجديدة للـ Hero Section  */
 .hero-section {
     position: relative; /* مهم لتمكين وضع الصورة كخلفية مطلقة */
     max-width: 1200px;
@@ -436,122 +436,6 @@ footer {
 .cta-button:hover {
     background-color: var(--accent-hover);
 }
-/* ==========  شريط الإحصائيات  ========== */
-.stats-bar-integrated {
-    max-width: 900px; /* عرضه يكون أقل من عرض الصفحة */
-    margin: 0px auto 50px auto; /* مسافة فاصلة في الأسفل */
-    padding: 15px 30px;
-    background: var(--card-bg); /* لون البطاقة الأبيض */
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); /* ظل خفيف */
-}
-.stats-bar-integrated .stats-inner {
-    display: flex;
-    justify-content: center; /* توسيط الإحصائيات */
-    align-items: center;
-    gap: 25px;
-}
-.stats-inner {
-    overflow: visible !important; /* مهم جدًا */
-    position: relative;
-    z-index: auto;
-}
-
-.stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    line-height: 1.2;
-}
-.stat .num {
-    font-size: 1.15rem;
-    font-weight: 800;
-}
-.stat .label {
-    font-size: 0.85rem;
-    color: var(--text-light);
-    font-weight: 500;
-}
-.separator {
-    font-size: 1.5rem;
-    color: var(--border);
-    opacity: 0.7;
-}
-/* === الأونلاين المنسدل (تصحيح الهيكل) === */
-
-
-.online-toggle {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--text-light);
-    padding: 0;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    margin-right: -4px; /* سحب السهم للخلف قليلاً */
-}
-.online-toggle:hover {
-    color: #f59e0b;
-}
-/* تنسيق أيقونة السهم داخل الزر */
-.online-toggle svg {
-    width: 16px;
-    height: 16px;
-    transition: transform 0.3s ease;
-    stroke: var(--text-light);
-}
-.online-toggle:hover svg {
-    stroke: var(--accent);
-}
-
-/* === تنسيق قائمة الأونلاين المنسدلة (الدروب داون) === */
-
-
-/* ============= دروب داون الأونلاين - الحل النهائي ============= */
-.online-stat {
-    position: relative;
-    z-index: 9999 !important;
-}
-
-.online-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    position: relative;
-    z-index: 9999;
-}
-#onlineDropdownPortal {
-    position: fixed !important;
-    z-index: 99999 !important;
-    pointer-events: none;
-    top: 0; left: 0;
-}
-
-.online-list {
-    min-width: 200px;
-    background: var(--glass-strong);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.22);
-    padding: 12px 0;
-    font-size: 0.95rem;
-}
-
-.online-toggle.active svg {
-    transform: rotate(90deg) !important;
-}
-/* النقطة الخضراء للحالة */
-.status-dot {
-    width: 8px;
-    height: 8px;
-    background: #10b981;
-    border-radius: 50%;
-    margin-left: 4px;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
-}
 
 
 /* إخفاء القائمة في الموبايل */
@@ -560,7 +444,142 @@ footer {
         display: none !important;
     }
 }
-
+/* ==================== تنسيقات شكل النوتة اللاصقة (الجديدة) ==================== */
+/* إعداد التوزيع الجديد: Flexbox للتوزيع الأفقي */
+.stats-section.stats-grid {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 30px;
+    max-width: 900px;
+    margin: 30px auto 50px auto;
+}
+/* تنسيق بطاقة النوتة اللاصقة (العام) */
+.stat-card.note-style {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 15px 15px; /* تم تعديل الـ padding الأفقي ليتناسب مع العرض الجديد */
+    
+    /* === الحل النهائي لتثبيت الارتفاع والعرض === */
+    width: 120px; 
+    height: 95px;
+    
+    /* شكل النوتة اللاصقة */
+    background: #fff9e5; 
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+    transform: rotate(0.5deg); 
+    transition: transform 0.2s ease;
+    
+    position: relative; 
+    z-index: 10;
+}
+.stat-card.note-style:hover {
+    /* 1. رفع النوتة قليلاً للأعلى (لإعطاء إحساس "الالتقاط") */
+    transform: rotate(0deg) translateY(-5px); 
+    
+    /* 2. زيادة وتغميق الظل */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); 
+    
+    /* 3. تغيير لون الخلفية قليلاً لإضافة تميز */
+    background: #fff5d8; /* لون أغمق قليلاً من #fff9e5 */
+    
+    /* زيادة الـ z-index لضمان أنها فوق النوتات المجاورة عند الرفع */
+    z-index: 12; 
+}
+/* الأرقام والتسميات داخل البطاقة */
+.stat-card .num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.stat-card .label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
+/* تخصيص بسيط للأونلاين */
+.stat-card.online-stat {
+    transform: rotate(-1.5deg); 
+}
+/* تنسيق السطر الذي يحتوي على الرقم وزر الدروب داون */
+.online-top-line {
+    display: flex;
+    align-items: center; 
+    justify-content: center;
+    line-height: 1.0;
+    position: relative;
+    top: -2px; /* تصحيح لمرور السطر بالكامل */
+}
+/* تنسيق زر السهم (الآن يعمل بشكل ثابت) */
+.online-toggle {
+    margin-right: 2px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1; 
+    display: flex;
+    align-items: center;
+    position: unset; 
+    top: unset;
+}
+.online-toggle svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-light);
+    transition: transform 0.25s ease;
+    transform: rotate(90deg); /* يشير للأعلى عند الإغلاق */
+}
+.online-toggle:hover svg {
+    stroke: #f59e0b; 
+}
+.online-toggle.active svg {
+    transform: rotate(-90deg) !important; /* يشير للأسفل عند الفتح */
+}
+/* ==================== تحديث تنسيقات الدروب داون ==================== */
+/* لضمان أن الدروب داون يظهر فوق العناصر الأخرى */
+.online-stat {
+    z-index: 9999 !important;
+}
+/* تصحيح تنسيق القائمة المنسدلة للتناسب مع الشكل الجديد */
+.online-list {
+    min-width: 120px;
+    background: var(--glass-strong);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 12px; /* تصغير الزوايا لتناسب النوتة */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* ظل أقل حدة */
+    padding: 10px 0; /* تصغير الـ padding الداخلي */
+    font-size: 0.9rem;
+}
+.online-list .online-user-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    transition: var(--transition) ease;
+}
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    margin-left: 4px;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
+}
+.online-user-item span:last-child {
+    margin-right: 8px;
+}
+#onlineDropdownPortal {
+    position: fixed !important;
+    z-index: 99999 !important;
+    pointer-events: none;
+    top: 0; left: 0;
+}
+/* ... (بقية تنسيقات .online-user-item و .status-dot تبقى كما هي) ... */
 .latest-announcement-card {
     /* زيادة العرض إلى أقصى حد وتوسيطها */
     max-width: 1000px;
@@ -600,7 +619,7 @@ footer {
     color: var(--text-medium);
     margin-bottom: 15px;
 }
-/* === تنسيقات شبكة أحدث المقالات في الصفحة الرئيسية === */
+/*  تنسيقات شبكة أحدث المقالات في الصفحة الرئيسية  */
 .latest-articles-grid {
     max-width: 1200px;
     margin: 50px auto 80px auto;
@@ -816,14 +835,14 @@ footer {
     padding-top: 10px;
     border-top: 1px dashed var(--border-light);
 }
-/* === 4. تنسيق الرسالة الختامية (Final Message) === */
+/*  4. تنسيق الرسالة الختامية (Final Message) */
 .final-message {
     max-width: 900px;
     margin: 50px auto;
     padding: 40px;
     border-radius: 15px;
     background-color: var(--primary-color); 
-    color: white;
+    color: var(--text-dark);
     text-align: center;
     box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4);
 }
@@ -831,7 +850,7 @@ footer {
     font-size: 2.2rem;
     font-weight: 800;
     margin-bottom: 20px;
-    color: white;
+    color: var(--text-dark);
 }
 .quote {
     font-size: 1.15rem;
@@ -2521,3 +2540,47 @@ footer {
     }
 }
 
+/* تنسيقات جدول سجل الدخول */
+.admin-history-section {
+    margin-top: 40px;
+    margin-bottom: 40px;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.data-table thead th {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 12px 15px;
+    text-align: right;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.data-table tbody td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #dee2e6;
+    color: #343a40;
+    font-size: 0.95rem;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+
+.username-tag {
+    font-weight: 500;
+    color: #007bff; /* لون مميز لاسم المستخدم */
+    background-color: #e7f2ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
