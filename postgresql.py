@@ -8,24 +8,34 @@ load_dotenv()
 @contextmanager
 def get_db_context():
     conn = None
+    # 💡 التحقق أولاً من وجود DATABASE_URL (الطريقة المُفضلة لـ Render)
+    database_url = os.getenv("DATABASE_URL")
+    
     try:
-        host = os.getenv("DB_HOST")
-        dbname = os.getenv("DB_NAME")
-        user = os.getenv("DB_USER")
-        password = os.getenv("DB_PASSWORD")
-        port = os.getenv("DB_PORT", "5432")
+        if database_url:
+            # استخدام DATABASE_URL مباشرة
+            conn = psycopg2.connect(database_url, sslmode="require")
+        else:
+            # استخدام المتغيرات المنفصلة (للاستخدام المحلي)
+            host = os.getenv("DB_HOST")
+            dbname = os.getenv("DB_NAME")
+            user = os.getenv("DB_USER")
+            password = os.getenv("DB_PASSWORD")
+            port = os.getenv("DB_PORT", "5432")
 
-        if not all([host, dbname, user, password]):
-            raise ValueError("متغيرات قاعدة البيانات مفقودة!")
+            if not all([host, dbname, user, password]):
+                raise ValueError("متغيرات قاعدة البيانات مفقودة!")
 
-        conn = psycopg2.connect(
-            host=host,
-            dbname=dbname,
-            user=user,
-            password=password,
-            port=port,
-            sslmode="require" if os.getenv("DATABASE_URL") else "prefer"
-        )
+            conn = psycopg2.connect(
+                host=host,
+                dbname=dbname,
+                user=user,
+                password=password,
+                port=port,
+                # يمكن تعيين sslmode هنا إلى 'prefer' أو 'disable' إذا لم تكن تستخدم SSL محلياً
+                sslmode="prefer"
+            )
+        
         yield conn
     except Exception as e:
         if conn:
@@ -42,10 +52,11 @@ def init_database():
         conn.autocommit = True
         cur = conn.cursor()
         try:
-            print("🟢 جاري التحقق من تهيئة قاعدة البيانات...")
+            # 🟢 رسالة بداية واحدة
+            print("🟢 جاري تهيئة مكونات قاعدة البيانات الأساسية...")
 
             # =======================================================
-            # 1. إنشاء جدول stats_summary لتخزين الإجمالي الحقيقي (يُنفذ مرة واحدة)
+            # 1. إنشاء جدول stats_summary
             # =======================================================
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS stats_summary (
@@ -53,9 +64,8 @@ def init_database():
                     value BIGINT NOT NULL DEFAULT 0
                 );
             ''')
-            print("✅ تم التحقق من جدول stats_summary")
             
-            # تهيئة الصف الأساسي (لتخزين Total Visitors)
+            # تهيئة الصف الأساسي
             cur.execute("""
                 INSERT INTO stats_summary (key, value)
                 VALUES ('total_visitors_count', 0)
@@ -63,16 +73,12 @@ def init_database():
             """)
             
             # =======================================================
-            # 2. ترحيل البيانات: نسخ الإجمالي القديم إلى الجدول الجديد (مرة واحدة فقط)
+            # 2. ترحيل البيانات (الإبقاء على رسالة الترحيل فقط)
             # =======================================================
             cur.execute("SELECT value FROM stats_summary WHERE key = 'total_visitors_count'")
             current_total = cur.fetchone()[0] if cur.rowcount > 0 else 0
 
-            # نتحقق إذا كانت القيمة الحالية صفر (لم يتم الترحيل بعد)
             if current_total == 0:
-                # *تنبيه: يجب التأكد أن جدول visits موجود بالفعل في القاعدة قبل هذا السطر*
-                print("⚠️ جاري ترحيل الإجمالي الحالي للزوار من جدول visits...")
-                
                 cur.execute("SELECT COUNT(DISTINCT session_id) FROM visits")
                 initial_total = cur.fetchone()[0] or 0
                 
@@ -82,10 +88,9 @@ def init_database():
                         SET value = %s
                         WHERE key = 'total_visitors_count' AND value = 0;
                     """, (initial_total,))
-                    print(f"✅ تم ترحيل {initial_total} زائر كإجمالي ابتدائي.")
-                else:
-                    print("◀️ جدول visits فارغ، الإجمالي الابتدائي هو صفر.")
-
+                    print(f"✅ تم ترحيل {initial_total} زائر كإجمالي ابتدائي.") # ⬅️ إبقاء هذه الرسالة
+                # else: إزالة رسالة "جدول visits فارغ"
+            
             # =======================================================
             # 3. إنشاء جدول الإشعارات (Notifications)
             # =======================================================
@@ -100,22 +105,12 @@ def init_database():
                     created_at TIMESTAMPTZ DEFAULT NOW()
                 );
             ''')
-            # إضافة فهارس لتحسين الأداء
             cur.execute('CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread ON notifications(recipient_id, is_read);')
-            print("✅ تم التحقق من جدول notifications")
-            cur.execute('SELECT * FROM  users;')
-            rows = cur.fetchall()
-            print(rows)
+           
             
             # ========================================
-            # 4. دالة PostgreSQL لجلب الاسم الكامل (public.get_full_name)
+            # 4. تحديث دالة PostgreSQL لجلب الاسم الكامل (public.get_full_name)
             # ========================================
-            print("⚙️ جاري تحديث دالة public.get_full_name في PostgreSQL...")
-            
-            # 🛑 التصحيح: حذف الدالة القديمة أولاً إذا كانت موجودة بتوقيعها القديم
-            cur.execute("DROP FUNCTION IF EXISTS public.get_full_name(TEXT, INTEGER, BOOLEAN);")
-            
-            # 💡 التعديل: لاحظ أننا نستخدم الآن p_max_names
             cur.execute('''
                 CREATE OR REPLACE FUNCTION public.get_full_name(
                     p_code TEXT,
@@ -165,23 +160,18 @@ def init_database():
                 END;
                 $$ LANGUAGE plpgsql STABLE;
             ''')
-            print("✅ تم تحديث دالة get_full_name.")
+            # ❌ إزالة: print("✅ تم تحديث دالة get_full_name.")
 
             # ---
             # 5. جدول family_search + الـ Trigger
             # ---
-            print("⚙️ جاري التحقق من جدول family_search والـ Trigger...")
-            
-            # 🛑 1. حذف الجدول القديم (إذا كان موجوداً) لضمان تطبيق الهيكل الجديد بالكامل
-            # هذا ضروري إذا كنت تريد إعادة بناء الجدول بـ 'level' وعمود الـ GENERATED
-            cur.execute("DROP TABLE IF EXISTS family_search CASCADE;")
             
             cur.execute('''
-                CREATE TABLE family_search (
+                CREATE TABLE IF NOT EXISTS family_search (
                     code TEXT PRIMARY KEY,
                     full_name TEXT NOT NULL,
                     nick_name TEXT,
-                    level INT, -- 💡 عمود المستوى الجديد
+                    level INT, 
                     search_text TEXT GENERATED ALWAYS AS (
                         coalesce(full_name, '') || ' ' || coalesce(nick_name, '')
                     ) STORED,
@@ -201,17 +191,17 @@ def init_database():
             cur.execute('''
                 CREATE OR REPLACE FUNCTION refresh_family_search() RETURNS trigger AS $$
                 BEGIN
-                    INSERT INTO family_search (code, full_name, nick_name, level) -- 💡 إضافة level
+                    INSERT INTO family_search (code, full_name, nick_name, level)
                     VALUES (
                         NEW.code,
                         public.get_full_name(NEW.code, NULL, FALSE),
                         NEW.nick_name,
-                        NEW.level -- 💡 جلب level
+                        NEW.level
                     )
                     ON CONFLICT (code) DO UPDATE SET
                         full_name = EXCLUDED.full_name,
                         nick_name = EXCLUDED.nick_name,
-                        level = EXCLUDED.level, -- 💡 تحديث level
+                        level = EXCLUDED.level,
                         updated_at = NOW();
                     
                     RETURN NEW;
@@ -223,37 +213,20 @@ def init_database():
             cur.execute('''
                 DROP TRIGGER IF EXISTS trig_refresh_search ON family_name;
                 CREATE TRIGGER trig_refresh_search
-                    AFTER INSERT OR UPDATE OF name, f_code, m_code, h_code, w_code, nick_name, level -- 💡 إضافة level للتحديث
+                    AFTER INSERT OR UPDATE OF name, f_code, m_code, h_code, w_code, nick_name, level
                     ON family_name
                     FOR EACH ROW
                     EXECUTE FUNCTION refresh_family_search();
             ''')
             
-            
-            print("✅ تم التحقق من جدول family_search والـ Trigger بنجاح.")
+            # ❌ إزالة: print("✅ تم التحقق من جدول family_search والـ Trigger بنجاح.")
 
-            # ... (بقية الدالة: cur.execute('SELECT * FROM users;'), إلخ) ...
             
+            # 8. رسالة نهاية واحدة
             print("✅ تم إنهاء التهيئة بنجاح!")
-            try:
-                cur.execute('''
-                    TRUNCATE family_search RESTART IDENTITY; 
-                    
-                    INSERT INTO family_search (code, full_name, nick_name, level)
-                    SELECT 
-                        code, 
-                        public.get_full_name(code, NULL, TRUE), -- جلب الاسم الكامل مع اللقب
-                        nick_name, 
-                        level
-                    FROM family_name;
-                ''')
-                conn.commit()
-                return {"message": "نجاح إعادة بناء جدول family_search وتحديث جميع الأسماء."}
-            except Exception as e:
-                    conn.rollback()
-                    return {"error": f"فشل في إعادة البناء: {e}"}
-            
+          
            
         except Exception as e:
-            print(f"❌ خطأ أثناء التهيئة: {e}")
+            # ❌ الإبقاء على رسالة الخطأ الحاسم فقط
+            print(f"❌ خطأ أثناء تهيئة قاعدة البيانات: {e}") 
             raise
