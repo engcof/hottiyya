@@ -165,7 +165,19 @@ def init_database():
             # ---
             # 5. جدول family_search + الـ Trigger
             # ---
-            
+            cur.execute('''
+                CREATE OR REPLACE FUNCTION public.normalize_arabic(text)
+                RETURNS text AS $$
+                -- هذه الدالة تقوم بإزالة التشكيل، وتحويل الهمزات/الياء/الألف إلى صيغة موحدة
+                SELECT 
+                    TRANSLATE(
+                        $1, 
+                        'ئؤيآأإءة',
+                        'يويآآآه'
+                    )
+            $$ LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
+            ''')
+            #print("✅ تم تحديث دالة normalize_arabic.")
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS family_search (
                     code TEXT PRIMARY KEY,

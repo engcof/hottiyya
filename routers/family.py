@@ -114,7 +114,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                     cur.execute("""
                         SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
                         FROM family_search
-                        WHERE public.normalize_arabic_db(TRIM(full_name)) ILIKE %s AND level >= 2
+                        WHERE public.normalize_arabic(TRIM(full_name)) ILIKE %s AND level >= 2
                         ORDER BY full_name
                         LIMIT %s OFFSET %s
                     """, (search_term, ITEMS_PER_PAGE, offset))
@@ -123,7 +123,7 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
-                        WHERE public.normalize_arabic_db(TRIM(full_name)) ILIKE %s AND level >= 2
+                        WHERE public.normalize_arabic(TRIM(full_name)) ILIKE %s AND level >= 2
                     """, (search_term,))
                     total = cur.fetchone()[0]
                  
@@ -270,8 +270,6 @@ async def name_details(request: Request, code: str):
     })
     set_cache_headers(response)
     return response
-
-    
 
 # ====================== إضافة عضو جديد ======================
 @router.get("/add", response_class=HTMLResponse)
