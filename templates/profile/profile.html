@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}صفحتي الشخصية{% endblock %}
+
+{% block content %}
+<section class="profile-section">
+    {% if success_msg %}
+    <div class="alert alert-success flash-success-message mb-4">{{ success_msg }}</div>
+    {% endif %}
+
+    {% if error %}
+    <div class="alert alert-danger mb-4">{{ error }}</div>
+    {% endif %}
+    <div class="container">
+        <div class="inbox-card card shadow-lg mb-4">
+            <h4 class="card-title p-3 border-bottom text-primary">📥 صندوق الوارد</h4>
+            <div class="card-body p-0">
+                <div class="notifications-list list-group list-group-flush">
+                    {% if inbox_messages %}
+                        {% for message in inbox_messages %}
+                        <div class="list-group-item notification-item d-flex justify-content-between align-items-start {% if not message.is_read %}unread-item{% endif %}">
+                            <div class="message-content flex-grow-1">
+                                <p class="mb-1">
+                                    <strong class="text-info">👤 المرسل:</strong> 
+                                    <span class="font-weight-bold">{{ message.sender_username }}</span>
+                                    <small class="text-muted float-left">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                </p>
+                                <p class="message-text mb-0">{{ message.message }}</p>
+                            </div>
+                            <div class="message-actions ml-3 d-flex flex-column align-items-end">
+                                
+                                {% if not message.is_read %}
+                                <form method="post" action="/profile/mark-read/{{ message.id }}" class="mb-1">
+                                    <button type="submit" class="btn btn-sm btn-success">✅ قراءة</button>
+                                </form>
+                                {% else %}
+                                    <span class="badge badge-secondary mb-1">مقروءة</span>
+                                {% endif %}
+                                
+                                <form method="post" action="/profile/delete-message/{{ message.id }}" 
+                                    onsubmit="return confirm('هل أنت متأكد من حذف هذه الرسالة؟')"
+                                    class="delete-form-inline">
+                                    
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"> 
+                                    
+                                    <button type="submit" class="btn btn-sm btn-link text-danger p-0">🗑️ حذف</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-light text-center m-3">لا توجد رسائل في صندوق الوارد.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if total_pages > 1 %}
+            <div class="card-footer d-flex justify-content-center">
+                <nav aria-label="ترقيم الرسائل">
+                    <ul class="pagination">
+                        <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="/profile?page={{ current_page - 1 }}">السابق</a>
+                        </li>
+                        
+                        {% for p in range(1, total_pages + 1) %}
+                        <li class="page-item {% if p == current_page %}active{% endif %}">
+                            <a class="page-link" href="/profile?page={{ p }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+
+                        <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                            <a class="page-link" href="/profile?page={{ current_page + 1 }}">التالي</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+        <div class="send-message-card card shadow-lg mb-4">
+            <h4 class="card-title p-3 border-bottom text-primary">✉️ إرسال رسالة</h4>
+            <div class="card-body">
+                <form method="post" action="/profile/send-message" class="auth-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    
+                    {% if user.role == 'admin' %}
+                        <div class="form-group">
+                            <label for="recipient">المستلم:</label>
+                            <select name="recipient_id" id="recipient" class="form-control" required>
+                                <option value="">اختر المستخدم</option>
+                                {% for u in all_users %}
+                                    <option value="{{ u.id }}">{{ u.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                   {% elif admin_id %}
+                    <input type="hidden" name="recipient_id" value="{{ admin_id }}"> 
+                    <div class="alert alert-info">يتم إرسال رسالتك إلى مدير النظام.</div>
+                    {% else %}
+                        <div class="alert alert-danger">لا يمكن إرسال الرسالة: لم يتم تعيين مدير نظام!</div>
+                    {% endif %}
+                    
+                    <div class="form-group">
+                        <label for="message">الرسالة:</label>
+                        <textarea name="message" id="message" class="form-control" placeholder="نص الرسالة..." rows="3" required></textarea>
+                    </div>
+                    {% if user.role == 'admin' or admin_id %}
+                        <button type="submit" class="btn btn-success submit-btn w-100 mt-3">إرسال الرسالة</button>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+        <div class="change-password-card card shadow-lg mb-4">
+            <h4 class="card-title p-3 border-bottom text-primary">🔐 تغيير كلمة السر</h4>
+            <div class="card-body">
+                 <form method="post" action="/profile/change-password" class="auth-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="form-group">
+                        <input type="password" name="current_password" class="form-control" placeholder="كلمة السر الحالية"  required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="new_password" class="form-control" placeholder="كلمة السر الجديدة"  required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="confirm_password" class="form-control" placeholder="تأكيد كلمة السر الجديدة"  required>
+                    </div>
+                        <button type="submit" class="btn btn-primary submit-btn w-100 mt-3">تحديث كلمة السر</button>
+                </form>
+            </div>
+        </div>
+        <a href="/" class="btn btn-lg btn-secondary w-100 mb-5">العودة للرئيسية</a>
+    </div>
+</section>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const successMessage = document.querySelector('.flash-success-message');
+
+    if (successMessage) {
+        // تعيين مؤقت (Timer) لمدة 5000 ميلي ثانية (5 ثوانٍ)
+        setTimeout(() => {
+            // تشغيل تأثير التلاشي (Fade-out)
+            successMessage.style.opacity = '0';
+            successMessage.style.transition = 'opacity 0.5s ease-out';
+            
+            // إزالة العنصر من الـ DOM بعد انتهاء التلاشي (0.5 ثانية)
+            setTimeout(() => {
+                successMessage.remove();
+            }, 500); 
+
+        }, 5000); // 5 ثواني
+    }
+});
+</script>
+{% endblock %}

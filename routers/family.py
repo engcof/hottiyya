@@ -1,7 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
-from services.family_service import get_full_name
 from security.csrf import generate_csrf_token, verify_csrf_token
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
@@ -53,22 +52,28 @@ async def show_names(request: Request, page: int = 1, q: str = None):
     ITEMS_PER_PAGE = 24
     offset = (page - 1) * ITEMS_PER_PAGE
 
-    members = []
+    rows = []
     total = 0
+    search_term = None # تحديد search_term خارج الكتل
 
     with get_db_context() as conn:
         with conn.cursor() as cur:
             if q and q.strip():
                 phrase = q.strip()
+                
+                # توحيد المدخلات مرة واحدة
+                clean_phrase = " ".join(phrase.split())
+                normalized_input = normalize_arabic(clean_phrase)
+                search_term = f"%{normalized_input}%" # 💡 هذا هو المعامل الذي سنستخدمه
 
                 # -----------------------
-                # 1) البحث بالكود
+                # 1) البحث بالكود (الأولوية القصوى)
                 # ----------------------
-                if "-" in phrase:
+                if "-" in phrase and len(phrase.split()) == 1:
                     cur.execute("""
-                        SELECT code, full_name, nick_name
+                        SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
                         FROM family_search
-                        WHERE code ILIKE %s
+                        WHERE code ILIKE %s AND level >= 2
                         ORDER BY code
                         LIMIT %s OFFSET %s
                     """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
@@ -77,18 +82,18 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
-                        WHERE code ILIKE %s
+                        WHERE code ILIKE %s AND level >= 2
                     """, (f"%{phrase}%",))
                     total = cur.fetchone()[0]
 
                 # -----------------------
-                # 2) البحث باللقب
+                # 2) البحث باللقب (إذا كانت كلمة واحدة وليست كود)
                 # -----------------------
                 elif len(phrase.split()) == 1:
                     cur.execute("""
-                        SELECT code, full_name, nick_name
+                        SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
                         FROM family_search
-                        WHERE nick_name ILIKE %s
+                        WHERE nick_name ILIKE %s AND level >= 2
                         ORDER BY full_name
                         LIMIT %s OFFSET %s
                     """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
@@ -97,71 +102,53 @@ async def show_names(request: Request, page: int = 1, q: str = None):
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
-                        WHERE nick_name ILIKE %s
+                        WHERE nick_name ILIKE %s AND level >= 2
                     """, (f"%{phrase}%",))
                     total = cur.fetchone()[0]
 
                 # -----------------------
-                # 3) البحث بجملة كاملة (Full Text Search)
+                # 3) البحث بجملة كاملة (Full Text Search) - يستخدم التوحيد
                 # -----------------------
                 else:
-                    clean_phrase = " ".join(phrase.split())
-                    normalized_input = normalize_arabic(clean_phrase)
-                    
+                    # 💡 نستخدم الاستعلام الموحد والمرن (الذي ثبت أنه يحل المشاكل)
                     cur.execute("""
-                        SELECT code, full_name, nick_name
+                        SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
                         FROM family_search
-                        WHERE normalized_full_name ILIKE %s
+                        WHERE public.normalize_arabic_db(TRIM(full_name)) ILIKE %s AND level >= 2
                         ORDER BY full_name
                         LIMIT %s OFFSET %s
-                         """, (f"%{normalized_input}%", ITEMS_PER_PAGE, offset))
-
-                    cur.execute("""
-                        SELECT COUNT(*)
-                        FROM family_search
-                        WHERE normalized_full_name ILIKE %s
-                        """, (f"%{normalized_input}%",))
-
-                    # --- البحث بجملة كاملة بنفس الترتيب فقط ---
-                    clean_phrase = " ".join(phrase.split())  # إزالة المسافات الزائدة
-
-                    cur.execute("""
-                        SELECT code, full_name, nick_name
-                        FROM family_search
-                        WHERE full_name ILIKE %s
-                        ORDER BY full_name
-                        LIMIT %s OFFSET %s
-                    """, (f"%{clean_phrase}%", ITEMS_PER_PAGE, offset))
+                    """, (search_term, ITEMS_PER_PAGE, offset))
                     rows = cur.fetchall()
                     
                     cur.execute("""
                         SELECT COUNT(*)
                         FROM family_search
-                        WHERE full_name ILIKE %s
-                    """, (f"%{clean_phrase}%",))
-                    total = cur.fetchone()[0]   
+                        WHERE public.normalize_arabic_db(TRIM(full_name)) ILIKE %s AND level >= 2
+                    """, (search_term,))
+                    total = cur.fetchone()[0]
+                 
 
             else:
-                # بدون بحث
+                # 💡 بدون بحث - جلب الاسم المقطوع مباشرة لضمان الأداء
                 cur.execute("""
-                    SELECT code, name, nick_name 
-                    FROM family_name 
+                    SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
+                    FROM family_search 
                     WHERE level >= 2
-                    ORDER BY name 
+                    ORDER BY full_name 
                     LIMIT %s OFFSET %s
                 """, (ITEMS_PER_PAGE, offset))
                 rows = cur.fetchall()
-
-                cur.execute("SELECT COUNT(*) FROM family_name WHERE level >= 2")
+    
+                cur.execute("SELECT COUNT(*) FROM family_search WHERE level >= 2")
                 total = cur.fetchone()[0]
+            
             members = []
             
-            # بناء القائمة النهائية
-            for code, name, nick_name in rows:
-                # جلب الاسم الكامل (حسب الدالة الموجودة لديك)
-                display_name = get_full_name(code, max_length=7, include_nick=False)
+            # 💡 يتم الآن معالجة الصفوف بسرعة دون استدعاءات داخلية لـ DB
+            for row in rows:
+                # يجب التأكد من الترتيب: code, full_name_display, nick_name, level
+                code, display_name, nick_name, level = row
                 
-                # تنظيف الاسم من التشكيل
                 clean_display_name = normalize_arabic(display_name)
                 clean_nick_name = normalize_arabic(nick_name.strip()) if nick_name else None
 
@@ -198,14 +185,39 @@ async def name_details(request: Request, code: str):
         return RedirectResponse("/auth/login")
 
     with get_db_context() as conn:
+        # استخدام RealDictCursor لسهولة الوصول للبيانات بالاسم
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            
+            # 1. جلب العضو من family_name
             cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
             member = cur.fetchone()
             if not member:
                 raise HTTPException(status_code=404, detail="العضو غير موجود")
 
+            
+            # 2. جلب الاسم الكامل (سلسلة الأجداد) بدون اللقب
+            cur.execute("SELECT public.get_full_name(%s, NULL, FALSE) AS full_name", (code,))
+            result = cur.fetchone()
+            full_name_no_nick = result["full_name"] if result else member.get("name", "اسم غير معروف")
+            
+            # 3. جلب اللقب منفصلاً
+            display_nick_name = member.get("nick_name")
+            if display_nick_name:
+                 display_nick_name = display_nick_name.strip()
+            
+            # 4. جلب اسم الأم
+            mother_full_name = ""
+            if member.get("m_code"):
+                 cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS mother_name", (member["m_code"],))
+                 result = cur.fetchone()
+                 mother_full_name = result["mother_name"] if result else "الأم غير موجودة"
+
+            # ----------------------------------------------------
+            # 5. بقية الاستعلامات
+            # ----------------------------------------------------
             cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
             info = cur.fetchone() or {}
+            
             cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
             pic = cur.fetchone()
             picture_url = pic["pic_path"] if pic else None
@@ -217,30 +229,49 @@ async def name_details(request: Request, code: str):
                     gender = "ذكر"
                 elif rel in ("ابنة", "زوجة", "ابنة زوج", "ابنة زوجة"):
                     gender = "أنثى"
-
-            full_name = get_full_name(code, include_nick=True)  # اللقب هنا
-            mother_full_name = get_full_name(member["m_code"], include_nick=True) if member.get("m_code") else ""
-
+            
+            # 6. جلب أسماء الأزواج/الزوجات
             wives = []
             if gender == "ذكر":
                 cur.execute("SELECT code FROM family_name WHERE h_code = %s", (code,))
-                wives = [{"code": r["code"], "name": get_full_name(r["code"], include_nick=True)} for r in cur.fetchall()]
+                wives_codes = cur.fetchall()
+                for r in wives_codes:
+                    cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS wife_name", (r["code"],))
+                    result = cur.fetchone()
+                    wife_name = result["wife_name"] if result else "اسم غير معروف"
+                    
+                    wives.append({
+                        "code": r["code"], 
+                        "name": wife_name
+                    })
 
             husbands = []
             if gender == "أنثى" and member.get("h_code"):
-                husbands = [{"code": member["h_code"], "name": get_full_name(member["h_code"], include_nick=True)}]
+                cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS husband_name", (member["h_code"],))
+                result = cur.fetchone()
+                husband_name = result["husband_name"] if result else "اسم غير معروف"
+                
+                husbands = [{
+                    "code": member["h_code"], 
+                    "name": husband_name
+                }]
 
-            cur.execute("SELECT code , name FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
+            cur.execute("SELECT code, name FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
             children = [{"code": r["code"], "name": r["name"],} for r in cur.fetchall()]
 
     response = templates.TemplateResponse("family/details.html", {
         "request": request, "user": user, "member": member, "info": info,
-        "picture_url": picture_url, "full_name": full_name,
-        "mother_full_name": mother_full_name, "wives": wives,
+        "picture_url": picture_url, 
+        "full_name": full_name_no_nick,     
+        "nick_name": display_nick_name,     
+        "mother_full_name": mother_full_name, 
+        "wives": wives,
         "husbands": husbands, "children": children, "gender": gender
     })
     set_cache_headers(response)
     return response
+
+    
 
 # ====================== إضافة عضو جديد ======================
 @router.get("/add", response_class=HTMLResponse)
@@ -285,7 +316,7 @@ async def add_name(
     w_code = w_code.strip().upper() if w_code else None
     h_code = h_code.strip().upper() if h_code else None
     relation = html.escape(relation.strip()) if relation else None
-    nick_name = nick_name.strip() if nick_name else None # محمي بالـ regex لاحقاً
+    nick_name = nick_name.strip() if nick_name else None 
     gender = gender.strip() if gender else None
     d_o_b = d_o_b.strip() if d_o_b else None
     d_o_d = d_o_d.strip() if d_o_d else None
@@ -299,13 +330,13 @@ async def add_name(
     success = None
 
     # ================================
-    # 1. الكود: A0-000-001 فقط (لا يوجد شيء بعد الشرطة الثانية)
+    # 1. الكود: A0-000-001 فقط 
     # ================================
     if not re.fullmatch(r"[A-Z]\d{0,3}-\d{3}-\d{3}", code):
         error = "صيغة الكود غير صحيحة!<br>الصيغة الصحيحة: <strong>A0-000-001</strong> أو <strong>Z99-999-999</strong>"
 
     # ================================
-    # 2. الاسم: حروف عربية + مسافات فقط (ممنوع أرقام أو رموز)
+    # 2. الاسم: حروف عربية + مسافات فقط 
     # ================================
     elif not re.fullmatch(r"[\u0600-\u06FF\s]+", name):
         error = "الاسم يجب أن يحتوي على حروف عربية فقط (ممنوع الأرقام والرموز)"
@@ -371,7 +402,7 @@ async def add_name(
             error = "تاريخ الوفاة غير صالح"
 
     # ================================
-    # 10. كود الأب/الأم/الزوج/الزوجة (إن وُجد يجب نفس صيغة الكود الرئيسي)
+    # 10. كود الأب/الأم/الزوج/الزوجة
     # ================================
     parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
     if f_code and not re.fullmatch(parent_pattern, f_code):
@@ -429,8 +460,8 @@ async def add_name(
                             shutil.copyfileobj(picture.file, f)
                         cur.execute("""
                             INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
-                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
-                        """, (code, pic_path, pic_path))
+                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
+                        """, (code, pic_path))
 
                     conn.commit()
                     success = f"تم حفظ {name} بنجاح!"
@@ -438,6 +469,9 @@ async def add_name(
                     # تفريغ النموذج بعد النجاح
                     code = name = f_code = m_code = w_code = h_code = relation = nick_name = ""
                     level = gender = d_o_b = d_o_d = email = phone = address = p_o_b = status = None
+            
+            # توجيه بعد النجاح
+            return RedirectResponse(f"/names/details/{code}", status_code=303)
 
         except Exception as e:
             error = "حدث خطأ أثناء الحفظ. حاول مرة أخرى."
@@ -498,9 +532,10 @@ async def edit_name_form(request: Request, code: str):
             pic = cur.fetchone()
             picture_url = pic["pic_path"] if pic else None
 
+    # 💡 تم إزالة دالة get_full_name القديمة من هنا، ويمكنك جلب الاسم الكامل في القالب
     response = templates.TemplateResponse("family/edit_name.html", {
         "request": request, "user": user, "member": member, "info": info,
-        "picture_url": picture_url, "code": code, "full_name": get_full_name(code),
+        "picture_url": picture_url, "code": code, 
         "csrf_token": csrf_token, "error": None
     })
     set_cache_headers(response)
@@ -511,7 +546,7 @@ async def update_name(request: Request,
                       code: str, name: str = Form(...), 
                       f_code: str = Form(None), m_code: str = Form(None),
                       w_code: str = Form(None), h_code: str = Form(None),
-                      relation: str = Form(None), level: str = Form(None), # استقبل level كـ str للتحقق
+                      relation: str = Form(None), level: str = Form(None), 
                       nick_name: str = Form(None), gender: str = Form(None),
                       d_o_b: str = Form(None), d_o_d: str = Form(None),
                       email: str = Form(None), phone: str = Form(None),
@@ -526,11 +561,10 @@ async def update_name(request: Request,
     verify_csrf_token(request, form.get("csrf_token"))
 
     error = None
-    level_int = None # المتغير الجديد للتحقق من المستوى
+    level_int = None 
     
-    # === 1. التنظيف وتطبيق الـ XSS (استخدم html.escape) ===
+    # === 1. التنظيف وتطبيق الـ XSS ===
     
-    # تنظيف وتطبيق XSS للحقول غير المقيدة بالـ Regex
     name = name.strip()
     f_code = f_code.strip().upper() if f_code else None
     m_code = m_code.strip().upper() if m_code else None
@@ -568,7 +602,7 @@ async def update_name(request: Request,
     if not error and nick_name and not re.fullmatch(r"[\u0600-\u06FF\s]+", nick_name):
         error = "اللقب يجب أن يكون حروف عربية فقط (مثل: أبو أحمد، أم علي)"
 
-    # 2.4. مكان الميلاد (تجنب الرموز والأرقام في البداية)
+    # 2.4. مكان الميلاد 
     elif not error and p_o_b and (p_o_b[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", p_o_b)):
         error = "مكان الميلاد لا يجب أن يبدأ برمز أو رقم"
 
@@ -606,7 +640,7 @@ async def update_name(request: Request,
         except ValueError:
             error = "تاريخ الوفاة غير صالح"
 
-    # 2.9. أكواد الأقارب (نفس صيغة الكود الرئيسي)
+    # 2.9. أكواد الأقارب
     parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
     if not error and f_code and not re.fullmatch(parent_pattern, f_code):
         error = f"كود الأب غير صحيح"
@@ -617,7 +651,7 @@ async def update_name(request: Request,
     elif not error and w_code and not re.fullmatch(parent_pattern, w_code):
         error = "كود الزوجة غير صحيح"
 
-    # 2.10. صورة (تحقق من النوع فقط)
+    # 2.10. صورة 
     if not error and picture and picture.filename:
         allowed = {'.jpg', '.jpeg', '.png', '.webp'}
         ext = os.path.splitext(picture.filename)[1].lower()
@@ -629,7 +663,7 @@ async def update_name(request: Request,
         try:
             with get_db_context() as conn:
                 with conn.cursor() as cur:
-                    # استخدم level_int بعد التحقق منه
+                    # 3.1 تحديث family_name
                     cur.execute("""
                         UPDATE family_name SET
                         name=%s, f_code=%s, m_code=%s, w_code=%s, h_code=%s,
@@ -637,6 +671,7 @@ async def update_name(request: Request,
                         WHERE code=%s
                     """, (name, f_code, m_code, w_code, h_code, relation, level_int, nick_name, code))
 
+                    # 3.2 تحديث أو إدخال family_info
                     cur.execute("SELECT 1 FROM family_info WHERE code_info = %s", (code,))
                     if cur.fetchone():
                         cur.execute("""
@@ -649,8 +684,8 @@ async def update_name(request: Request,
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                         """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
 
+                    # 3.3 تحديث الصورة
                     if picture and picture.filename:
-                        # يجب التأكد من استخدام ext الصحيح من عملية التحقق في 2.10
                         ext = os.path.splitext(picture.filename)[1].lower()
                         safe_filename = f"{code}{ext}"
                         pic_path = os.path.join(UPLOAD_DIR, safe_filename)
@@ -658,34 +693,32 @@ async def update_name(request: Request,
                             shutil.copyfileobj(picture.file, f)
                         cur.execute("""
                             INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
-                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = %s
-                        """, (code, pic_path, pic_path))
+                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
+                        """, (code, pic_path))
 
                     conn.commit()
-            return RedirectResponse(f"/names/details/{code}", status_code=303)
+                    return RedirectResponse(f"/names/details/{code}", status_code=303) # توجيه بعد النجاح
 
         except Exception as e:
-            error = f"فشل في حفظ التعديلات: {e}. تأكد من البيانات."
-    
-    # في حالة وجود خطأ، يجب إعادة تحميل الصفحة مع البيانات المدخلة والخطأ
-    # إعادة جلب البيانات الأصلية للعرض الصحيح
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+            error = "حدث خطأ أثناء التحديث. حاول مرة أخرى."
 
+    # إذا حدث خطأ، قم بتحميل بيانات العضو مرة أخرى لعرضها مع الخطأ
     with get_db_context() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
-            member = cur.fetchone() or {}
+            member = cur.fetchone()
             cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
             info = cur.fetchone() or {}
             cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
             pic = cur.fetchone()
             picture_url = pic["pic_path"] if pic else None
-    
-    # يتم هنا إرجاع النموذج مع الخطأ ليرى المستخدم أين أخطأ
+
+    # إرجاع الصفحة مع رسالة الخطأ
+    csrf_token = generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
     return templates.TemplateResponse("family/edit_name.html", {
         "request": request, "user": user, "member": member, "info": info,
-        "picture_url": picture_url, "code": code, "full_name": get_full_name(code),
+        "picture_url": picture_url, "code": code,
         "csrf_token": csrf_token, "error": error
     })
 
@@ -704,128 +737,3 @@ async def delete_name(request: Request, code: str):
             conn.commit()
     return RedirectResponse("/names", status_code=303)
 
-# ====================== استيراد البيانات (أدمن فقط) ======================
-@router.get("/import-data", response_class=HTMLResponse)
-async def import_page(request: Request):
-    user = request.session.get("user")
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403)
-    return templates.TemplateResponse("family/import_data.html", {"request": request, "user": user})
-
-@router.post("/import-data")
-async def import_data(
-    request: Request,
-    dump_file: UploadFile = File(...),
-    password: str = Form(...),
-):
-    user = request.session.get("user")
-    if not user or user.get("role") != "admin" or password != IMPORT_PASSWORD:
-        raise HTTPException(status_code=403, detail="كلمة المرور غير صحيحة أو ليس لديك صلاحية")
-
-    if not dump_file.filename.lower().endswith(('.dump', '.sql')):
-        return templates.TemplateResponse("family/import_data.html", {
-            "request": request, "user": user,
-            "message": "الملف لازم يكون بصيغة .dump أو .sql"
-        })
-
-    # حفظ الملف مؤقتًا
-    file_path = f"/tmp/{dump_file.filename}"
-    try:
-        contents = await dump_file.read()
-        with open(file_path, "wb") as f:
-            f.write(contents)
-    except Exception:
-        return templates.TemplateResponse("family/import_data.html", {
-            "request": request, "user": user,
-            "message": "فشل في حفظ الملف المؤقت"
-        })
-
-    message = ""
-    try:
-        database_url = os.getenv("DATABASE_URL")
-
-        # إعطاء وقت كافي جدًا (10 دقايق)
-        cmd = ["pg_restore", "--verbose", "--clean", "--if-exists", "--no-owner", "--no-acl", 
-            "--dbname", database_url, file_path] if file_path.endswith('.dump') \
-            else ["psql", database_url, "-f", file_path]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600  # من 120 → 600
-        )
-
-        if result.returncode == 0:
-            message = "تم استيراد البيانات بنجاح! العائلة كلها موجودة الآن"
-        else:
-            message = f"فشل الاستيراد:<br><pre>{result.stderr.replace(chr(10), '<br>')[-1500:]}</pre>"
-
-    except subprocess.TimeoutExpired:
-        message = "انتهت المهلة! لكن عادةً بيكون الاستيراد اكتمل جزئيًا. جرب تاني أو قسم الملف."
-    except Exception as e:
-        message = f"خطأ: {str(e)}"
-    finally:
-        if os.path.exists(file_path):
-            os.remove(file_path)    
-    
-   
-    return templates.TemplateResponse("family/import_data.html", {
-        "request": request,
-        "user": user,
-        "message": message
-    })
-
-# ====================== تصدير البيانات (أدمن فقط) ======================
-@router.get("/export-data")
-async def export_data(request: Request, password: str = ""):
-    user = request.session.get("user")
-    if not user or user.get("role") != "admin" or password != IMPORT_PASSWORD:
-        raise HTTPException(status_code=403, detail="كلمة المرور غير صحيحة أو ليس لديك صلاحية")
-
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        raise HTTPException(status_code=500, detail="DATABASE_URL مش موجود")
-
-    # ملف بصيغة .dump (الأفضل للنسخ الكاملة)
-    export_path = f"/home/engcof/render-backup/عائلة_حطية_كاملة_{datetime.now().strftime('%Y%m%d_%H%M%S')}.dump"
-
-    try:
-        cmd = [
-            "pg_dump",
-            "--verbose",
-            "--no-owner",
-            "--no-acl",
-            "--format=custom",          # صيغة .dump (أفضل وأصغر حجمًا)
-            "--file", export_path,
-            database_url
-        ]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600  # 10 دقايق كفاية حتى لو 100 ألف سجل
-        )
-
-        if result.returncode != 0:
-            raise Exception(f"pg_dump فشل: {result.stderr[-1500:]}")
-
-        if not os.path.exists(export_path) or os.path.getsize(export_path) < 50000:
-            raise Exception("الملف صغير جدًا أو فاضي")
-
-        return FileResponse(
-            path=export_path,
-            filename=f"عائلة_حطية_كاملة_الداتابيز_{datetime.now().strftime('%Y%m%d_%H%M')}.dump",
-            media_type="application/octet-stream"
-        )
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"فشل التصدير: {str(e)}")
-    finally:
-        if os.path.exists(export_path):
-            try:
-                os.remove(export_path)
-            except:
-                pass
-  

@@ -437,7 +437,6 @@ footer {
     background-color: var(--accent-hover);
 }
 
-
 /* إخفاء القائمة في الموبايل */
 @media (max-width: 1024px) {
     .online-list {
@@ -1544,6 +1543,45 @@ footer {
     border-top: 1px solid var(--border-light);
     margin-top: 5px;
 }
+/* تنسيقات جدول سجل الدخول */
+.admin-history-section {
+    margin-top: 40px;
+    margin-bottom: 40px;
+}
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.data-table thead th {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    font-weight: 600;
+    padding: 12px 15px;
+    text-align: right;
+    border-bottom: 2px solid #e9ecef;
+}
+.data-table tbody td {
+    padding: 10px 15px;
+    border-bottom: 1px solid #dee2e6;
+    color: #343a40;
+    font-size: 0.95rem;
+}
+.data-table tbody tr:hover {
+    background-color: #f1f1f1;
+}
+.username-tag {
+    font-weight: 500;
+    color: #007bff; /* لون مميز لاسم المستخدم */
+    background-color: #e7f2ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
 /* ==========  نهاية اللوحة الادارية  ========== */
 
 /* ==========  ✅   صفحة الأخبار (News Page)  ✅  ========== */
@@ -2540,47 +2578,331 @@ footer {
     }
 }
 
-/* تنسيقات جدول سجل الدخول */
-.admin-history-section {
-    margin-top: 40px;
-    margin-bottom: 40px;
+
+/* =======================================
+   1. تحسين عام لمظهر البطاقة وصندوق الوارد
+   ======================================= */
+.inbox-card {
+    /* تحسين الظلال والحدود لمظهر احترافي */
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff; /* خلفية بيضاء للوضوح */
 }
 
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-    background-color: #ffffff;
+/* =======================================
+   2. تنسيق صندوق الوارد (Inbox Styling)
+   ======================================= */
+.notifications-list {
+    margin-top: 20px;
+    padding: 0;
+    list-style: none; /* إزالة التنقيط الافتراضي */
+}
+
+.notification-item {
+    /* تنسيق كل رسالة على حدة */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 12px; /* تباعد بين الرسائل */
     border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid; /* شريط جانبي لتحديد الحالة */
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* ظل خفيف */
 }
 
-.data-table thead th {
-    background-color: #f8f9fa;
-    color: #6c757d;
+.notification-item:hover {
+    transform: translateY(-2px); /* تأثير خفيف عند المرور بالفأرة */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.notification-item div:first-child {
+    /* تنسيق محتوى الرسالة (المرسل والنص) */
+    flex-grow: 1;
+    padding-right: 15px;
+}
+
+.notification-item p {
+    margin: 5px 0 0;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+/* =======================================
+   3. تخصيص حالة الرسالة (مقروءة/غير مقروءة)
+   ======================================= */
+
+/* الرسائل غير المقروءة (Alert-Primary في Bootstrap) */
+.notification-item.alert-primary {
+    border-color: #007bff; /* أزرق */
+    background-color: #e9f0ff; /* خلفية فاتحة جداً لغير المقروءة */
+    font-weight: bold;
+}
+/* الرسائل المقروءة (Alert-Secondary في Bootstrap) */
+.notification-item.alert-secondary {
+    border-color: #6c757d; /* رمادي */
+    background-color: #f8f9fa; /* خلفية محايدة للمقروءة */
+    font-weight: normal;
+    opacity: 0.8; /* جعلها أقل بروزاً */
+}
+/* تنسيق زر القراءة */
+.notification-item form button {
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid #28a745;
+    color: #28a745;
+    background-color: transparent;
+    cursor: pointer;
+}
+.notification-item form button:hover {
+    background-color: #28a745;
+    color: white;
+}
+/* تنسيق نص حالة "مقروءة" */
+.text-success.small {
+    font-size: 0.85rem;
     font-weight: 600;
-    padding: 12px 15px;
-    text-align: right;
-    border-bottom: 2px solid #e9ecef;
 }
 
-.data-table tbody td {
+/* =======================================
+   1. التنسيقات الأساسية للبطاقات والأقسام
+   ======================================= */
+.profile-section {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 40px 20px;
+    text-align: center;
+    background-color: #f4f7f6; /* خلفية خفيفة جداً للصفحة */
+    
+}
+/* تنسيق العناوين داخل البطاقات */
+.card-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin-bottom: 0; /* لإزالة التباعد السفلي إذا كان هناك border-bottom */
+}
+/* التنسيق الافتراضي للـ card-body إذا لم يكن به list-group */
+.card-body {
+    padding: 20px;
+}
+/* =======================================
+   2. تنسيق صندوق الوارد (Inbox Card)
+   ======================================= */
+/* البطاقة الرئيسية لصندوق الوارد */
+.inbox-card {
+    border: none;
+    border-radius: 12px; /* حواف مستديرة */
+    overflow: hidden; /* لضمان أن الحدود المستديرة تطبق على القائمة الداخلية */
+    margin-bottom: 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff; /* خلفية بيضاء للوضوح */
+    
+}
+/* حاوية الرسائل */
+.notifications-list {
+    /* List-group-flush يجعل العناصر تمتد للحافة */
+    padding: 0;
+    list-style: none; /* إزالة التنقيط الافتراضي */
+}
+/* تنسيق عنصر الرسالة الواحد */
+.notification-item {
+    border-left: 5px solid transparent; /* شريط جانبي يحدد الحالة */
+    padding: 15px 20px;
+    transition: background-color 0.3s, border-left 0.3s;
+}
+.notification-item:hover {
+    background-color: #f0f4f7; /* خلفية خفيفة عند المرور بالفأرة */
+}
+/* الرسائل غير المقروءة */
+.unread-item {
+    background-color: #e6f7ff; /* خلفية مميزة جداً */
+    border-left-color: #007bff; /* شريط أزرق */
+    font-weight: 500; /* لتمييز النص قليلاً */
+}
+/* الرسائل المقروءة */
+.list-group-item:not(.unread-item) {
+    border-left-color: #cccccc; /* شريط رمادي فاتح */
+    opacity: 0.9;
+}
+.message-content {
+    line-height: 1.4;
+}
+.message-text {
+    color: #495057; /* لون غامق قليلاً لنص الرسالة */
+    white-space: pre-wrap; /* للحفاظ على تنسيق الرسالة إن وجد */
+    word-break: break-word;
+}
+/* =======================================
+   3. تنسيق نماذج الإرسال وتغيير كلمة السر
+   ======================================= */
+
+.send-message-card, .change-password-card {
+    border-radius: 12px;
+    border: 1px solid #dee2e6; /* حد خفيف للفصل */
+    margin-bottom: 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff; /* خلفية بيضاء للوضوح */
+}
+.auth-form .form-group {
+    margin-bottom: 15px;
+}
+.auth-form label {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+/* تنسيق حقول الإدخال */
+.auth-form .form-control {
+    border-radius: 8px;
     padding: 10px 15px;
-    border-bottom: 1px solid #dee2e6;
-    color: #343a40;
-    font-size: 0.95rem;
+}
+/* زر العودة للرئيسية المنفصل */
+.btn-lg {
+    border-radius: 10px;
+    font-size: 1.1rem;
 }
 
-.data-table tbody tr:hover {
-    background-color: #f1f1f1;
+/* =======================================
+   Media Queries for Responsiveness
+   (Small Screens & Mobile Devices)
+   ======================================= */
+
+/* تطبيق التنسيقات على الأجهزة التي عرضها أقل من 768 بكسل (الموبايل) */
+@media (max-width: 768px) {
+    
+    /* 1. تقليل التباعد الداخلي للبطاقات */
+    .inbox-card .card-body,
+    .send-message-card .card-body,
+    .change-password-card .card-body {
+        padding: 15px;
+    }
+    /* 2. تحسين مظهر رسالة صندوق الوارد */
+    .notification-item {
+        flex-direction: column; /* ترتيب المحتوى والإجراءات عمودياً */
+        align-items: flex-start !important;
+        padding: 15px; /* تباعد داخلي أكبر */
+        margin-bottom: 10px;
+    }
+    .message-content {
+        width: 100%; /* اجعل المحتوى يملأ العرض */
+        padding-right: 0 !important;
+    }
+    .message-content p.mb-1 {
+        /* فصل وقت الرسالة عن اسم المرسل */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .message-actions {
+        margin-top: 10px; /* تباعد بين نص الرسالة وزر القراءة */
+        width: 100%;
+        text-align: left; /* تحريك زر القراءة لليسار */
+        margin-left: 0 !important;
+    }
+    /* 3. تصغير حجم العناوين لملائمة الشاشة */
+    .card-title {
+        font-size: 1.2rem;
+        padding: 10px 15px !important;
+    }
+
+    /* 4. زر العودة للرئيسية */
+    .btn-lg {
+        padding: 12px 20px;
+        font-size: 1rem;
+    }
+    
 }
 
-.username-tag {
-    font-weight: 500;
-    color: #007bff; /* لون مميز لاسم المستخدم */
-    background-color: #e7f2ff;
-    padding: 3px 8px;
-    border-radius: 4px;
-    display: inline-block;
+/* تطبيق التنسيقات على الأجهزة التي عرضها أقل من 1024 بكسل (التابلت) */
+@media (max-width: 1024px) {
+    /* تفعيل قائمة الموبايل وإخفاء قائمة سطح المكتب */
+    .nav-links {
+        display: none;
+    }
+    .mobile-menu-toggle {
+        display: flex;
+    }
+    header {
+        max-width: 95%;
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+}
+
+/* الشارة الظاهرة فوق زر المستخدم (Avatar) */
+.notification-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background-color: var(--danger); /* أحمر */
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 50%;
+    
+    /* وضعها أعلى يمين الصورة الرمزية */
+    position: absolute;
+    top: 5px; 
+    right: 5px; 
+    z-index: 1;
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+    pointer-events: none; /* لمنعها من اعتراض النقرات على الزر */
+}
+
+/* الشارة الظاهرة داخل القائمة المنسدلة (Inline) */
+.notification-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background-color: var(--danger);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 12px;
+    float: left; /* دفعها إلى أقصى اليسار */
+    margin-top: -2px;
+    margin-left: 10px;
+}
+/* تعديل بسيط لزر المستخدم ليكون موضعاً نسبياً للشارة */
+.user-btn {
+    position: relative; /* مهم لوضع .notification-badge بشكل صحيح */
+}
+
+/* زر الحذف يكون صغيراً وخفيفاً */
+.message-actions .btn-link {
+    font-size: 0.8rem;
+    line-height: 1;
+}
+
+/* تنسيق Pagination (يفترض وجود Bootstrap) */
+.pagination {
+    display: flex;
+    padding-left: 0;
+    list-style: none;
+    border-radius: 0.25rem;
+}
+.page-item.active .page-link {
+    background-color: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+.page-link {
+    padding: 0.5rem 0.75rem;
+    margin-right: -1px;
+    line-height: 1.25;
+    color: var(--accent);
+    background-color: #fff;
+    border: 1px solid var(--border);
+    text-decoration: none;
+}
+.page-link:hover {
+    background-color: #f0fdf4;
 }

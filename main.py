@@ -16,14 +16,12 @@ from psycopg2.extras import RealDictCursor
 
 # استيراد الدوال الأمنية والمساعدة
 from security.session import set_cache_headers
-from security.csrf import generate_csrf_token, verify_csrf_token
-from security.hash import check_password, hash_password
-from security.rate_limit import initialize_rate_limiter, rate_limit_attempt, reset_attempts
+from security.rate_limit import initialize_rate_limiter
 
 # استيراد الخدمات والراوترات
-
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
-from routers import auth, admin, family, articles, news, permissions, data
+from services.notification import get_unread_notification_count
+from routers import auth, admin, family, articles, news, permissions, data, profile
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -96,8 +94,6 @@ async def analytics_middleware(request: Request, call_next):
 # =========================================
 # Middleware - الترتيب المهم (LIFO: أضف من الداخل إلى الخارج)
 # =========================================
-# ملاحظة: سنعتمد على الترتيب الذي عمل لديك محلياً لضمان عدم حدوث Assertion Error مجدداً.
-
 # 1. Analytics Middleware (يجب أن يعمل بعد SessionMiddleware)
 app.add_middleware(
     BaseHTTPMiddleware,
@@ -138,20 +134,27 @@ app.include_router(articles.router)
 app.include_router(news.router)
 app.include_router(permissions.router)
 app.include_router(data.router)
+app.include_router(profile.router)
 # =========================================
 # # الصفحة الرئيسية
 # # =========================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = request.session.get("user")
+    unread_count = 0 # القيمة الافتراضية
     with get_db_context() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+
+            # 💡 جلب عدد الرسائل غير المقروءة إذا كان المستخدم مسجلاً
+            if user:
+                unread_count = get_unread_notification_count(user["id"]) # 💡 استخدام الدالة الجديدة
             # جلب العنوان لأحدث مقال لعرضه في الشريط المتحرك
             cur.execute("SELECT title FROM articles ORDER BY created_at DESC LIMIT 1")
             latest_article_title = cur.fetchone()
     response = templates.TemplateResponse("index.html", {
         "request": request,
         "user": user,
+        "unread_count": unread_count,
         "today_visitors": get_today_visitors(),
         "total_visitors": get_total_visitors(),
         "online_count": get_online_count(),
@@ -170,113 +173,6 @@ async def about_page(request: Request):
     })
     set_cache_headers(response)
     return response
-
-# =========================================
-# الملف الشخصي
-# =========================================
-@app.get("/profile", response_class=HTMLResponse)
-async def profile_page(request: Request):
-    user = request.session.get("user")
-    if not user:
-        # استخدام RedirectResponse مباشرة للتبسيط
-        return RedirectResponse("/auth/login", status_code=status.HTTP_302_FOUND)
-        
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    response = templates.TemplateResponse("profile.html", {
-        "request": request,
-        "user": user,
-        "csrf_token": csrf_token
-    })
-    set_cache_headers(response)
-    return response
-
-@app.post("/profile/change-password")
-async def change_password(request: Request):
-    user = request.session.get("user")
-    if not user:
-        return RedirectResponse("/auth/login", status_code=status.HTTP_302_FOUND)
-    
-    # 🚨 1. تطبيق تقييد المعدل باستخدام معرف المستخدم (User ID)
-    user_id_key = str(user["id"])
-    try:
-        rate_limit_attempt(user_id_key)
-    except HTTPException as e:
-        new_csrf = generate_csrf_token()
-        request.session["csrf_token"] = new_csrf
-        return templates.TemplateResponse("profile.html", {
-            "request": request,
-            "user": user,
-            "error": e.detail, 
-            "success": False,
-            "csrf_token": new_csrf
-        })
-
-    form = await request.form()
-    current_password = form.get("current_password")
-    new_password = form.get("new_password")
-    confirm_password = form.get("confirm_password")
-    csrf_token = form.get("csrf_token")
-
-   
-    stored_csrf_token = request.session.get("csrf_token")
-    error = None
-    success = False
-    # نطاق رموز أوسع للمطابقة
-    SYMBOL_START_PATTERN = r"^[-\s_\.\@\#\!\$\%\^\&\*\(\)\{\}\[\]\<\>]" 
-    # 2. التحقق من CSRF
-    try:
-        verify_csrf_token(request, csrf_token)
-    except HTTPException:
-        error = "جلسة منتهية، أعد تسجيل الدخول"
-
-    # 3. التحقق من مدخلات كلمة السر الجديدة
-    if not error:
-        if len(new_password) < 6: 
-            error = "كلمة السر الجديدة يجب أن تكون 6 أحرف على الأقل"
-        elif re.match(SYMBOL_START_PATTERN, new_password):
-            error = "كلمة السر الجديدة لا يجب أن تبدأ برمز أو مسافة"
-        elif new_password != confirm_password: 
-            error = "كلمتا السر الجديدتان غير متطابقتين"
-        # 4. التحقق من كلمة السر الحالية
-        else:
-            try:
-                with get_db_context() as conn:
-                    with conn.cursor() as cur:
-                        cur.execute("SELECT password FROM users WHERE id = %s", (user["id"],))
-                        db_pass_row = cur.fetchone()
-                        
-                        if not db_pass_row:
-                             error = "حدث خطأ غير متوقع في قاعدة البيانات (المستخدم مفقود)"
-                        else:
-                            db_pass = db_pass_row[0]
-                            if not check_password(current_password, db_pass):
-                                error = "كلمة السر الحالية غير صحيحة"
-                            else:
-                                hashed = hash_password(new_password)
-                                cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed, user["id"]))
-                                conn.commit()
-                                success = True
-            except Exception as e:
-                print(f"خطأ في تحديث كلمة السر: {e}") 
-                error = "حدث خطأ غير متوقع أثناء تحديث كلمة السر."
-
-    # 5. إدارة عداد تقييد المعدل
-    if success:
-        reset_attempts(user_id_key)
-    
-    # تجديد الـ CSRF
-    new_csrf = generate_csrf_token()
-    request.session["csrf_token"] = new_csrf
-
-    return templates.TemplateResponse("profile.html", {
-        "request": request,
-        "user": user,
-        "error": error,
-        "success": success,
-        "csrf_token": new_csrf
-    })
-
 
 @app.get("/debug/db-count")
 async def debug_db_count():
@@ -316,7 +212,6 @@ async def not_found(request: Request, exc):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-
 
 # uvicorn main:app --reload
 

@@ -26,6 +26,10 @@
                 {% if user %}
                     <button class="user-btn" id="userBtn">
                         <span class="avatar">{{ user.username[0] | upper }}</span>
+                        
+                        {% if unread_count and unread_count > 0 %}
+                        <span class="notification-badge">{{ unread_count }}</span>
+                        {% endif %}
                         <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
                             <path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
                     </button>
@@ -41,7 +45,14 @@
                                 </div>
                             </div>
                         </div>
-                        <a href="/profile" class="dropdown-link">صفحتي الشخصية</a>
+                        
+                        <a href="/profile" class="dropdown-link">
+                            صفحتي الشخصية
+                            {% if unread_count and unread_count > 0 %}
+                            <span class="notification-badge-inline">{{ unread_count }}</span>
+                            {% endif %}
+                        </a>
+                        
                         <a href="/auth/logout" class="dropdown-link logout">تسجيل الخروج</a>
                     </div>
                 {% else %}

@@ -7,7 +7,8 @@ from security.session import set_cache_headers
 from psycopg2.extras import RealDictCursor
 from security.hash import hash_password
 from core.templates import templates
-from services.analytics import get_logged_in_users_history # استدعاء الدالة الجديدة
+from services.analytics import get_logged_in_users_history 
+from services.notification import send_notification
 import html
 import re
 
