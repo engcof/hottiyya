@@ -78,7 +78,7 @@ def send_notification(recipient_id: int, message: str, sender_id: int):
     with get_db_context() as conn:
         with conn.cursor() as cur:
             cur.execute("""
-                INSERT INTO notifications (sender_id, recipient_id, message_text)
+                INSERT INTO notifications (sender_id, recipient_id, message)
                 VALUES (%s, %s, %s)
             """, (sender_id, recipient_id, message))
             conn.commit()

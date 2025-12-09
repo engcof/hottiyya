@@ -469,7 +469,7 @@ async def add_name(
                     level = gender = d_o_b = d_o_d = email = phone = address = p_o_b = status = None
             
             # توجيه بعد النجاح
-            return RedirectResponse(f"/names/details/{code}", status_code=303)
+           
 
         except Exception as e:
             error = "حدث خطأ أثناء الحفظ. حاول مرة أخرى."
@@ -695,7 +695,7 @@ async def update_name(request: Request,
                         """, (code, pic_path))
 
                     conn.commit()
-                    return RedirectResponse(f"/names/details/{code}", status_code=303) # توجيه بعد النجاح
+                    
 
         except Exception as e:
             error = "حدث خطأ أثناء التحديث. حاول مرة أخرى."
