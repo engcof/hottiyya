@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permissions import has_permission
+from utils.permission import has_permission
 from security.session import set_cache_headers
 from core.templates import templates
 import shutil

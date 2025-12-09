@@ -3,6 +3,11 @@
 
 {% block content %}
 <section class="family-tree-section">
+    {% if success %}
+<div class="alert alert-success" role="alert">
+    {{ success }}
+</div>
+{% endif %}
     <div class="container">
         <!-- العنوان + زر الإضافة -->
         <div class="section-header">
@@ -51,6 +56,7 @@
                     {% endif %}
                     {% if can_delete %}
                     <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button type="submit" class="btn-f-action btn-f-delete">حذف</button>
                     </form>
                     {% endif %}
@@ -58,17 +64,42 @@
             </div>
             {% endfor %}
         </div>
+        {% if totals_pages > 1 %}
+        <div class="card-footer d-flex justify-content-center">
+            <nav aria-label="ترقيم الأسماء">
+                <ul class="pagination">
+                    {% set query_params = "&q=" + q if q else "" %} 
+                    
+                    <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="/names?page={{ current_page - 1 }}{{ query_params }}">السابق</a>
+                    </li>
+                    
+                    {% set prev_p = 0 %}
+                    {% for p in page_numbers %}
+                                
+                        <li class="page-item {% if p == current_page %}active{% endif %} 
+                                
+                                /* 💡 المنطق الجديد: أخفِ الرقم p على الأجهزة الصغيرة (sm) إذا لم يكن: */
+                                /* 1. الصفحة الحالية (active) */
+                                /* 2. الصفحة الأولى (p == 1) */
+                                /* 3. الصفحة الأخيرة (p == totals_pages) */
+                                
+                                {% if p != current_page and p != 1 and p != totals_pages %}
+                                        d-none d-sm-inline-block 
+                                {% endif %}
+                                
+                                ">
+                            <a class="page-link" href="/names?page={{ p }}{{ query_params }}">{{ p }}</a>
+                        </li>
+                        
+                        {% set prev_p = p %}
+                    {% endfor %}
 
-        <!-- التصفح بين الصفحات -->
-        {% if total_pages > 1 %}
-        <div class="pagination">
-            {% if has_prev %}
-            <a href="/names?page={{ page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">السابق</a>
-            {% endif %}
-            <span class="page-info">الصفحة {{ page }} من {{ total_pages }}</span>
-            {% if has_next %}
-            <a href="/names?page={{ page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="page-btn">التالي</a>
-            {% endif %}
+                    <li class="page-item {% if current_page == totals_pages %}disabled{% endif %}">
+                        <a class="page-link" href="/names?page={{ current_page + 1 }}{{ query_params }}">التالي</a>
+                    </li>
+                </ul>
+            </nav>
         </div>
         {% endif %}
     </div>

@@ -4,7 +4,7 @@ from psycopg2.extras import RealDictCursor
 from security.session import set_cache_headers
 from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permissions import has_permission
+from utils.permission import has_permission
 import shutil
 import os
 from core.templates import templates

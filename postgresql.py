@@ -107,9 +107,95 @@ def init_database():
             ''')
             cur.execute('CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread ON notifications(recipient_id, is_read);')
            
+            # =======================================================
+            # 4. ترحيل التواريخ: حذف d_o_b و d_o_d من family_info
+            # =======================================================
+            cur.execute("""
+                DO $$
+                BEGIN
+                    -- حذف العمودين من family_info ونقل مسؤوليتهما إلى family_age_search
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='family_info' AND column_name='d_o_b') THEN
+                        ALTER TABLE family_info DROP COLUMN d_o_b;
+                        RAISE NOTICE '✅ تم حذف العمود d_o_b من family_info.';
+                    END IF;
+                    
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='family_info' AND column_name='d_o_d') THEN
+                        ALTER TABLE family_info DROP COLUMN d_o_d;
+                        RAISE NOTICE '✅ تم حذف العمود d_o_d من family_info.';
+                    END IF;
+                END
+                $$;
+            """)
+
+            # حذف الـ Trigger غير المستخدم (إن وجد)
+            cur.execute('''
+                DROP TRIGGER IF EXISTS trig_refresh_age_search ON family_info;
+            ''')
+
+            # ========================================
+            # 5. تحديث دالة PostgreSQL لحساب العمر عند الوفاة
+            # (مطلوبة لاستخدامها في العمود المحسوب)
+            # ========================================
+            cur.execute('''
+                CREATE OR REPLACE FUNCTION public.calculate_age_at_death_db(
+                    p_dob DATE,
+                    p_dod DATE
+                ) RETURNS INTEGER AS $$
+                DECLARE
+                    age INTEGER := NULL;
+                BEGIN
+                    -- منطق حساب العمر عند الوفاة
+                    IF p_dob IS NOT NULL AND p_dod IS NOT NULL THEN
+                        IF p_dod >= p_dob THEN
+                            age := EXTRACT(YEAR FROM p_dod) - EXTRACT(YEAR FROM p_dob);
+                            
+                            IF (EXTRACT(MONTH FROM p_dod), EXTRACT(DAY FROM p_dod)) < 
+                            (EXTRACT(MONTH FROM p_dob), EXTRACT(DAY FROM p_dob)) THEN
+                                age := age - 1;
+                            END IF;
+                        END IF;
+                    END IF;
+                    
+                    RETURN age;
+                END;
+                $$ LANGUAGE plpgsql IMMUTABLE;
+                -- 💡 ملاحظة: يجب أن تكون الدالة IMMUTABLE لكي تستخدم في الأعمدة المحسوبة
+            ''')
+            
+            # =======================================================
+            # 6. إنشاء جدول family_age_search مع العمود المحسوب
+            # =======================================================
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS family_age_search (
+                    code TEXT PRIMARY KEY REFERENCES family_name(code) ON DELETE CASCADE,
+                    
+                    -- التواريخ الآن هنا
+                    d_o_b DATE,
+                    d_o_d DATE,
+                    
+                    -- العمر عند الوفاة: عمود يُحسب تلقائياً ويُخزَّن
+                    age_at_death INTEGER 
+                    GENERATED ALWAYS AS (public.calculate_age_at_death_db(d_o_b, d_o_d)) STORED,
+                    
+                    -- حقل بحث إضافي
+                    search_text TEXT GENERATED ALWAYS AS (
+                        CASE 
+                            WHEN d_o_d IS NOT NULL THEN 'متوفي' 
+                            WHEN d_o_b IS NOT NULL THEN 'حي' 
+                            ELSE '' 
+                        END
+                    ) STORED,
+                    
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                );
+            ''')
+
+            # إضافة فهارس للتواريخ
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_age_search_dob ON family_age_search(d_o_b);')
+            cur.execute('CREATE INDEX IF NOT EXISTS idx_age_search_dod ON family_age_search(d_o_d);')
             
             # ========================================
-            # 4. تحديث دالة PostgreSQL لجلب الاسم الكامل (public.get_full_name)
+            # 7. تحديث دالة PostgreSQL لجلب الاسم الكامل (public.get_full_name)
             # ========================================
             cur.execute('''
                 CREATE OR REPLACE FUNCTION public.get_full_name(

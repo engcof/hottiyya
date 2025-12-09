@@ -1,22 +1,31 @@
-from datetime import datetime
-from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
-from security.csrf import generate_csrf_token, verify_csrf_token
-from postgresql import get_db_context
-from psycopg2.extras import RealDictCursor
-from utils.permissions import has_permission
-from utils.normalize import normalize_arabic
-from security.session import set_cache_headers
-from typing import Optional
-import subprocess
-from fastapi.responses import FileResponse
-import shutil
-import signal
+# المكتبات القياسية (Standard Library)
+import html 
 import os
 import re
+from typing import Optional
+from datetime import date # 💡 تمت إضافتها هنا
+
+# المكتبات الخارجية (Third-party)
+from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Query
+from fastapi.responses import HTMLResponse, RedirectResponse
 from dotenv import load_dotenv
+
+# المكتبات المحلية (Local Imports)
 from core.templates import templates
-import html # تم إضافة استيراد html في البداية
+from security.csrf import generate_csrf_token, verify_csrf_token
+from security.session import set_cache_headers
+from utils.permission import has_permission
+from utils.time_utils import calculate_age_details
+from services.family_service import ( 
+    search_and_fetch_names, 
+    fetch_names_no_search, 
+    get_member_details, 
+    is_code_exists,
+    add_new_member,
+    update_member_data,
+    get_member_for_edit,
+    delete_member
+)
 
 load_dotenv()
 IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
@@ -34,13 +43,21 @@ def can(user: dict, perm: str) -> bool:
         return True
     return bool(user.get("id") and has_permission(user.get("id"), perm))
 
-def to_tsquery_safe(phrase: str):
-    words = [w for w in phrase.split() if w.strip()]
-    return " & ".join([f"{w}:*" for w in words])
 
+# ضعه داخل دالة add_name أو update_name
+def validate_parent_code(code_value, code_name):
+    parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
+    if code_value and not re.fullmatch(parent_pattern, code_value):
+        return f"كود {code_name} غير صحيح"
+    return None
 # ====================== قائمة الأعضاء ======================
 @router.get("/", response_class=HTMLResponse)
-async def show_names(request: Request, page: int = 1, q: str = None):
+async def show_names(
+    request: Request, 
+    page: int = Query(1, ge=1), 
+    q: str = Query(None),
+    success: Optional[str] = Query(None)
+):
     user = request.session.get("user")
     if not user:
         return RedirectResponse("/auth/login")
@@ -49,130 +66,71 @@ async def show_names(request: Request, page: int = 1, q: str = None):
     can_edit   = can(user, "edit_member")
     can_delete = can(user, "delete_member")
 
-    ITEMS_PER_PAGE = 24
-    offset = (page - 1) * ITEMS_PER_PAGE
+    # 💡 يجب إضافة توليد وتخزين الرمز هنا (إذا لم يكن موجودًا)
+    csrf_token = generate_csrf_token() 
+    request.session["csrf_token"] = csrf_token
 
-    rows = []
-    total = 0
-    search_term = None # تحديد search_term خارج الكتل
-
-    with get_db_context() as conn:
-        with conn.cursor() as cur:
-            if q and q.strip():
-                phrase = q.strip()
-                
-                # توحيد المدخلات مرة واحدة
-                clean_phrase = " ".join(phrase.split())
-                normalized_input = normalize_arabic(clean_phrase)
-                search_term = f"%{normalized_input}%" # 💡 هذا هو المعامل الذي سنستخدمه
-
-                # -----------------------
-                # 1) البحث بالكود (الأولوية القصوى)
-                # ----------------------
-                if "-" in phrase and len(phrase.split()) == 1:
-                    cur.execute("""
-                        SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
-                        FROM family_search
-                        WHERE code ILIKE %s AND level >= 2
-                        ORDER BY code
-                        LIMIT %s OFFSET %s
-                    """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
-                    rows = cur.fetchall()
-                    
-                    cur.execute("""
-                        SELECT COUNT(*)
-                        FROM family_search
-                        WHERE code ILIKE %s AND level >= 2
-                    """, (f"%{phrase}%",))
-                    total = cur.fetchone()[0]
-
-                # -----------------------
-                # 2) البحث باللقب (إذا كانت كلمة واحدة وليست كود)
-                # -----------------------
-                elif len(phrase.split()) == 1:
-                    cur.execute("""
-                        SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
-                        FROM family_search
-                        WHERE nick_name ILIKE %s AND level >= 2
-                        ORDER BY full_name
-                        LIMIT %s OFFSET %s
-                    """, (f"%{phrase}%", ITEMS_PER_PAGE, offset))
-                    rows = cur.fetchall()
-                    
-                    cur.execute("""
-                        SELECT COUNT(*)
-                        FROM family_search
-                        WHERE nick_name ILIKE %s AND level >= 2
-                    """, (f"%{phrase}%",))
-                    total = cur.fetchone()[0]
-
-                # -----------------------
-                # 3) البحث بجملة كاملة (Full Text Search) - يستخدم التوحيد
-                # -----------------------
-                else:
-                    # 💡 نستخدم الاستعلام الموحد والمرن (الذي ثبت أنه يحل المشاكل)
-                    cur.execute("""
-                        SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
-                        FROM family_search
-                        WHERE public.normalize_arabic(TRIM(full_name)) ILIKE %s AND level >= 2
-                        ORDER BY full_name
-                        LIMIT %s OFFSET %s
-                    """, (search_term, ITEMS_PER_PAGE, offset))
-                    rows = cur.fetchall()
-                    
-                    cur.execute("""
-                        SELECT COUNT(*)
-                        FROM family_search
-                        WHERE public.normalize_arabic(TRIM(full_name)) ILIKE %s AND level >= 2
-                    """, (search_term,))
-                    total = cur.fetchone()[0]
-                 
-
-            else:
-                # 💡 بدون بحث - جلب الاسم المقطوع مباشرة لضمان الأداء
-                cur.execute("""
-                    SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
-                    FROM family_search 
-                    WHERE level >= 2
-                    ORDER BY full_name 
-                    LIMIT %s OFFSET %s
-                """, (ITEMS_PER_PAGE, offset))
-                rows = cur.fetchall()
+    # ----------------------------------------------------
+    # 1. معالجة رسائل النجاح 💡
+    # ----------------------------------------------------
+    success_message = None
+    if success == "member_deleted":
+        success_message = "✅ تم حذف العضو بنجاح."
+    elif success == "member_updated":
+        success_message = "✅ تم تحديث بيانات العضو بنجاح."
+    # ----------------------------------------------------
+    # 1. استدعاء دالة الخدمة لجلب البيانات (مع معالجة البحث)
+    # ----------------------------------------------------
+    search_query = q.strip() if q else None
     
-                cur.execute("SELECT COUNT(*) FROM family_search WHERE level >= 2")
-                total = cur.fetchone()[0]
-            
-            members = []
-            
-            # 💡 يتم الآن معالجة الصفوف بسرعة دون استدعاءات داخلية لـ DB
-            for row in rows:
-                # يجب التأكد من الترتيب: code, full_name_display, nick_name, level
-                code, display_name, nick_name, level = row
-                
-                clean_display_name = normalize_arabic(display_name)
-                clean_nick_name = normalize_arabic(nick_name.strip()) if nick_name else None
+    if search_query:
+        # جلب البيانات مع البحث
+        members, current_page, totals_pages, total_count = search_and_fetch_names(search_query, page)
+    else:
+        # جلب البيانات بدون بحث
+        members, current_page, totals_pages, total_count = fetch_names_no_search(page)
+        
+    # ----------------------------------------------------
+    # 2. توليد قائمة أرقام الصفحات (Pagination Logic) - بقي كما هو
+    # ----------------------------------------------------
+    
+    PAGES_TO_SHOW = 7  # (يمكنك اختيار 5 أو 7 حسب الرغبة)
+    page_numbers = set()
+    
+    page_numbers.add(1)
+    if totals_pages > 1:
+        page_numbers.add(totals_pages)
+        
+    start = max(2, current_page - PAGES_TO_SHOW // 2)
+    end = min(totals_pages - 1, current_page + PAGES_TO_SHOW // 2)
+    
+    if start <= 2:
+        end = min(totals_pages - 1, PAGES_TO_SHOW + 1)
+    if end >= totals_pages - 1:
+        start = max(2, totals_pages - PAGES_TO_SHOW)
+        
+    for p in range(start, end + 1):
+        if p > 1 and p < totals_pages:
+            page_numbers.add(p)
 
-                members.append({
-                    "code": code,
-                    "full_name": clean_display_name,
-                    "nick_name": clean_nick_name
-                })
-
-            members.sort(key=lambda x: x["full_name"])
-    total_pages = (total + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
-
+    page_numbers = sorted(list(page_numbers))
+    
+    # ----------------------------------------------------
+    # 3. عرض النتيجة
+    # ----------------------------------------------------
     response = templates.TemplateResponse("family/names.html", {
         "request": request,
         "user": user,
         "members": members,
-        "page": page,
-        "total_pages": total_pages,
-        "has_prev": page > 1,
-        "has_next": page < total_pages,
+        "current_page": current_page,    
+        "totals_pages": totals_pages,     
+        "page_numbers": page_numbers, 
         "q": q,
+        "csrf_token": csrf_token,
         "can_add": can_add,
         "can_edit": can_edit,
-        "can_delete": can_delete
+        "can_delete": can_delete,
+        "success": success_message
     })
     set_cache_headers(response)
     return response
@@ -184,87 +142,54 @@ async def name_details(request: Request, code: str):
     if not user:
         return RedirectResponse("/auth/login")
 
-    with get_db_context() as conn:
-        # استخدام RealDictCursor لسهولة الوصول للبيانات بالاسم
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            
-            # 1. جلب العضو من family_name
-            cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
-            member = cur.fetchone()
-            if not member:
-                raise HTTPException(status_code=404, detail="العضو غير موجود")
+    # 1. استدعاء دالة الخدمة لجلب جميع التفاصيل المطلوبة
+    details = get_member_details(code)
 
-            
-            # 2. جلب الاسم الكامل (سلسلة الأجداد) بدون اللقب
-            cur.execute("SELECT public.get_full_name(%s, NULL, FALSE) AS full_name", (code,))
-            result = cur.fetchone()
-            full_name_no_nick = result["full_name"] if result else member.get("name", "اسم غير معروف")
-            
-            # 3. جلب اللقب منفصلاً
-            display_nick_name = member.get("nick_name")
-            if display_nick_name:
-                 display_nick_name = display_nick_name.strip()
-            
-            # 4. جلب اسم الأم
-            mother_full_name = ""
-            if member.get("m_code"):
-                 cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS mother_name", (member["m_code"],))
-                 result = cur.fetchone()
-                 mother_full_name = result["mother_name"] if result else "الأم غير موجودة"
+    if not details:
+        raise HTTPException(status_code=404, detail="العضو غير موجود")
+    
+    # 💡 الخطوة الجديدة: حساب تفاصيل العمر والوفاة
+   
 
-            # ----------------------------------------------------
-            # 5. بقية الاستعلامات
-            # ----------------------------------------------------
-            cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
-            info = cur.fetchone() or {}
-            
-            cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
-            pic = cur.fetchone()
-            picture_url = pic["pic_path"] if pic else None
+    # 2. تفريغ البيانات من قاموس الـ details لتبسيط التمرير للقالب
+    member = details["member"]
+    info = details["info"]
+    picture_url = details["picture_url"]
+    full_name_no_nick = details["full_name"]
+    display_nick_name = details["nick_name"]
+    mother_full_name = details["mother_full_name"]
+    wives = details["wives"]
+    husbands = details["husbands"]
+    children = details["children"]
+    gender = details["gender"]
+    dob_str = info.get("d_o_b")
+    dod_str = info.get("d_o_d")
+    
+   #
+    db_age_at_death = info.get("age_at_death") 
+    age_details = calculate_age_details(dob_str, dod_str)
 
-            gender = info.get("gender")
-            if not gender and member.get("relation"):
-                rel = member["relation"]
-                if rel in ("ابن", "زوج", "ابن زوج", "ابن زوجة"):
-                    gender = "ذكر"
-                elif rel in ("ابنة", "زوجة", "ابنة زوج", "ابنة زوجة"):
-                    gender = "أنثى"
-            
-            # 6. جلب أسماء الأزواج/الزوجات
-            wives = []
-            if gender == "ذكر":
-                cur.execute("SELECT code FROM family_name WHERE h_code = %s", (code,))
-                wives_codes = cur.fetchall()
-                for r in wives_codes:
-                    cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS wife_name", (r["code"],))
-                    result = cur.fetchone()
-                    wife_name = result["wife_name"] if result else "اسم غير معروف"
-                    
-                    wives.append({
-                        "code": r["code"], 
-                        "name": wife_name
-                    })
+    # 💡 التعديل: ضمان تحويل القيمة إلى عدد صحيح (int) إذا كانت غير None وليست سلسلة نصية فارغة
+    final_age_at_death = None
 
-            husbands = []
-            if gender == "أنثى" and member.get("h_code"):
-                cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS husband_name", (member["h_code"],))
-                result = cur.fetchone()
-                husband_name = result["husband_name"] if result else "اسم غير معروف"
-                
-                husbands = [{
-                    "code": member["h_code"], 
-                    "name": husband_name
-                }]
+    if db_age_at_death is not None and db_age_at_death != '':
+        try:
+            # تحويلها إلى int لضمان أنها رقم
+            final_age_at_death = int(db_age_at_death)
+        except (TypeError, ValueError):
+            # في حالة فشل التحويل (وهذا لا ينبغي أن يحدث إذا كانت البيانات نظيفة)
+            final_age_at_death = None
 
-            cur.execute("SELECT code, name FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
-            children = [{"code": r["code"], "name": r["name"],} for r in cur.fetchall()]
-
+    if final_age_at_death is not None:
+        age_details["age_at_death"] = final_age_at_death
+    # 3. عرض النتيجة
     response = templates.TemplateResponse("family/details.html", {
         "request": request, "user": user, "member": member, "info": info,
         "picture_url": picture_url, 
         "full_name": full_name_no_nick,     
         "nick_name": display_nick_name,     
         "mother_full_name": mother_full_name, 
+        "age_details": age_details,
         "wives": wives,
         "husbands": husbands, "children": children, "gender": gender
     })
@@ -291,7 +216,7 @@ async def add_name(
     code: str = Form(...), name: str = Form(...),
     f_code: Optional[str] = Form(None), m_code: Optional[str] = Form(None),
     w_code: Optional[str] = Form(None), h_code: Optional[str] = Form(None),
-    relation: Optional[str] = Form(None), level: Optional[int] = Form(None),
+    relation: Optional[str] = Form(None), level: Optional[str] = Form(None), 
     nick_name: Optional[str] = Form(None), gender: Optional[str] = Form(None),
     d_o_b: Optional[str] = Form(None), d_o_d: Optional[str] = Form(None),
     email: Optional[str] = Form(None), phone: Optional[str] = Form(None),
@@ -323,10 +248,11 @@ async def add_name(
     address = html.escape(address.strip()) if address else None
     p_o_b = html.escape(p_o_b.strip()) if p_o_b else None
     status = status.strip() if status else None
+    
+    level_int = None 
 
     error = None
     success = None
-
     # ================================
     # 1. الكود: A0-000-001 فقط 
     # ================================
@@ -340,10 +266,17 @@ async def add_name(
         error = "الاسم يجب أن يحتوي على حروف عربية فقط (ممنوع الأرقام والرموز)"
 
     # ================================
-    # 3. المستوى
+    # 3. المستوى (تم تحسينه)
     # ================================
-    elif level is None or level < 1:
-        error = "المستوى مطلوب ويجب أن يكون رقم موجب"
+    if not error and level:
+        try:
+            level_int = int(level)
+            if level_int < 1:
+                error = "المستوى يجب أن يكون رقماً موجباً."
+        except ValueError:
+            error = "المستوى يجب أن يكون رقماً صحيحاً."
+    elif not error:
+        error = "المستوى مطلوب ولا يمكن أن يكون فارغاً."
 
     # ================================
     # 4. اللقب (إذا وُجد)
@@ -378,7 +311,6 @@ async def add_name(
     # ================================
     # 9. التواريخ (لا تكون في المستقبل + تاريخ الوفاة بعد الميلاد)
     # ================================
-    from datetime import date
     today = date.today()
 
     if d_o_b:
@@ -402,29 +334,23 @@ async def add_name(
     # ================================
     # 10. كود الأب/الأم/الزوج/الزوجة
     # ================================
-    parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
-    if f_code and not re.fullmatch(parent_pattern, f_code):
-        error = f"كود الأب غير صحيح (مثال: {code.split('-')[0]}0-000-001)"
-    elif m_code and not re.fullmatch(parent_pattern, m_code):
-        error = "كود الأم غير صحيح"
-    elif h_code and not re.fullmatch(parent_pattern, h_code):
-        error = "كود الزوج غير صحيح"
-    elif w_code and not re.fullmatch(parent_pattern, w_code):
-        error = "كود الزوجة غير صحيح"
+    if f_code_error := validate_parent_code(f_code, "الأب"):
+        error = f_code_error
+    elif m_code_error := validate_parent_code(m_code, "الأم"):
+        error = m_code_error
+    elif h_code_error := validate_parent_code(h_code, "الزوج"):
+        error = h_code_error
+    elif w_code_error := validate_parent_code(w_code, "الزوجة"):
+        error = w_code_error
 
-    # ================================
-    # 11. تحقق من تكرار الكود في قاعدة البيانات
-    # ================================
+    # === 11. تحقق من تكرار الكود في قاعدة البيانات (باستخدام الخدمة) ===
     elif not error:
-        with get_db_context() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code,))
-                if cur.fetchone():
-                    error = "هذا الكود مستخدم من قبل! اختر كودًا آخر."
+        # استخدام دالة الخدمة
+        if is_code_exists(code):
+            error = "هذا الكود مستخدم من قبل! اختر كودًا آخر."
 
-    # ================================
-    # 12. رفع الصورة (نوع الملف فقط)
-    # ================================
+    # === 12. رفع الصورة (نوع الملف فقط) ===
+    ext = None
     if not error and picture and picture.filename:
         allowed = {'.jpg', '.jpeg', '.png', '.webp'}
         ext = os.path.splitext(picture.filename)[1].lower()
@@ -432,72 +358,62 @@ async def add_name(
             error = "نوع الصورة غير مدعوم! استخدم: JPG، PNG، WebP فقط"
 
     # ================================
-    # إذا كل شيء تمام → احفظ
+    # 13. إذا كل شيء تمام → احفظ (باستخدام الخدمة)
     # ================================
     if not error:
         try:
-            with get_db_context() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("""
-                        INSERT INTO family_name 
-                        (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    """, (code, name, f_code, m_code, w_code, h_code, relation, level, nick_name))
+            # 💡 تجميع البيانات لإرسالها لطبقة الخدمة
+            member_data = {
+                "code": code, "name": name, "f_code": f_code, "m_code": m_code,
+                "w_code": w_code, "h_code": h_code, "relation": relation, 
+                "level": level_int, 
+                "nick_name": nick_name, 
+                "d_o_b": d_o_b, "d_o_d": d_o_d, 
+                "gender": gender, "email": email, "phone": phone,
+                "address": address, "p_o_b": p_o_b, "status": status
+            }
+            # استدعاء دالة الخدمة للحفظ
+            add_new_member(member_data, picture, ext)
 
-                    cur.execute("""
-                        INSERT INTO family_info 
-                        (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        ON CONFLICT (code_info) DO NOTHING
-                    """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
+            success = f"تم حفظ {name} بنجاح!"
 
-                    if picture and picture.filename:
-                        safe_filename = f"{code}{ext}"
-                        pic_path = os.path.join(UPLOAD_DIR, safe_filename)
-                        with open(pic_path, "wb") as f:
-                            shutil.copyfileobj(picture.file, f)
-                        cur.execute("""
-                            INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
-                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
-                        """, (code, pic_path))
-
-                    conn.commit()
-                    success = f"تم حفظ {name} بنجاح!"
-
-                    # تفريغ النموذج بعد النجاح
-                    code = name = f_code = m_code = w_code = h_code = relation = nick_name = ""
-                    level = gender = d_o_b = d_o_d = email = phone = address = p_o_b = status = None
+            # 💡 مسار النجاح: إرجاع نموذج فارغ ورسالة نجاح
+            empty_form_data = {key: "" for key in ["code", "name", "f_code", "m_code", "w_code", "h_code", 
+                                                "relation", "level", "nick_name", "gender", "d_o_b", 
+                                                "d_o_d", "email", "phone", "address", "p_o_b", "status"]}
             
-            # توجيه بعد النجاح
-           
-
+            csrf_token = generate_csrf_token()
+            request.session["csrf_token"] = csrf_token
+        
+            return templates.TemplateResponse("family/add_name.html", {
+                "request": request, "user": user, "csrf_token": csrf_token,
+                "error": None, "success": success, 
+                "form_data": empty_form_data 
+            })
+            
         except Exception as e:
+            # 💡 إذا حدث خطأ في قاعدة البيانات، يتم تعيين رسالة الخطأ والاستمرار في مسار الفشل أدناه
             error = "حدث خطأ أثناء الحفظ. حاول مرة أخرى."
-
-    # إرجاع الصفحة دائمًا
+           
+    # ----------------------------------------------------
+    # 💡 مسار الفشل الموحد (Failure Path)
+    # يتم تنفيذه إذا كان هناك خطأ في التحقق أو فشل في قاعدة البيانات
+    # ----------------------------------------------------
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
     return templates.TemplateResponse("family/add_name.html", {
         "request": request, "user": user, "csrf_token": csrf_token,
-        "error": error, "success": success,
-        "form_data": {
-            "code": code if error else "",
-            "name": name if error else "",
-            "f_code": f_code if error else "",
-            "m_code": m_code if error else "",
-            "w_code": w_code if error else "",
-            "h_code": h_code if error else "",
-            "relation": relation or "",
-            "level": str(level) if level and error else "",
-            "nick_name": nick_name or "",
-            "gender": gender or "",
-            "d_o_b": d_o_b or "",
-            "d_o_d": d_o_d or "",
-            "email": email or "",
-            "phone": phone or "",
-            "address": address or "",
-            "p_o_b": p_o_b or "",
+        "error": error, 
+        "success": None, # لضمان عدم ظهور رسالة نجاح في حال الخطأ
+        "form_data": { # إعادة تعبئة النموذج بالبيانات المدخلة
+            "code": code or "", "name": name or "", "f_code": f_code or "",
+            "m_code": m_code or "", "w_code": w_code or "", "h_code": h_code or "",
+            "relation": relation or "", "level": level or "", 
+            "nick_name": nick_name or "", "gender": gender or "",
+            "d_o_b": d_o_b or "", "d_o_d": d_o_d or "",
+            "email": email or "", "phone": phone or "",
+            "address": address or "", "p_o_b": p_o_b or "",
             "status": status or "",
         }
     })
@@ -512,25 +428,20 @@ async def edit_name_form(request: Request, code: str):
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
-            member = cur.fetchone()
+    # 1. استدعاء دالة الخدمة لجلب البيانات
+    details = get_member_for_edit(code)
 
-            if not member:
-                return templates.TemplateResponse("family/edit_name.html", {
-                    "request": request, "user": user, "code": code,
-                    "csrf_token": csrf_token, "error": "العضو غير موجود أو تم حذفه"
-                })
+    if not details:
+        return templates.TemplateResponse("family/edit_name.html", {
+            "request": request, "user": user, "code": code,
+            "csrf_token": csrf_token, "error": "العضو غير موجود أو تم حذفه"
+        })
 
-            cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
-            info = cur.fetchone() or {}
+    # 2. تفريغ البيانات
+    member = details["member"]
+    info = details["info"]
+    picture_url = details["picture_url"]
 
-            cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
-            pic = cur.fetchone()
-            picture_url = pic["pic_path"] if pic else None
-
-    # 💡 تم إزالة دالة get_full_name القديمة من هنا، ويمكنك جلب الاسم الكامل في القالب
     response = templates.TemplateResponse("family/edit_name.html", {
         "request": request, "user": user, "member": member, "info": info,
         "picture_url": picture_url, "code": code, 
@@ -546,7 +457,9 @@ async def update_name(request: Request,
                       w_code: str = Form(None), h_code: str = Form(None),
                       relation: str = Form(None), level: str = Form(None), 
                       nick_name: str = Form(None), gender: str = Form(None),
-                      d_o_b: str = Form(None), d_o_d: str = Form(None),
+                      d_o_b_str: Optional[str] = Form(None, alias="d_o_b"), 
+                      d_o_d_str: Optional[str] = Form(None, alias="d_o_d"),
+                      #d_o_b: str = Form(None), d_o_d: str = Form(None),
                       email: str = Form(None), phone: str = Form(None),
                       address: str = Form(None), p_o_b: str = Form(None),
                       status: str = Form(None), picture: UploadFile = File(None)):
@@ -571,13 +484,24 @@ async def update_name(request: Request,
     relation = html.escape(relation.strip()) if relation else None
     nick_name = nick_name.strip() if nick_name else None
     gender = gender.strip() if gender else None
-    d_o_b = d_o_b.strip() if d_o_b else None
-    d_o_d = d_o_d.strip() if d_o_d else None
+    d_o_b_str = d_o_b_str.strip() if d_o_b_str else None
+    d_o_d_str = d_o_d_str.strip() if d_o_d_str else None
+    #d_o_b = d_o_b.strip() if d_o_b else None
+    #d_o_d = d_o_d.strip() if d_o_d else None
     email = email.strip().lower() if email else None
     phone = phone.strip() if phone else None
     address = html.escape(address.strip()) if address else None
     p_o_b = html.escape(p_o_b.strip()) if p_o_b else None
     status = status.strip() if status else None
+    try:
+        # 💡 استخدم دالة مساعدة لتحويل السلسلة النصية إلى date
+        d_o_b = date.fromisoformat(d_o_b_str) if d_o_b_str else None
+        d_o_d = date.fromisoformat(d_o_d_str) if d_o_d_str else None
+       
+    except ValueError:
+        error = "صيغة تاريخ الميلاد أو الوفاة غير صحيحة."
+        d_o_b = None # لتجنب الخطأ التالي
+        d_o_d = None
 
     # === 2. التحقق من المدخلات (Input Validation) ===
     
@@ -617,99 +541,80 @@ async def update_name(request: Request,
         error = "رقم الهاتف غير صالح (استخدم أرقام، مسافات، +، -، () فقط)"
 
     # 2.8. التواريخ
-    from datetime import date
-    today = date.today()
+    today = date.today() # 💡 تم حذف الاستيراد المكرر هنا
 
-    if not error and d_o_b:
-        try:
-            dob = date.fromisoformat(d_o_b)
-            if dob > today:
-                error = "تاريخ الميلاد لا يمكن أن يكون في المستقبل"
-        except ValueError:
-            error = "تاريخ الميلاد غير صالح"
+    if not error and d_o_b: # 💡 d_o_b هنا هو كائن date أو None
+        # لم تعد بحاجة لـ try/except أو fromisoformat، لأنها نجحت في الأعلى
+        if d_o_b > today:
+            error = "تاريخ الميلاد لا يمكن أن يكون في المستقبل"
 
-    if not error and d_o_d:
-        try:
-            dod = date.fromisoformat(d_o_d)
-            if dod > today:
-                error = "تاريخ الوفاة لا يمكن أن يكون في المستقبل"
-            if d_o_b and dod < date.fromisoformat(d_o_b):
-                error = "تاريخ الوفاة لا يمكن أن يكون قبل تاريخ الميلاد"
-        except ValueError:
-            error = "تاريخ الوفاة غير صالح"
+    if not error and d_o_d: # 💡 d_o_d هنا هو كائن date أو None
+        # لم تعد بحاجة لـ try/except أو fromisoformat
+        if d_o_d > today:
+            error = "تاريخ الوفاة لا يمكن أن يكون في المستقبل"
+        
+        # 💡 استخدم d_o_b مباشرة للمقارنة
+        if d_o_b and d_o_d < d_o_b: 
+            error = "تاريخ الوفاة لا يمكن أن يكون قبل تاريخ الميلاد"
 
     # 2.9. أكواد الأقارب
-    parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
-    if not error and f_code and not re.fullmatch(parent_pattern, f_code):
-        error = f"كود الأب غير صحيح"
-    elif not error and m_code and not re.fullmatch(parent_pattern, m_code):
-        error = "كود الأم غير صحيح"
-    elif not error and h_code and not re.fullmatch(parent_pattern, h_code):
-        error = "كود الزوج غير صحيح"
-    elif not error and w_code and not re.fullmatch(parent_pattern, w_code):
-        error = "كود الزوجة غير صحيح"
-
-    # 2.10. صورة 
+    if f_code_error := validate_parent_code(f_code, "الأب"):
+        error = f_code_error
+    elif m_code_error := validate_parent_code(m_code, "الأم"):
+        error = m_code_error
+    elif h_code_error := validate_parent_code(h_code, "الزوج"):
+        error = h_code_error
+    elif w_code_error := validate_parent_code(w_code, "الزوجة"):
+        error = w_code_error
+ 
+   # 2.10. صورة 
+    ext = None
     if not error and picture and picture.filename:
         allowed = {'.jpg', '.jpeg', '.png', '.webp'}
         ext = os.path.splitext(picture.filename)[1].lower()
         if ext not in allowed:
             error = "نوع الصورة غير مدعوم! استخدم: JPG، PNG، WebP فقط"
 
-    # === 3. التنفيذ أو إرجاع الخطأ ===
+   # === 3. التنفيذ أو إرجاع الخطأ (باستخدام الخدمة) ===
     if not error:
         try:
-            with get_db_context() as conn:
-                with conn.cursor() as cur:
-                    # 3.1 تحديث family_name
-                    cur.execute("""
-                        UPDATE family_name SET
-                        name=%s, f_code=%s, m_code=%s, w_code=%s, h_code=%s,
-                        relation=%s, level=%s, nick_name=%s
-                        WHERE code=%s
-                    """, (name, f_code, m_code, w_code, h_code, relation, level_int, nick_name, code))
-
-                    # 3.2 تحديث أو إدخال family_info
-                    cur.execute("SELECT 1 FROM family_info WHERE code_info = %s", (code,))
-                    if cur.fetchone():
-                        cur.execute("""
-                            UPDATE family_info SET gender=%s, d_o_b=%s, d_o_d=%s, email=%s,
-                            phone=%s, address=%s, p_o_b=%s, status=%s WHERE code_info=%s
-                        """, (gender, d_o_b, d_o_d, email, phone, address, p_o_b, status, code))
-                    else:
-                        cur.execute("""
-                            INSERT INTO family_info (code_info, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status)
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """, (code, gender, d_o_b, d_o_d, email, phone, address, p_o_b, status))
-
-                    # 3.3 تحديث الصورة
-                    if picture and picture.filename:
-                        ext = os.path.splitext(picture.filename)[1].lower()
-                        safe_filename = f"{code}{ext}"
-                        pic_path = os.path.join(UPLOAD_DIR, safe_filename)
-                        with open(pic_path, "wb") as f:
-                            shutil.copyfileobj(picture.file, f)
-                        cur.execute("""
-                            INSERT INTO family_picture (code_pic, pic_path) VALUES (%s, %s)
-                            ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
-                        """, (code, pic_path))
-
-                    conn.commit()
-                    
-
+            # 💡 تجميع البيانات لإرسالها لطبقة الخدمة
+            member_data = {
+                "name": name, "f_code": f_code, "m_code": m_code, "w_code": w_code, 
+                "h_code": h_code, "relation": relation, "level_int": level_int, 
+                "nick_name": nick_name, "gender": gender, 
+                "d_o_b": d_o_b, "d_o_d": d_o_d, 
+                "email": email, "phone": phone, "address": address, 
+                "p_o_b": p_o_b, "status": status
+            }
+            # استدعاء دالة الخدمة للتحديث
+            update_member_data(code, member_data, picture, ext)
+            
+            # إذا نجح التحديث، وجه المستخدم لصفحة التفاصيل أو القائمة
+            return RedirectResponse(f"/names/details/{code}", status_code=303)
+          
         except Exception as e:
+            # إذا فشلت عملية قاعدة البيانات (حالة استثناء)
             error = "حدث خطأ أثناء التحديث. حاول مرة أخرى."
+    
+    # ------------------------------------------------------------------
+    # 💡 مسار الفشل (Failure Path)
+    # يتم تنفيذه فقط إذا فشل التحقق الأولي أو فشل تحديث قاعدة البيانات
+    # ------------------------------------------------------------------
+    
+    details = get_member_for_edit(code) # استدعاء دالة الخدمة مرة واحدة
 
-    # إذا حدث خطأ، قم بتحميل بيانات العضو مرة أخرى لعرضها مع الخطأ
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM family_name WHERE code = %s", (code,))
-            member = cur.fetchone()
-            cur.execute("SELECT * FROM family_info WHERE code_info = %s", (code,))
-            info = cur.fetchone() or {}
-            cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code,))
-            pic = cur.fetchone()
-            picture_url = pic["pic_path"] if pic else None
+    # 💡 يتم تعيين المتغيرات هنا لضمان أن القالب يجدها
+    if details:
+        member = details["member"]
+        info = details["info"]
+        picture_url = details["picture_url"]
+    else:
+        # إذا لم يتم العثور على العضو (في حالة خطأ حرج)، نستخدم بيانات النموذج الحالية قدر الإمكان
+        member = {"code": code, "name": name, "level": level_int, "nick_name": nick_name}
+        info = {"d_o_b": d_o_b, "d_o_d": d_o_d, "email": email, "phone": phone, "address": address, "p_o_b": p_o_b, "status": status}
+        picture_url = None
+
 
     # إرجاع الصفحة مع رسالة الخطأ
     csrf_token = generate_csrf_token()
@@ -722,16 +627,27 @@ async def update_name(request: Request,
 
 # ====================== حذف عضو ======================
 @router.post("/delete/{code}")
-async def delete_name(request: Request, code: str):
+async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
     user = request.session.get("user")
+    
+    # 1. التحقق من الصلاحيات
     if not user or not can(user, "delete_member"):
-        return RedirectResponse("/names")
-    with get_db_context() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM family_picture WHERE code_pic = %s", (code,))
-            cur.execute("DELETE FROM family_info WHERE code_info = %s", (code,))
-            cur.execute("DELETE FROM family_name WHERE code = %s", (code,))
-            cur.execute("DELETE FROM family_search WHERE code = %s", (code,))
-            conn.commit()
-    return RedirectResponse("/names", status_code=303)
+        # إرجاع خطأ 403 (ممنوع) أو التوجيه مع رسالة خطأ
+        raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف الأعضاء")
 
+    # 2. التحقق من CSRF
+    form = await request.form()
+    verify_csrf_token(request, form.get("csrf_token"))
+    
+    # 3. استدعاء دالة الخدمة للحذف
+    try:
+        delete_member(code)
+        
+        # 4. التوجيه بعد النجاح إلى صفحة القائمة
+        # يمكن إضافة رسالة نجاح هنا إذا كان الـ frontend يدعم ذلك
+        return RedirectResponse("/names?success=member_deleted", status_code=303)
+        
+    except Exception as e:
+        # إذا حدث خطأ في قاعدة البيانات أثناء الحذف
+        # يمكن توجيه المستخدم لصفحة التفاصيل مع رسالة خطأ
+        raise HTTPException(status_code=500, detail=f"فشل الحذف للعضو {code}.")
