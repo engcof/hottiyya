@@ -436,7 +436,6 @@ footer {
 .cta-button:hover {
     background-color: var(--accent-hover);
 }
-
 /* إخفاء القائمة في الموبايل */
 @media (max-width: 1024px) {
     .online-list {
@@ -1047,185 +1046,164 @@ footer {
 }
 /* === تنسيق صفحة تفاصيل العضو (Member Details) === */
 .member-details-section {
-    max-width: 1200px;
-    margin: 40px auto 80px auto;
-    padding: 0 15px;
+    padding: 60px 20px;
+    min-height: 100vh;
+    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
 }
-/* 1. تنسيق رأس الصفحة والبيانات الأساسية */
 .member-header {
+    display: grid;
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom:20px;
+    gap: 20px;
 }
 .member-names {
-    font-size: 3.5rem;
+    font-size: clamp(2.8rem, 6vw, 2.2rem);
     font-weight: 900;
-    color: var(--text-dark);
-    margin-bottom: 5px;
+    color: #0f172a;
+    margin: 0;
+    line-height: 1.2;
+    padding: 20px 10px;
 }
 .code-badge {
-    display: inline-block;
-    background-color: var(--primary-color);
-    color: white;
-    padding: 5px 12px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: 1px;
-}
-.nickname-display {
-    margin: 15px 0 10px 0;
+    background: #ecfdf5;
+    color: var(--accent);
+    padding: 8px 20px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin: auto;
 }
 .nickname-big {
-    font-size: 1.5rem;
+    background: var(--accent);
+    color: white;
+    padding: 10px 32px;
+    border-radius: 50px;
+    font-size: 1.4rem;
     font-weight: 600;
-    color: var(--primary-color-dark);
-    padding: 5px 15px;
-    border: 2px solid var(--primary-color-light);
-    border-radius: 8px;
-    display: inline-block;
-}
-.status-display {
-    margin-top: 15px;
 }
 .status {
-    display: inline-block;
-    padding: 5px 15px;
-    border-radius: 6px;
-    font-weight: 700;
-    font-size: 0.9rem;
+    padding: 10px 28px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    text-align: center;
+    margin: 0px 0px 20px;
 }
-.alive {
-    background-color: #d1fae5; /* أخضر فاتح جداً */
-    color: #059669;
+.status.alive { 
+    background: #dcfce7; 
+    color: #166534; 
 }
-.deceased {
-    background-color: #fee2e2; /* أحمر فاتح جداً */
-    color: #b91c1c;
+.status.deceased { 
+    background: #fee2e2; 
+    color: #991b1b;
 }
-/* 2. هيكل الجسم (الصورة والمعلومات) */
 .member-body {
-    display: flex;
-    gap: 30px;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 50px;
+    margin-bottom: 60px;
 }
 .profile-picture {
-    flex-basis: 300px; /* تحديد عرض ثابت للصورة */
-    flex-shrink: 0;
     text-align: center;
 }
 .profile-img {
-    width: 100%;
-    height: 300px;
+    width: 260px;
+    height: 260px;
     object-fit: cover;
-    border-radius: 15px;
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    border: 5px solid var(--card-bg);
+    border-radius: 50%;
+    border: 8px solid white;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
 }
 .img-caption {
-    margin-top: 10px;
-    font-style: italic;
-    color: var(--text-light);
-    font-size: 0.9rem;
+    margin-top: 16px;
+    color: #64748b;
+    font-size: 1rem;
 }
 .info-section, .relations-section {
-    flex-grow: 1;
-    background-color: var(--card-bg);
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    margin-bottom: 30px; /* فصل الأقسام عند التكديس الرأسي */
+    background: var(--glass-strong);
+    padding: 32px;
+    border-radius: 24px;
+    box-shadow: var(--shadow);
 }
-/* عند عرض الصورة، اجعل الأقسام الأخرى تأخذ المساحة المتبقية */
-.info-section {
-    flex-grow: 1;
-    margin-bottom: 0; /* لا حاجة لهامش سفلي إذا كان العلاقات بالأسفل */
-}
-/* 3. تنسيق شبكة المعلومات الأساسية */
 .section-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--primary-color-dark);
-    margin-bottom: 25px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--primary-color-light);
+    font-size: 1.0rem;
+    font-weight: 500;
+    color: #0f172a;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #e2e8f0;
 }
 .info-grid {
     display: grid;
-    /* عمودين متساويين */
-    grid-template-columns: 1fr 1fr; 
-    gap: 20px 30px;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 .info-row {
-    border-bottom: 1px dashed var(--border-light);
-    padding-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
+    justify-content: auto;
+    padding: 14px 0;
+    border-bottom: 1px dashed #e2e8f0;
 }
 .info-label {
-    font-weight: 500;
-    color: var(--text-medium);
-    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 600;
+    min-width: 140px;
 }
 .info-value {
-    font-weight: 700;
-    color: var(--text-dark);
-    text-align: left;
+    color: #0f172a;
+    font-weight: 600;
+    text-align: center;
+    flex: 1;
 }
 .info-value a {
-    color: var(--primary-color);
-    text-decoration: none;
+    color: var(--accent);
+    font-weight: 700;
 }
-.info-value a:hover {
-    text-decoration: underline;
-}
-/* 4. تنسيق بطاقات العلاقات الأسرية */
-.relations-section {
-    /* نقلها لتكون تحت المعلومات الأساسية بدلاً من جانبها على الشاشات الصغيرة */
-    flex-basis: 100%;
-    margin-top: 30px;
-}
+
+/* العلاقات */
 .relations-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 أعمدة: الأم، الزوج، الأبناء */
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
 }
 .relation-card {
-    padding: 20px;
-    border-radius: 10px;
-    background-color: #f7fdfb; /* خلفية خفيفة جداً */
-    border: 1px solid var(--border-light);
+    background: white;
+    padding: 24px;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
 }
 .relation-card h5 {
-    font-size: 1rem;
-    color: var(--text-medium);
-    margin-bottom: 10px;
-    font-weight: 500;
+    margin: 0 0 16px;
+    color: #0f172a;
+    font-weight: 700;
+    font-size: 1.2rem;
 }
 .relation-link {
     display: block;
-    color: var(--primary-color-dark);
+    padding: 10px 16px;
+    background: #f8fafc;
+    color: var(--accent);
+    border-radius: 12px;
     font-weight: 600;
     text-decoration: none;
-    transition: color 0.2s;
-    margin-bottom: 5px;
+    transition: var(--transition);
 }
 .relation-link:hover {
-    color: var(--primary-color);
-    text-decoration: underline;
-}
-.text-muted {
-    font-size: 0.9rem;
-    color: var(--text-light);
+    background: #ecfdf5;
+    transform: translateX(8px);
 }
 .children-list {
-    max-height: 200px;
-    overflow-y: auto; /* إضافة شريط تمرير إذا كان هناك أبناء كثيرون */
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 .child-item {
-    display: block;
-    padding: 3px 0;
+    background: #ecfdf5;
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 50px;
     font-size: 0.95rem;
-    color: var(--text-dark);
-    text-decoration: none;
+    font-weight: 600;
 }
 .child-item:hover {
     color: var(--primary-color);
@@ -1321,7 +1299,9 @@ footer {
 .admin-dashboard {
     max-width: 1400px;
     margin: 40px auto 80px auto;
-    padding: 0 15px;
+    padding: 10px 20px 80px;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 /* 1. تنسيق العنوان ورأس الصفحة */
 .dashboard-header {
@@ -1344,15 +1324,18 @@ footer {
 /* 3. تنسيق شبكة البطاقات العلوية (إضافة/تعديل) */
 .admin-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr; 
-    gap: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 28px;
     margin-bottom: 40px;
 }
 .admin-card {
-    background-color: var(--card-bg);
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+   
+    background: white;
+    padding: 32px;
+    border-radius: 24px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+    border: 1px solid #e2e8f0;
+
 }
 .admin-card h2 {
     font-size: 1.8rem;
@@ -2580,93 +2563,6 @@ footer {
 
 
 /* =======================================
-   1. تحسين عام لمظهر البطاقة وصندوق الوارد
-   ======================================= */
-.inbox-card {
-    /* تحسين الظلال والحدود لمظهر احترافي */
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff; /* خلفية بيضاء للوضوح */
-}
-
-/* =======================================
-   2. تنسيق صندوق الوارد (Inbox Styling)
-   ======================================= */
-.notifications-list {
-    margin-top: 20px;
-    padding: 0;
-    list-style: none; /* إزالة التنقيط الافتراضي */
-}
-
-.notification-item {
-    /* تنسيق كل رسالة على حدة */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    margin-bottom: 12px; /* تباعد بين الرسائل */
-    border-radius: 8px;
-    border-left: 5px solid; /* شريط جانبي لتحديد الحالة */
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* ظل خفيف */
-}
-
-.notification-item:hover {
-    transform: translateY(-2px); /* تأثير خفيف عند المرور بالفأرة */
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.notification-item div:first-child {
-    /* تنسيق محتوى الرسالة (المرسل والنص) */
-    flex-grow: 1;
-    padding-right: 15px;
-}
-
-.notification-item p {
-    margin: 5px 0 0;
-    font-size: 1rem;
-    line-height: 1.4;
-}
-
-/* =======================================
-   3. تخصيص حالة الرسالة (مقروءة/غير مقروءة)
-   ======================================= */
-
-/* الرسائل غير المقروءة (Alert-Primary في Bootstrap) */
-.notification-item.alert-primary {
-    border-color: #007bff; /* أزرق */
-    background-color: #e9f0ff; /* خلفية فاتحة جداً لغير المقروءة */
-    font-weight: bold;
-}
-/* الرسائل المقروءة (Alert-Secondary في Bootstrap) */
-.notification-item.alert-secondary {
-    border-color: #6c757d; /* رمادي */
-    background-color: #f8f9fa; /* خلفية محايدة للمقروءة */
-    font-weight: normal;
-    opacity: 0.8; /* جعلها أقل بروزاً */
-}
-/* تنسيق زر القراءة */
-.notification-item form button {
-    font-size: 0.9rem;
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: 1px solid #28a745;
-    color: #28a745;
-    background-color: transparent;
-    cursor: pointer;
-}
-.notification-item form button:hover {
-    background-color: #28a745;
-    color: white;
-}
-/* تنسيق نص حالة "مقروءة" */
-.text-success.small {
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-/* =======================================
    1. التنسيقات الأساسية للبطاقات والأقسام
    ======================================= */
 .profile-section {
@@ -2702,15 +2598,22 @@ footer {
 }
 /* حاوية الرسائل */
 .notifications-list {
-    /* List-group-flush يجعل العناصر تمتد للحافة */
+    margin-top: 20px;
     padding: 0;
     list-style: none; /* إزالة التنقيط الافتراضي */
 }
 /* تنسيق عنصر الرسالة الواحد */
 .notification-item {
-    border-left: 5px solid transparent; /* شريط جانبي يحدد الحالة */
+    /* تنسيق كل رسالة على حدة */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 15px 20px;
-    transition: background-color 0.3s, border-left 0.3s;
+    margin-bottom: 12px; /* تباعد بين الرسائل */
+    border-radius: 8px;
+    border-left: 5px solid; /* شريط جانبي لتحديد الحالة */
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* ظل خفيف */
 }
 .notification-item:hover {
     background-color: #f0f4f7; /* خلفية خفيفة عند المرور بالفأرة */
@@ -2721,6 +2624,26 @@ footer {
     border-left-color: #007bff; /* شريط أزرق */
     font-weight: 500; /* لتمييز النص قليلاً */
 }
+/* تنسيق زر القراءة */
+.notification-item form button {
+    font-size: 0.9rem;
+    padding: 5px 10px;
+    border-radius: 5px;
+    border: 1px solid #28a745;
+    color: #28a745;
+    background-color: transparent;
+    cursor: pointer;
+}
+.notification-item form button:hover {
+    background-color: #28a745;
+    color: white;
+}
+.notification-item p {
+    margin: 5px 0 0;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
 /* الرسائل المقروءة */
 .list-group-item:not(.unread-item) {
     border-left-color: #cccccc; /* شريط رمادي فاتح */
@@ -2734,6 +2657,7 @@ footer {
     white-space: pre-wrap; /* للحفاظ على تنسيق الرسالة إن وجد */
     word-break: break-word;
 }
+
 /* =======================================
    3. تنسيق نماذج الإرسال وتغيير كلمة السر
    ======================================= */

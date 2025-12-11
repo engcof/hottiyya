@@ -56,29 +56,29 @@
                         {% endif %}
                     {% endmacro %}
 
-                    {{ info_row("العلاقة", member.relation) }}
-                    {{ info_row("الجنس", gender) }}
-                    {{ info_row("المستوى", member.level) }}
-                    {{ info_row("تاريخ الميلاد", info.d_o_b) }}
-                    {{ info_row("تاريخ الوفاة", info.d_o_d) }}
+                    {{ info_row("العلاقة  :- ", member.relation) }}
+                    {{ info_row("الجنس  :- ", gender) }}
+                    {{ info_row("المستوى  :- ", member.level) }}
+                    {{ info_row("تاريخ الميلاد  :- ", info.d_o_b) }}
+                    {{ info_row("تاريخ الوفاة  :- ", info.d_o_d) }}
                     {% if age_details %}
                     
                     {# 1. إذا كان متوفيًا (عرض العمر عند الوفاة والوفاة منذ) #}
                     {% if age_details.has_dod %}
                         {# 💡 هذا السطر صحيح: يستخدم قيمة age_at_death التي جلبها الـ Router من قاعدة البيانات #}
-                        {{ info_row("العمر عند الوفاة", age_details.age_at_death ~ " سنة") if age_details.age_at_death is not none else "" }}
-                        {{ info_row("الوفاة منذ", age_details.time_since_death) if age_details.time_since_death is not none else "" }}
+                        {{ info_row("العمر عند الوفاة  :- ", age_details.age_at_death ~ " سنة") if age_details.age_at_death is not none else "" }}
+                        {{ info_row("الوفاة منذ  :- ", age_details.time_since_death) if age_details.time_since_death is not none else "" }}
 
                     {# 2. إذا كان على قيد الحياة (عرض العمر الحالي) #}
                     {% elif age_details.has_dob %}
-                        {{ info_row("العمر الحالي", age_details.age ~ " سنة") if age_details.age is not none else "" }}
+                        {{ info_row("العمر الحالي  :- ", age_details.age ~ " سنة") if age_details.age is not none else "" }}
                     {% endif %}
 
                     {% endif %}
-                    {{ info_row("مكان الميلاد", info.p_o_b) }}
-                    {{ info_row("العنوان", info.address) }}
-                    {{ info_row("البريد الإلكتروني", info.email, "mailto:") }}
-                    {{ info_row("رقم الهاتف", info.phone, "tel:") }}
+                    {{ info_row("مكان الميلاد  :- ", info.p_o_b) }}
+                    {{ info_row("العنوان  :- ", info.address) }}
+                    {{ info_row("البريد الإلكتروني  :- ", info.email, "mailto:") }}
+                    {{ info_row("رقم الهاتف  :- ", info.phone, "tel:") }}
                 </div>
             </div>
 
