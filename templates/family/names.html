@@ -3,12 +3,12 @@
 
 {% block content %}
 <section class="family-tree-section">
-    {% if success %}
-<div class="alert alert-success" role="alert">
-    {{ success }}
-</div>
-{% endif %}
-    <div class="container">
+     <div class="container">    
+        {% if success %}
+            <div class="alert alert-success" role="alert">
+                {{ success }}
+            </div>
+        {% endif %}
         <!-- العنوان + زر الإضافة -->
         <div class="section-header">
             <h1 class="page-title">شجرة العائلة</h1>

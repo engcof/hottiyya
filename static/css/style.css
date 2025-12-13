@@ -883,8 +883,11 @@ footer {
 
 /* ========== ✅  صفحة شجرة العائلة ✅ ========== */
 .family-tree-section {
-    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 60px 20px;
     min-height: 100vh;
+    text-align: center;
 }
 .section-header {
     display: flex;
@@ -1297,7 +1300,7 @@ footer {
 
 /* ========== ✅  تنسيق لوحة التحكم الإدارية (Admin Dashboard)  ✅ ========== */
 .admin-dashboard {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 40px auto 80px auto;
     padding: 10px 20px 80px;
     min-height: 100vh;
@@ -1528,8 +1531,11 @@ footer {
 }
 /* تنسيقات جدول سجل الدخول */
 .admin-history-section {
-    margin-top: 40px;
-    margin-bottom: 40px;
+    max-width: 1200px;
+    margin: 40px auto 80px auto;
+    padding: 10px 20px 80px;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 .data-table {
     width: 100%;
