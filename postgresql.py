@@ -54,18 +54,11 @@ def init_database():
         try:
             # 🟢 رسالة بداية واحدة
             print("🟢 جاري تهيئة مكونات قاعدة البيانات الأساسية...")
-
-            # =======================================================
-            # 1. إنشاء جدول stats_summary
-            # =======================================================
-            cur.execute('''
-                CREATE TABLE IF NOT EXISTS stats_summary (
-                    key TEXT PRIMARY KEY,
-                    value BIGINT NOT NULL DEFAULT 0
-                );
-            ''')
             
-            # تهيئة الصف الأساسي
+            # =======================================================
+            # 1. تهيئة صفوف stats_summary الأساسية (لضمان وجود العداد)
+            # =======================================================
+            # (تم حذف CREATE TABLE IF NOT EXISTS stats_summary)
             cur.execute("""
                 INSERT INTO stats_summary (key, value)
                 VALUES ('total_visitors_count', 0)
@@ -73,42 +66,13 @@ def init_database():
             """)
             
             # =======================================================
-            # 2. ترحيل البيانات (الإبقاء على رسالة الترحيل فقط)
+            # 2. إنشاء فهرس notifications (لضمان وجوده)
             # =======================================================
-            cur.execute("SELECT value FROM stats_summary WHERE key = 'total_visitors_count'")
-            current_total = cur.fetchone()[0] if cur.rowcount > 0 else 0
-
-            if current_total == 0:
-                cur.execute("SELECT COUNT(DISTINCT session_id) FROM visits")
-                initial_total = cur.fetchone()[0] or 0
-                
-                if initial_total > 0:
-                    cur.execute("""
-                        UPDATE stats_summary
-                        SET value = %s
-                        WHERE key = 'total_visitors_count' AND value = 0;
-                    """, (initial_total,))
-                    print(f"✅ تم ترحيل {initial_total} زائر كإجمالي ابتدائي.") # ⬅️ إبقاء هذه الرسالة
-                # else: إزالة رسالة "جدول visits فارغ"
-            
-            # =======================================================
-            # 3. إنشاء جدول الإشعارات (Notifications)
-            # =======================================================
-            cur.execute('''
-                CREATE TABLE IF NOT EXISTS notifications (
-                    id SERIAL PRIMARY KEY,
-                    sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, 
-                    recipient_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-                    message TEXT NOT NULL,
-                    is_read BOOLEAN DEFAULT FALSE,
-                    is_admin_message BOOLEAN DEFAULT FALSE,
-                    created_at TIMESTAMPTZ DEFAULT NOW()
-                );
-            ''')
+            # (تم حذف CREATE TABLE IF NOT EXISTS notifications)
             cur.execute('CREATE INDEX IF NOT EXISTS idx_notifications_recipient_unread ON notifications(recipient_id, is_read);')
            
             # =======================================================
-            # 4. ترحيل التواريخ: حذف d_o_b و d_o_d من family_info
+            # 3. ترحيل التواريخ: حذف d_o_b و d_o_d من family_info (ترحيل هيكلي)
             # =======================================================
             cur.execute("""
                 DO $$
@@ -133,8 +97,7 @@ def init_database():
             ''')
 
             # ========================================
-            # 5. تحديث دالة PostgreSQL لحساب العمر عند الوفاة
-            # (مطلوبة لاستخدامها في العمود المحسوب)
+            # 4. تحديث دالة PostgreSQL لحساب العمر عند الوفاة (يجب أن تبقى)
             # ========================================
             cur.execute('''
                 CREATE OR REPLACE FUNCTION public.calculate_age_at_death_db(
@@ -159,11 +122,10 @@ def init_database():
                     RETURN age;
                 END;
                 $$ LANGUAGE plpgsql IMMUTABLE;
-                -- 💡 ملاحظة: يجب أن تكون الدالة IMMUTABLE لكي تستخدم في الأعمدة المحسوبة
             ''')
             
             # =======================================================
-            # 6. إنشاء جدول family_age_search مع العمود المحسوب
+            # 5. إنشاء جدول family_age_search مع العمود المحسوب (يجب أن يبقى)
             # =======================================================
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS family_age_search (
@@ -173,7 +135,7 @@ def init_database():
                     d_o_b DATE,
                     d_o_d DATE,
                     
-                    -- العمر عند الوفاة: عمود يُحسب تلقائياً ويُخزَّن
+                    -- العمر عند الوفاة: عمود يُحسب تلقائياً ويُخزَّن
                     age_at_death INTEGER 
                     GENERATED ALWAYS AS (public.calculate_age_at_death_db(d_o_b, d_o_d)) STORED,
                     
@@ -195,7 +157,7 @@ def init_database():
             cur.execute('CREATE INDEX IF NOT EXISTS idx_age_search_dod ON family_age_search(d_o_d);')
             
             # ========================================
-            # 7. تحديث دالة PostgreSQL لجلب الاسم الكامل (public.get_full_name)
+            # 6. تحديث دالة PostgreSQL لجلب الاسم الكامل (يجب أن تبقى)
             # ========================================
             cur.execute('''
                 CREATE OR REPLACE FUNCTION public.get_full_name(
@@ -246,18 +208,12 @@ def init_database():
                 END;
                 $$ LANGUAGE plpgsql STABLE;
             ''')
-            # ❌ إزالة: print("✅ تم تحديث دالة get_full_name.")
 
             # ..........................
-            # 5. جدول family_search + الـ Trigger
+            # 7. جدول family_search + الـ Trigger (يجب أن تبقى)
             # ..........................
 
-            # ❌ 1. حذف دالة normalize_arabic القديمة (لإعادة إنشائها بالشكل الجديد)
-            #cur.execute('''
-                #DROP FUNCTION IF EXISTS public.normalize_arabic(text) CASCADE;
-            #''')
-
-            # 💡 1. إعادة تعريف دالة التطبيع (توحيد الألفات فقط)
+            # 💡 7.1. إعادة تعريف دالة التطبيع (توحيد الألفات فقط)
             cur.execute('''
                 CREATE OR REPLACE FUNCTION public.normalize_arabic(text)
                 RETURNS text AS $$
@@ -271,8 +227,7 @@ def init_database():
             $$ LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
             ''')
 
-            # 💡 2. إنشاء جدول family_search (لضمان وجوده إذا تم حذفه لأي سبب)
-            # سنقوم بتضمين جميع الأعمدة الموجودة في الجدول الذي أرسلته
+            # 💡 7.2. إنشاء جدول family_search (لضمان وجوده)
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS family_search (
                     code TEXT PRIMARY KEY,
@@ -280,12 +235,11 @@ def init_database():
                     nick_name TEXT,
                     level INT, 
                     updated_at TIMESTAMPTZ DEFAULT NOW()
-                    -- لن نضع search_text هنا، بل سنضيفه/نحدثه لاحقاً بأمان
                 )
             ''')
 
 
-            # 💡 3. إدارة عمود search_text المحسوب (إضافة/تحديث آمن)
+            # 💡 7.3. إدارة عمود search_text المحسوب (إضافة/تحديث آمن)
             cur.execute("""
                 DO $$
                 BEGIN
@@ -309,7 +263,7 @@ def init_database():
                 $$;
             """)
 
-            # 💡 4. إعادة إنشاء الفهارس (بعد ضمان وجود عمود search_text الجديد)
+            # 💡 7.4. إعادة إنشاء الفهارس (بعد ضمان وجود عمود search_text الجديد)
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_family_search_gin
                 ON family_search
@@ -318,7 +272,7 @@ def init_database():
             cur.execute('CREATE INDEX IF NOT EXISTS idx_family_search_name ON family_search(full_name)')
             # ..........................
             
-            # 6. دالة Trigger (refresh_family_search)
+            # 7.5. دالة Trigger (refresh_family_search)
             cur.execute('''
                 CREATE OR REPLACE FUNCTION refresh_family_search() RETURNS trigger AS $$
                 BEGIN
@@ -340,7 +294,7 @@ def init_database():
                 $$ LANGUAGE plpgsql;
             ''')
 
-            # 7. ربط Trigger بجدول family_name
+            # 7.6. ربط Trigger بجدول family_name
             cur.execute('''
                 DROP TRIGGER IF EXISTS trig_refresh_search ON family_name;
                 CREATE TRIGGER trig_refresh_search
@@ -350,20 +304,10 @@ def init_database():
                     EXECUTE FUNCTION refresh_family_search();
             ''')
             
-            # ❌ إزالة: print("✅ تم التحقق من جدول family_search والـ Trigger بنجاح.")
 
-            # 💡 8. إضافة خطوة التحديث الإجباري لجميع الصفوف القديمة (لإعادة بناء family_search)
-            #print("⚙️ جاري إعادة بناء جدول البحث لجميع الأعضاء القدامى...")
-            #cur.execute("""
-                #UPDATE family_name
-                #SET level = level; -- تحديث الحقل بقيمته الحالية لتشغيل الـ Trigger
-            #""")
-            #print(f"✅ تم تحديث {cur.rowcount} عضو بنجاح وإعادة بناء جدول البحث.")
-
-            # 9. رسالة نهاية واحدة (كانت رقم 8 سابقاً)
+            # 9. رسالة نهاية واحدة (نظيفة)
             print("✅ تم إنهاء التهيئة بنجاح!")
-
-           
+          
            
         except Exception as e:
             # ❌ الإبقاء على رسالة الخطأ الحاسم فقط
