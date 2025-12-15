@@ -239,12 +239,16 @@ def init_database():
             ''')
 
 
+            cur.execute('''
+                DROP INDEX IF EXISTS idx_family_search_gin;
+            ''')
+
+
             # 💡 7.3. إدارة عمود search_text المحسوب (إضافة/تحديث آمن)
             cur.execute("""
                 DO $$
                 BEGIN
-                    -- 1. حذف الفهرس GIN أولاً لأنه يعتمد على search_text
-                    DROP INDEX IF EXISTS idx_family_search_gin;
+                    -- 1. لا نحتاج لحذف الفهرس GIN هنا بعد الآن (تم حذفه في الخطوة السابقة)
                     
                     -- 2. إذا كان العمود search_text موجوداً، قم بحذفه
                     IF EXISTS (SELECT 1 FROM information_schema.columns 
@@ -270,7 +274,6 @@ def init_database():
                 USING GIN (to_tsvector('arabic', search_text))
             """)
             cur.execute('CREATE INDEX IF NOT EXISTS idx_family_search_name ON family_search(full_name)')
-            # ..........................
             
             # 7.5. دالة Trigger (refresh_family_search)
             cur.execute('''
