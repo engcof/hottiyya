@@ -248,42 +248,59 @@ def init_database():
             ''')
             # ❌ إزالة: print("✅ تم تحديث دالة get_full_name.")
 
-            # ---
+            # ..........................
             # 5. جدول family_search + الـ Trigger
-            # ---
+            # ..........................
+
+            # ❌ 1. حذف دالة normalize_arabic القديمة (لإعادة إنشائها بالشكل الجديد)
+            cur.execute('''
+                DROP FUNCTION IF EXISTS public.normalize_arabic(text) CASCADE;
+            ''')
+
+            # 💡 2. إعادة تعريف الدالة لتوحيد (أ، إ، آ) إلى 'ا'، مع الإبقاء على 'ء'، 'ي'، 'ة'، 'ؤ'، 'ئ' كما هي
             cur.execute('''
                 CREATE OR REPLACE FUNCTION public.normalize_arabic(text)
                 RETURNS text AS $$
-                -- هذه الدالة تقوم بإزالة التشكيل، وتحويل الهمزات/الياء/الألف إلى صيغة موحدة
+                -- هذه الدالة تركز فقط على توحيد الهمزات على الألف والألف الممدودة
                 SELECT 
                     TRANSLATE(
                         $1, 
-                        'ئؤيآأإءة',
-                        'يويآآآه'
+                        'أإآ', -- الأحرف التي سيتم استبدالها (ألفات مهموزة)
+                        'ااا'  -- البدائل: (أ, إ, آ) -> ا
                     )
             $$ LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
             ''')
-            #print("✅ تم تحديث دالة normalize_arabic.")
+
+            # 💡 3. حذف جدول البحث (لتطبيق الدالة الجديدة على search_text)
+            cur.execute('''
+                DROP TABLE IF EXISTS family_search CASCADE;
+            ''')
+
+            # 💡 4. إعادة إنشاء جدول family_search
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS family_search (
                     code TEXT PRIMARY KEY,
                     full_name TEXT NOT NULL,
                     nick_name TEXT,
                     level INT, 
+                    -- الآن search_text يستخدم دالة normalize_arabic الجديدة
                     search_text TEXT GENERATED ALWAYS AS (
-                        coalesce(full_name, '') || ' ' || coalesce(nick_name, '')
+                        public.normalize_arabic(coalesce(full_name, '') || ' ' || coalesce(nick_name, ''))
                     ) STORED,
                     updated_at TIMESTAMPTZ DEFAULT NOW()
                 )
             ''')
 
-            # إضافة الفهارس
+            # 💡 5. إعادة إنشاء الفهرس GIN
             cur.execute("""
                 CREATE INDEX IF NOT EXISTS idx_family_search_gin
                 ON family_search
                 USING GIN (to_tsvector('arabic', search_text))
             """)
             cur.execute('CREATE INDEX IF NOT EXISTS idx_family_search_name ON family_search(full_name)')
+            # ..........................
+
+          
             
             # 6. دالة Trigger (refresh_family_search)
             cur.execute('''
@@ -319,7 +336,18 @@ def init_database():
             
             # ❌ إزالة: print("✅ تم التحقق من جدول family_search والـ Trigger بنجاح.")
 
-            
+            # 💡 8. إضافة خطوة التحديث الإجباري لجميع الصفوف القديمة (لإعادة بناء family_search)
+            print("⚙️ جاري إعادة بناء جدول البحث لجميع الأعضاء القدامى...")
+            cur.execute("""
+                UPDATE family_name
+                SET level = level; -- تحديث الحقل بقيمته الحالية لتشغيل الـ Trigger
+            """)
+            print(f"✅ تم تحديث {cur.rowcount} عضو بنجاح وإعادة بناء جدول البحث.")
+
+            # 9. رسالة نهاية واحدة (كانت رقم 8 سابقاً)
+            print("✅ تم إنهاء التهيئة بنجاح!")
+
+            # ..........................
             # 8. رسالة نهاية واحدة
             print("✅ تم إنهاء التهيئة بنجاح!")
           
