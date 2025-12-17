@@ -16,6 +16,7 @@
                 <li><a href="/" {% if request.path == '/' %}class="active"{% endif %}>الرئيسية</a></li>
                 <li><a href="/news" {% if request.path.startswith('/news') %}class="active"{% endif %}>الأخبار</a></li>
                 <li><a href="/articles" {% if request.path.startswith('/articles') %}class="active"{% endif %}>المقالات</a></li>
+                <li><a href="/gallery" {% if request.path.startswith('/gallery') %}class="active"{% endif %}>معرض الصور</a></li>
                 <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة العائلة</a></li>
                 <li><a href="/about">عن العائلة</a></li>
                 {% if user and user.role == "admin" %}
@@ -69,6 +70,7 @@
             <a href="/">الرئيسية</a>
             <a href="/news">الأخبار</a>
             <a href="/articles">المقالات</a>
+            <a href="/names">معرض الصور</a>
             <a href="/names">شجرة العائلة</a>
             <a href="/about">عن العائلة</a>
             {% if user and user.role == "admin" %}<a href="/admin">الإدارة</a>{% endif %}
@@ -93,7 +95,7 @@
             <div class="footer-copyright">
                 © 2025 عائلة الحوطية • جميع الحقوق محفوظة
             </div>
-            <div style="margin-top:12px;color:#10b981;font-weight:600;">صُنع بـ ❤ بواسطة Osmancof</div>
+            <div style="margin-top:12px;color:#10b981;font-weight:600;">صُمم بـ ❤ بواسطة Osmancof</div>
         </div>
     </footer>
     <!-- إضافة ملفات JavaScript مشتركة هنا -->

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from postgresql import get_db_context
-from services.auth_service import get_current_user
+
 from security.csrf import generate_csrf_token, verify_csrf_token
 from fastapi.responses import HTMLResponse, RedirectResponse
-from security.session import set_cache_headers
+from security.session import set_cache_headers,get_current_user
 from psycopg2.extras import RealDictCursor
 from core.templates import templates
 import html # تم إضافة هذه المكتبة لتنقية المدخلات (Sanitization)

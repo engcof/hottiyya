@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="margin-top: 120px; max-width: 700px; min-height: 80vh;">
+    <div class="glass-strong p-5" style="border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);">
+        <div class="text-center mb-5">
+            <div class="icon-circle mb-3" style="font-size: 2rem; color: var(--accent);">
+                <i class="fas fa-camera-retro"></i>
+            </div>
+            <h2 class="hero-title" style="font-size: 2rem; margin-bottom: 10px;">إضافة مادة للمعرض</h2>
+            <p class="text-lighter">قم بملء البيانات التالية بدقة لنشر الصورة</p>
+        </div>
+        <form action="/gallery/add" method="POST" enctype="multipart/form-data" class="auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-group">
+                <label class="form-label fw-bold">عنوان الصورة</label>
+                <input type="text" name="title" 
+                placeholder="ابدأ بوصف واضح (لا تبدأ برقم أو رمز)" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label fw-bold">رابط الصورة (URL)</label>
+                <input type="file" name="image" accept="image/*" required class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label fw-bold">تصنيف الصورة</label>
+                <select name="category" >
+                    <option value="">-- اختر التصنيف --</option>
+                    <option value="مناسبات">مناسبات</option>
+                    <option value="تاريخي">تاريخي</option>
+                    <option value="اجتماعات">اجتماعات</option>
+                </select>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <button type="submit" class="btn-f-action btn-f-view w-100 py-3 shadow-sm">
+                        <i class="fas fa-cloud-upload-alt ms-2"></i> اعتماد ونشر الصورة
+                    </button>
+                </div>
+                <div class="col-md-4">
+                    <a href="/gallery" class="btn btn-outline-light w-100 py-3 border-0">إلغاء</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .glass-input {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        padding: 12px 20px;
+        border-radius: 12px;
+    }
+    .glass-input:focus {
+        background: rgba(255, 255, 255, 0.1) !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.3);
+    }
+</style>
+{% endblock %}

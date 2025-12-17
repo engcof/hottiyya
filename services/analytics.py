@@ -140,3 +140,67 @@ def clean_visits_history(days: int = 7):
             print(f"تم حذف سجلات الزيارات التي مر عليها أكثر من {days} أيام.")
     except Exception as e:
         print(f"خطأ أثناء حذف السجلات القديمة: {e}")
+
+def log_action(user_id: int, action: str, details: str):
+    """تسجيل العملية مع التأكد من هوية المستخدم من قاعدة البيانات."""
+    try:
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                # نتحقق أولاً من اسم المستخدم المرتبط بهذا الـ ID لضمان الدقة
+                cur.execute("SELECT username FROM users WHERE id = %s", (user_id,))
+                user_res = cur.fetchone()
+                actual_username = user_res[0] if user_res else "Unknown"
+
+                cur.execute("""
+                    INSERT INTO activity_logs (user_id, action, details)
+                    VALUES (%s, %s, %s)
+                """, (user_id, action, details))
+            conn.commit()
+    except Exception as e:
+        print(f"Error in log_action: {e}")
+
+
+def get_all_activity_logs(limit: int = 100):
+    """جلب سجل النشاطات مع اسم المستخدم القائم بالعملية."""
+    with get_db_context() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT al.id, u.username, al.action, al.details, al.timestamp
+                FROM activity_logs al
+                LEFT JOIN users u ON al.user_id = u.id
+                ORDER BY al.timestamp DESC
+                LIMIT %s
+            """, (limit,))
+            return cur.fetchall()       
+
+def get_activity_logs_paginated(page: int = 1, per_page: int = 30):
+    """جلب السجلات مع الترقيم (30 نشاط لكل صفحة)."""
+    offset = (page - 1) * per_page
+    
+    with get_db_context() as conn:
+        with conn.cursor() as cur:
+            # 1. جلب العدد الإجمالي للصفحات
+            cur.execute("SELECT COUNT(*) FROM activity_logs")
+            total_logs = cur.fetchone()[0]
+            total_pages = (total_logs + per_page - 1) // per_page
+
+            # 2. جلب البيانات مع ربطها باسم المستخدم
+            cur.execute("""
+                SELECT al.id, u.username, al.action, al.details, al.timestamp
+                FROM activity_logs al
+                LEFT JOIN users u ON al.user_id = u.id
+                ORDER BY al.timestamp DESC
+                LIMIT %s OFFSET %s
+            """, (per_page, offset))
+            
+            logs = [
+                {
+                    "id": row[0],
+                    "username": row[1] or "نظام/محذوف",
+                    "action": row[2],
+                    "details": row[3],
+                    "timestamp": row[4]
+                } for row in cur.fetchall()
+            ]
+            
+            return logs, total_pages        

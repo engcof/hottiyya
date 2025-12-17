@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="admin-dashboard">
+    <div class="container">
+        <div class="dashboard-header">
+            <h1 class="page-title">سجل العمليات الشامل</h1>
+            <p class="subtitle">مراقبة كافة حركات الإضافة والحذف والتعديل في النظام</p>
+            <a href="/admin" class="btn-add" style="background: var(--secondary);">
+                العودة للوحة الإدارة
+            </a>
+        </div>
+
+        <div class="admin-card full">
+            <h2>سجل النشاطات (30 سجل لكل صفحة)</h2>
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>المستخدم</th>
+                            <th>نوع العملية</th>
+                            <th>التفاصيل</th>
+                            <th>التاريخ والوقت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td><span class="username-tag">{{ log.username }}</span></td>
+                            <td>
+                                <span class="role-badge {% if 'حذف' in log.action %}delete{% elif 'إضافة' in log.action %}add{% else %}manager{% endif %}">
+                                    {{ log.action }}
+                                </span>
+                            </td>
+                            <td style="max-width: 400px; white-space: normal;">{{ log.details }}</td>
+                            <td class="text-lighter small">{{ log.timestamp.strftime('%Y-%m-%d | %H:%M:%S') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">لا توجد سجلات نشاط مسجلة حالياً.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                {% if current_page > 1 %}
+                <a href="/admin/logs?page={{ current_page - 1 }}" class="page-btn">السابق</a>
+                {% endif %}
+                
+                <span class="page-info">الصفحة {{ current_page }} من {{ total_pages }}</span>
+                
+                {% if current_page < total_pages %}
+                <a href="/admin/logs?page={{ current_page + 1 }}" class="page-btn">التالي</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

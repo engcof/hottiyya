@@ -52,15 +52,38 @@ def init_database():
         conn.autocommit = True
         cur = conn.cursor()
         try:
-            # 🟢 رسالة بداية واحدة
             print("🟢 جاري تهيئة مكونات قاعدة البيانات الأساسية...")
-            
 
-            # 9. رسالة نهاية واحدة (نظيفة)
-            print("✅ تم إنهاء التهيئة بنجاح!")
+            # 1. مسح الجدول القديم لضمان تطبيق التعديلات الجديدة (user_id)
+            # نستخدم CASCADE لمسح أي علاقات مرتبطة إن وجدت
+            cur.execute("DROP TABLE IF EXISTS gallery CASCADE;")
+
+            # 2. إنشاء جدول المعرض بالهيكلية الجديدة والمكتملة
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS gallery (
+                    id SERIAL PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,           -- عنوان الصورة
+                    image_url TEXT NOT NULL,               -- رابط Cloudinary
+                    category VARCHAR(100),                 -- تصنيف الصورة
+                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- ربطها بـ engcof
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            # 3. إنشاء فهرس لتسريع جلب الصور حسب التصنيف
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_gallery_category ON gallery(category);")
+            
+            cur.execute(""" 
+                    CREATE TABLE IF NOT EXISTS activity_logs (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- المستخدم الذي قام بالفعل
+                    action VARCHAR(100) NOT NULL,                           -- (إضافة خبر، حذف مقال، إلخ)
+                    details TEXT,                                           -- تفاصيل العملية
+                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- توقيت العملية بدقة
+                );
+            """)
+            print("✅ تم إنشاء جدول معرض الصور وإنهاء التهيئة بنجاح!")
           
-           
         except Exception as e:
-            # ❌ الإبقاء على رسالة الخطأ الحاسم فقط
             print(f"❌ خطأ أثناء تهيئة قاعدة البيانات: {e}") 
             raise

@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Form
 from postgresql import get_db_context
-from services.auth_service import get_current_user
 from security.csrf import generate_csrf_token, verify_csrf_token
 from fastapi.responses import HTMLResponse, RedirectResponse
-from security.session import set_cache_headers
+from security.session import set_cache_headers,get_current_user
 from psycopg2.extras import RealDictCursor
 from security.hash import hash_password
+# استيراد الخدمات والراوترات
+#from services.analytics import 
 from core.templates import templates
-from services.analytics import get_logged_in_users_history 
+from services.analytics import get_logged_in_users_history ,get_activity_logs_paginated
 from services.notification import send_notification
 import html
 import re
@@ -351,3 +352,24 @@ async def remove_permission(
     except Exception as e:
         request.session["error_message"] = f"فشل في إزالة الصلاحية: {str(e)}"
         return RedirectResponse(url=f"/admin?page={current_page}", status_code=303)
+    
+
+@router.get("/logs")
+async def view_all_activity_logs(request: Request, page: int = 1):
+    user = request.session.get("user")
+    # التأكد من رتبة الإدمن (كما في الصورة)
+    if not user or user.get("role") != "admin":
+         return RedirectResponse(url="/403", status_code=303)
+    
+   
+    logs, total_pages = get_activity_logs_paginated(page=page, per_page=30)
+    
+    response = templates.TemplateResponse("admin/logs.html", {
+        "request": request,
+        "logs": logs,
+        "current_page": page,
+        "total_pages": total_pages,
+        "user": user
+    })
+    set_cache_headers(response)
+    return response

@@ -16,6 +16,7 @@ from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
 from utils.permission import has_permission
 from utils.time_utils import calculate_age_details
+from services.analytics import log_action
 from services.family_service import ( 
     search_and_fetch_names, 
     fetch_names_no_search, 
@@ -114,6 +115,7 @@ async def show_names(
             page_numbers.add(p)
 
     page_numbers = sorted(list(page_numbers))
+
     
     # ----------------------------------------------------
     # 3. عرض النتيجة
@@ -249,6 +251,7 @@ async def add_name(
     p_o_b = html.escape(p_o_b.strip()) if p_o_b else None
     status = status.strip() if status else None
     
+
     level_int = None 
 
     error = None
@@ -372,8 +375,15 @@ async def add_name(
                 "gender": gender, "email": email, "phone": phone,
                 "address": address, "p_o_b": p_o_b, "status": status
             }
-            # استدعاء دالة الخدمة للحفظ
+            # 1. تنفيذ الحفظ الفعلي في قاعدة البيانات أولاً
             add_new_member(member_data, picture, ext)
+
+            # 2. 🟢 هنا المكان الصحيح للسجل (بعد نجاح الحفظ فقط)
+            log_action(
+                user_id=user['id'], 
+                action="إضافة فرد", 
+                details=f"تم إضافة {name} بنجاح إلى شجرة العائلة"
+            )
 
             success = f"تم حفظ {name} بنجاح!"
 
@@ -589,7 +599,14 @@ async def update_name(request: Request,
             }
             # استدعاء دالة الخدمة للتحديث
             update_member_data(code, member_data, picture, ext)
-            
+
+            # 2. 🟢 هنا المكان الصحيح للسجل (بعد نجاح الحفظ فقط)
+            log_action(
+                user_id=user['id'], 
+                action="تعديل فرد", 
+                details=f"تم تعديل بيانات العضو {name} (الكود: {code}) بنجاح"
+            )
+
             # إذا نجح التحديث، وجه المستخدم لصفحة التفاصيل أو القائمة
             return RedirectResponse(f"/names/details/{code}", status_code=303)
           
@@ -632,7 +649,6 @@ async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
     
     # 1. التحقق من الصلاحيات
     if not user or not can(user, "delete_member"):
-        # إرجاع خطأ 403 (ممنوع) أو التوجيه مع رسالة خطأ
         raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف الأعضاء")
 
     # 2. التحقق من CSRF
@@ -641,13 +657,20 @@ async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
     
     # 3. استدعاء دالة الخدمة للحذف
     try:
+        # تنفيذ الحذف الفعلي من قاعدة البيانات
         delete_member(code)
         
-        # 4. التوجيه بعد النجاح إلى صفحة القائمة
-        # يمكن إضافة رسالة نجاح هنا إذا كان الـ frontend يدعم ذلك
+        # 🟢 إضافة سجل النشاط هنا (بعد نجاح الحذف وقبل التوجيه)
+        # لم نضف اسم المستخدم داخل النص لمنع التكرار في الجدول
+        log_action(
+            user_id=user['id'], 
+            action="حذف فرد", 
+            details=f"تم حذف العضو صاحب الكود: {code} نهائياً من شجرة العائلة"
+        )
+        
+        # 4. التوجيه بعد النجاح
         return RedirectResponse("/names?success=member_deleted", status_code=303)
         
     except Exception as e:
-        # إذا حدث خطأ في قاعدة البيانات أثناء الحذف
-        # يمكن توجيه المستخدم لصفحة التفاصيل مع رسالة خطأ
+        # في حال فشل الحذف، لن يتم تسجيل أي نشاط في السجل الشامل
         raise HTTPException(status_code=500, detail=f"فشل الحذف للعضو {code}.")
