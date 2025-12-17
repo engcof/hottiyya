@@ -158,7 +158,7 @@ async def export_data_post(request: Request, password: str = Form(...)):
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"عائلة_حطية_كاملة_{timestamp}.dump"
     export_path = f"/tmp/{filename}" 
-    download_filename = f"full_database{timestamp}.dump"
+    download_filename = f"كاملة_الداتابيز{timestamp}.dump"
 
     try:
         # 4. تشغيل pg_dump
