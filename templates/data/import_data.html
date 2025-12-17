@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block title %}استيراد البيانات{% endblock %}
 {% block content %}
-<section class="family-section">
-    <div class="family-content">
+<section class="hero-section">
+    <div class="container">
         <h2 class="text-gradient">استيراد بيانات العائلة</h2>
         
         {% if message %}
@@ -10,7 +10,7 @@
             {{ message | safe }}
         </div>
         {% endif %}
-
+         <div class="admin-card">
         <form method="post" enctype="multipart/form-data" action="/data/import-data">
             <div class="form-group">
                 <label>ملف النسخة الاحتياطية (.dump أو .sql)</label>
@@ -22,10 +22,8 @@
             </div>
             <button type="submit" class="submit-btn">استيراد البيانات الآن</button>
         </form>
-
-        <div style="margin-top: 20px;">
-            <a href="/names" class="submit-btn secondary">العودة للقائمة</a>
         </div>
+        <div class="admin-card">
          <!-- تصحيح نموذج التصدير ليستخدم POST و المسار الصحيح -->
         <div class="export-box">
             <h3>تصدير الداتا الحالية من الموقع</h3>
@@ -33,11 +31,17 @@
             
             <!-- تم تغيير method إلى POST و action إلى المسار الصحيح /data/export-data -->
             <form method="post" action="/data/export-data" class="export-form">
+                 <div class="form-group">
                 <!-- هذا الإدخال هو كلمة المرور التي ترسل إلى دالة @router.post("/export-data") -->
                 <input type="password" name="password" placeholder="كلمة مرور الأدمن" required>
-                <button type="submit">تحميل الداتا الحالية (.dump)</button>
+                </div>
+                <button type="submit"class="submit-btn">تصدير البيانات الآن</button>
             </form>
             <small style="display: block; margin-top: 10px; color: #004d40;">تتم عملية التصدير في الخلفية وقد تستغرق بعض الوقت.</small>
+        </div>
+        </div>
+        <div style="margin-top: 20px;">
+            <a href="/" class="submit-btn secondary">العودة للقائمة</a>
         </div>
     </div>
 </section>
