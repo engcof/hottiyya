@@ -6,7 +6,6 @@ from security.session import set_cache_headers,get_current_user
 from psycopg2.extras import RealDictCursor
 from security.hash import hash_password
 # استيراد الخدمات والراوترات
-#from services.analytics import 
 from core.templates import templates
 from services.analytics import get_logged_in_users_history ,get_activity_logs_paginated
 from services.notification import send_notification
@@ -14,7 +13,7 @@ import html
 import re
 
 # === ثوابت التحقق ===
-VALID_USERNAME_REGEX = r"^[a-zA-Z0-9_\-\u0600-\u06FF]{3,30}$" 
+VALID_USERNAME_REGEX = r"^[a-zA-Z0-9_\-\u0600-\u06FF]{2,30}$" 
 PASSWORD_MIN_LENGTH = 4
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -125,7 +124,7 @@ async def add_user(
 
     # التحقق من المدخلات
     if not re.fullmatch(VALID_USERNAME_REGEX, username_stripped):
-        error = "اسم المستخدم غير صالح. يجب أن يحتوي على 3-30 حرفاً أو رقماً أو (_) أو (-)."
+        error = "اسم المستخدم غير صالح. يجب أن يحتوي على 2-30 حرفاً أو رقماً أو (_) أو (-)."
     elif len(password) < PASSWORD_MIN_LENGTH:
         error = f"كلمة المرور يجب ألا تقل عن {PASSWORD_MIN_LENGTH} أحرف."
     elif role == "admin":
@@ -245,7 +244,6 @@ async def delete_user(
         request.session["error_message"] = f"فشل في حذف المستخدم: {str(e)}"
         return RedirectResponse(url=f"/admin?page={current_page}", status_code=303)
 
-
 @router.post("/change_password")
 async def change_password(
     request: Request, 
@@ -295,7 +293,6 @@ async def change_password(
         request.session["error_message"] = f"فشل في تغيير كلمة المرور: {str(e)}"
         return RedirectResponse(url=f"/admin?page={current_page}", status_code=303)
 
-    
 # منح صلاحية لمستخدم
 @router.post("/give_permission")
 async def give_permission(
