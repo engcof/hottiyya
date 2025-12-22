@@ -2,26 +2,21 @@
 {% block title %}الأخبار {% endblock %}
 
 {% block content %}
-<section class="news-page">
+<section class="all-page">
     <div class="container">
-        <!-- العنوان الملكي -->
         <div class="page-header">
             <h1 class="page-title">الأخبار</h1>
             <p class="page-subtitle">آخر المستجدات والأحداث </p>
-        </div>
-
-        <!-- زر إضافة خبر (للإدمن والمدير فقط) -->
-        {% if can_add %}
-        <div class="add-news-wrapper">
+            <!-- زر إضافة خبر (للإدمن والمدير فقط) -->
+            {% if can_add %}
             <a href="/news/add" class="btn-add">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                    <line x1="5" y1="12" x2="19" y2="12"></line>
+              <svg viewBox="0 0 24 24" width="20" height="20">
+                    <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                 </svg>
-                إضافة خبر جديد
+                إضافة خبر 
             </a>
+            {% endif %}
         </div>
-        {% endif %}
 
         <!-- رسالة إذا ما فيش أخبار -->
         {% if not news %}

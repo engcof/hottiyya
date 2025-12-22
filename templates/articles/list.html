@@ -2,17 +2,16 @@
 {% block title %}المقالات{% endblock %}
 
 {% block content %}
-<section class="articles-section">
+<section class="all-page">
     <div class="container">
-        <!-- العنوان + زر كتابة مقال -->
-        <div class="section-header">
+        <div class="page-header">
             <h1 class="page-title">المقالات</h1>
             {% if can_add %}
             <a href="/articles/add" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                 </svg>
-                كتابة مقال جديد
+                كتابة مقال 
             </a>
             {% endif %}
         </div>

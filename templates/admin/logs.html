@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="admin-dashboard">
+<section class="all-page">
     <div class="container">
-        <div class="dashboard-header">
+        <div class="page-header">
             <h1 class="page-title">سجل العمليات الشامل</h1>
-            <p class="subtitle">مراقبة كافة حركات الإضافة والحذف والتعديل في النظام</p>
+            <p class="page-subtitle">مراقبة كافة حركات الإضافة والحذف والتعديل في النظام</p>
             <a href="/admin" class="btn-add" style="background: var(--secondary);">
                 العودة للوحة الإدارة
             </a>
@@ -26,7 +26,7 @@
                     <tbody>
                         {% for log in logs %}
                         <tr>
-                            <td><span class="username-tag">{{ log.username }}</span></td>
+                            <td><span class="perm-tag">{{ log.username }}</span></td>
                             <td>
                                 <span class="role-badge {% if 'حذف' in log.action %}delete{% elif 'إضافة' in log.action %}add{% else %}manager{% endif %}">
                                     {{ log.action }}

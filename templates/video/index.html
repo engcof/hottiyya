@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}معرض الفيديهات{% endblock %}
 {% block content %}
-<section class="video-section-wrapper py-5">
+<section class="all-page">
     <div class="container">    
-        <div class="d-flex justify-content-between align-items-center mb-5">
+        <div class="page-header">
             <h2 class="page-title"><i class="fas fa-film text-accent me-2"></i>معرض الفيديوهات</h2>
             {% if can_add %}
-            <a href="/video/add" class="cta-button" style="text-decoration: none;">
+            <a href="/video/add" class="btn-add" style="text-decoration: none;">
                 <i class="fas fa-plus-circle me-1"></i> إضافة فيديو جديد
             </a>
             {% endif %}

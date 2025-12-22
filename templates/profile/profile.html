@@ -2,15 +2,16 @@
 {% block title %}صفحتي الشخصية{% endblock %}
 
 {% block content %}
-<section class="profile-section">
-    {% if success_msg %}
-    <div class="alert alert-success flash-success-message mb-4">{{ success_msg }}</div>
-    {% endif %}
-
-    {% if error %}
-    <div class="alert alert-danger mb-4">{{ error }}</div>
-    {% endif %}
+<section class="all-page">
     <div class="container">
+        {% if success_msg %}
+        <div class="alert alert-success flash-success-message mb-4">{{ success_msg }}</div>
+        {% endif %}
+
+        {% if error %}
+        <div class="alert alert-danger mb-4">{{ error }}</div>
+        {% endif %}
+   
         <div class="inbox-card card shadow-lg mb-4">
             <h4 class="card-title p-3 border-bottom text-primary">📥 صندوق الوارد</h4>
             <div class="card-body p-0">

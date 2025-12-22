@@ -2,11 +2,11 @@
 {% block title %}لوحة الإدارة {% endblock %}
 
 {% block content %}
-<section class="admin-dashboard">
+<section class="all-page">
     <div class="container">
-        <div class="dashboard-header">
+        <div class="page-header">
             <h1 class="page-title">لوحة التحكم الإدارية</h1>
-            <p class="subtitle">إدارة المستخدمين والصلاحيات</p>
+            <p class="page-subtitle">إدارة المستخدمين والصلاحيات</p>
             
             <div class="header-actions" style="display: flex; gap: 10px;">
                 <a href="/admin/logs" class="btn-add" style="background-color: #6c757d;">
@@ -38,7 +38,6 @@
 
 
         <div class="admin-grid">
-
             <!-- بطاقة إضافة مستخدم جديد -->
             <div class="admin-card">
                 <h2>إضافة مستخدم جديد</h2>
@@ -202,40 +201,37 @@
                 {% endif %}
             </div>
         </div>
-    </div>
-</section>
-<section class="admin-history-section my-5">
-    <h2>سجل نشاط تسجيل الدخول (آخر 50)</h2>
     
-    <div class="alert alert-info">
-        <p>يتم عرض آخر نشاط للمستخدمين الذين قاموا بتسجيل الدخول. يتم تنظيف هذه السجلات تلقائيًا بعد 7 أيام.</p>
-    </div>
-    
-    <div class="table-responsive">
-        <table class="data-table log-table">
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>اسم المستخدم</th>
-                    <th>آخر نشاط (التاريخ)</th>
-                    <th>آخر نشاط (الوقت)</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for log in login_history %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td><span class="username-tag">{{ log.username }}</span></td>
-                    <td>{{ log.timestamp.strftime('%Y-%m-%d') }}</td>
-                    <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="4" class="text-center">لا يوجد سجل نشاط للمستخدمين المسجلين حاليًا.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="admin-card full">
+            <h2>سجل نشاط تسجيل الدخول (آخر 50)</h2>
+            <p class="page-subtitle">يتم تنظيف هذه السجلات تلقائيًا بعد 7 أيام.   </p>
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم المستخدم</th>
+                            <th>آخر نشاط (التاريخ)</th>
+                            <th>آخر نشاط (الوقت)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in login_history %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><span class="perm-tag">{{ log.username }}</span></td>
+                            <td>{{ log.timestamp.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center">لا يوجد سجل نشاط للمستخدمين المسجلين حاليًا.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </section>
 <!-- جافاسكريبت للإخفاء التلقائي لرسائل الفلاش -->
