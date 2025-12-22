@@ -18,8 +18,8 @@
                 <li><a href="/articles" {% if request.path.startswith('/articles') %}class="active"{% endif %}>المقالات</a></li>
                 <li><a href="/gallery" {% if request.path.startswith('/gallery') %}class="active"{% endif %}>معرض الصور</a></li>
                 <li><a href="/video" {% if request.path.startswith('/video') %}class="active"{% endif %}>معرض الفيديوهات</a></li>
-                <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة العائلة</a></li>
-                <li><a href="/about">عن العائلة</a></li>
+                <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة الحوطية</a></li>
+                <li><a href="/about">عن الحوطية</a></li>
                 {% if user and user.role == "admin" %}
                 <li><a href="/admin" {% if request.path.startswith('/admin') %}class="active"{% endif %}>الإدارة</a></li>
                 {% endif %}
@@ -73,8 +73,8 @@
             <a href="/articles">المقالات</a>
             <a href="/gallery">معرض الصور</a>
             <a href="/video">معرض الفيديوهات</a>
-            <a href="/names">شجرة العائلة</a>
-            <a href="/about">عن العائلة</a>
+            <a href="/names">شجرة الحوطية</a>
+            <a href="/about">عن الحوطية</a>
             {% if user and user.role == "admin" %}<a href="/admin">الإدارة</a>{% endif %}
             {% if user %}
                 <a href="/profile">صفحتي الشخصية</a>
@@ -95,7 +95,7 @@
                 <a href="/about">عن الموقع</a>
             </div>
             <div class="footer-copyright">
-                © 2025 عائلة الحوطية • جميع الحقوق محفوظة
+                © 2025 الحوطية • جميع الحقوق محفوظة
             </div>
             <div style="margin-top:12px;color:#10b981;font-weight:600;">صُمم بـ ❤ بواسطة Osmancof</div>
         </div>
