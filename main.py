@@ -1,18 +1,17 @@
 from datetime import datetime
 import os
-import re
 import uuid
 from urllib.parse import urlparse
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from core.templates import templates
-from postgresql import init_database, get_db_context
 from psycopg2.extras import RealDictCursor
+from postgresql import init_database, get_db_context
 
 # استيراد الدوال الأمنية والمساعدة
 from security.session import set_cache_headers
@@ -21,7 +20,7 @@ from security.rate_limit import initialize_rate_limiter
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 from services.notification import get_unread_notification_count
-from routers import auth, admin, family, articles, news, permissions, data, profile,gallery
+from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -92,7 +91,7 @@ async def analytics_middleware(request: Request, call_next):
     return response
 
 # =========================================
-# Middleware - الترتيب المهم (LIFO: أضف من الداخل إلى الخارج)
+# Middleware 
 # =========================================
 # 1. Analytics Middleware (يجب أن يعمل بعد SessionMiddleware)
 app.add_middleware(
@@ -136,9 +135,10 @@ app.include_router(permissions.router)
 app.include_router(data.router)
 app.include_router(profile.router)
 app.include_router(gallery.router)
+app.include_router(video.router)
 # =========================================
-# # الصفحة الرئيسية
-# # =========================================
+#         الصفحة الرئيسية
+# =========================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = request.session.get("user")

@@ -1913,6 +1913,45 @@ footer {
     color: var(--primary-color);
     transform: rotate(180deg); /* تدوير السهم للأمام في الـ RTL */
 }
+/* تنسيق حاوية الصورة في بطاقة المقال */
+.article-image {
+    width: calc(100% + 50px); /* للتمدد بكامل عرض البطاقة (بسبب الـ padding) */
+    margin: -25px -25px 20px -25px; 
+    height: 200px;
+    overflow: hidden;
+    border-radius: 12px 12px 0 0;
+}
+
+.article-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* لضمان عدم تشوه الصورة مهما كانت أبعادها */
+    transition: transform 0.3s ease;
+}
+
+.article-card:hover .article-image img {
+    transform: scale(1.05); /* تأثير تكبير بسيط عند التمرير */
+}
+
+/* تعديل بسيط للبطاقة لتعمل مع الصورة */
+.article-card {
+    padding: 25px;
+    overflow: hidden; /* لمنع الصورة من الخروج عن الزوايا المنحنية */
+}
+/* حاوية المحتوى لترتيب الصورة بجانب النص */
+
+/* تحسينات للجوال: جعل الصورة فوق النص إذا كانت الشاشة صغيرة */
+@media (max-width: 480px) {
+    .article-content-wrapper {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .article-thumbnail-box {
+        width: 100%;
+        height: 150px;
+    }
+}
 /* === تنسيق صفحة عرض المقال الفردي (Article Single) === */
 .article-single-section {
     max-width: 900px; /* لتضييق نطاق القراءة */
@@ -2896,4 +2935,217 @@ footer {
     pointer-events: none;
     background-color: #f8f9fa;
     border-color: var(--border);
+}
+
+/* ========== ✅ تنسيقات معرض الفيديوهات الموحدة ✅ ========== */
+
+/* 1. حاوية المعرض (الشبكة) */
+.video-gallery-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
+    gap: 25px !important;
+    margin-top: 30px;
+    direction: rtl;
+}
+
+/* 2. بطاقة الفيديو (Video Card) */
+.video-card {
+    background: var(--glass-strong);
+    border: 1px solid var(--border);
+    border-radius: var(--radius); /* أو 15px حسب رغبتك */
+    overflow: hidden;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow);
+}
+
+.video-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 45px rgba(0,0,0,0.12);
+}
+
+/* 3. حاوية مشغل الفيديو (Ratio 16:9) */
+.video-player-container {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* نسبة الارتفاع للعرض */
+    background: #000;
+    overflow: hidden;
+}
+
+.video-player-container video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+}
+
+/* 4. تفاصيل الفيديو والعنوان */
+.video-info {
+    padding: 20px;
+    flex-grow: 1;
+}
+
+.video-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+    line-clamp: 2; 
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.video-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.video-category {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.video-date {
+    font-size: 0.85rem;
+    color: var(--text-light);
+}
+
+/* 5. أزرار الإدارة (حذف) */
+.video-actions {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border);
+    background: rgba(248, 250, 252, 0.5);
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btn-delete-video {
+    background: transparent;
+    color: var(--danger);
+    border: 1px solid var(--danger);
+    padding: 6px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-delete-video:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* 6. الترقيم (Pagination) وحالة العدم */
+.pagination-container {
+    margin-top: 50px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.page-link-btn {
+    padding: 10px 18px;
+    border-radius: 12px;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    color: var(--text-light);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.page-link-btn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+
+.empty-video-state {
+    text-align: center;
+    padding: 80px 20px;
+    background: var(--glass);
+    border-radius: var(--radius);
+    border: 2px dashed var(--border);
+    color: var(--text-light);
+}
+
+/* 1. حاوية المعرض (الشبكة) */
+.video-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+    gap: 25px !important;
+    direction: rtl;
+    padding: 20px 0;
+}
+
+/* 2. بطاقة الفيديو (Video Card) */
+.video-card-item {
+    background: var(--bg); /* استخدام المتغيرات من ملفك الأصلي */
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: var(--transition);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+}
+
+.video-card-item:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 15px 45px rgba(0,0,0,0.12);
+}
+
+/* 3. حاوية مشغل الفيديو (Ratio 16:9) */
+.video-frame {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* يحافظ على أبعاد الفيديو 16:9 */
+    background: #000;
+}
+
+.video-frame video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+}
+
+/* 4. عنوان الفيديو مع حل مشكلة line-clamp */
+.video-item-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 15px 15px 10px;
+    color: var(--text);
+    
+    /* الخاصية القياسية الحديثة لحل الخطأ */
+    line-clamp: 2; 
+    
+    /* دعم المتصفحات القديمة (Chrome, Safari, Edge) */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 5. البيانات التعريفية أسفل الفيديو */
+.video-item-meta {
+    padding: 0 15px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }

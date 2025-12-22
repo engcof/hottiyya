@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="video-section-wrapper py-5">
+    <div class="container">    
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h2 class="page-title"><i class="fas fa-film text-accent me-2"></i>معرض الفيديوهات</h2>
+            {% if can_add %}
+            <a href="/video/add" class="cta-button" style="text-decoration: none;">
+                <i class="fas fa-plus-circle me-1"></i> إضافة فيديو جديد
+            </a>
+            {% endif %}
+        </div>
+
+        {% if success %}
+        <div class="glass-strong p-3 mb-4 text-accent text-center fw-bold" style="border-right: 5px solid var(--accent);">
+            {{ success }}
+        </div>
+        {% endif %}
+
+        <div class="video-grid-container">
+            {% for video in videos %}
+            <article class="video-card-item shadow-sm">
+                <div class="video-frame">
+                    <video controls preload="metadata">
+                        <source src="{{ video.video_url }}" type="video/mp4">
+                    </video>
+                </div>
+                
+                <div class="video-details p-3">
+                    <h3 class="video-item-title">{{ video.title }}</h3>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-light text-dark border">{{ video.category }}</span>
+                        <small class="text-muted">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '' }}</small>
+                    </div>
+                    
+                    {% if can_delete %}
+                    <div class="mt-3 pt-2 border-top">
+                        <form action="/video/delete/{{ video.id }}" method="POST" onsubmit="return confirm('حذف الفيديو؟');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                <i class="fas fa-trash-alt me-1"></i> حذف
+                            </button>
+                        </form>
+                        
+                    </div>
+                    {% endif %}
+                </div>
+            </article>
+            {% else %}
+            <div class="text-center w-100 py-5">
+                <p class="text-muted">لا توجد فيديوهات مرفوعة حالياً.</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% if total_pages > 1 %}
+        <div class="pagination-container">
+            {% if current_page > 1 %}
+            <a href="?page={{ current_page - 1 }}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="page-link-btn">
+                <i class="fas fa-chevron-right"></i> السابق
+            </a>
+            {% endif %}
+
+            {% for p in range(1, total_pages + 1) %}
+            <a href="?page={{ p }}{% if selected_category %}&category={{ selected_category }}{% endif %}" 
+            class="page-link-btn {% if p == current_page %}active{% endif %}">
+                {{ p }}
+            </a>
+            {% endfor %}
+
+            {% if current_page < total_pages %}
+            <a href="?page={{ current_page + 1 }}{% if selected_category %}&category={{ selected_category }}{% endif %}" class="page-link-btn">
+                التالي <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+       
+    </div>
+</section>
+
+<style>
+    .video-grid-container {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+        gap: 25px !important;
+        direction: rtl;
+    }
+
+    .video-card-item {
+        background: #fff;
+        border-radius: 15px;
+        overflow: hidden;
+        border: 1px solid #eee;
+        transition: 0.3s;
+    }
+
+    .video-frame {
+        position: relative;
+        width: 100%;
+        padding-top: 56.25%; /* Ratio 16:9 */
+        background: #000;
+    }
+
+    .video-frame video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    .video-item-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #333;
+    }
+</style>
+{% endblock %}

@@ -5,6 +5,8 @@ from security.session import set_cache_headers
 from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.permission import has_permission
+from services.analytics import log_action
+from services.article_service import ArticleService
 import shutil
 import os
 from core.templates import templates
@@ -23,42 +25,25 @@ def can(user: dict | None, perm: str) -> bool:
     user_id = user.get("id")
     return user_id and has_permission(user_id, perm)
 
-# === عرض قائمة المقالات ===
+# === عرض قائمة المقالات (باستخدام الخدمة) ===
 @router.get("/", response_class=HTMLResponse)
 async def list_articles(request: Request, page: int = 1):
     user = request.session.get("user")
     can_add = can(user, "add_article")
-    
-    per_page = 12
-    offset = (page - 1) * per_page
+    can_delete = can(user, "delete_article") 
 
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # جلب المقالات مع عدد التعليقات
-            cur.execute("""
-                SELECT 
-                    a.*,
-                    u.username,
-                    COUNT(c.id) as comments_count
-                FROM articles a
-                JOIN users u ON a.author_id = u.id
-                LEFT JOIN comments c ON c.article_id = a.id
-                GROUP BY a.id, u.username
-                ORDER BY a.created_at DESC
-                LIMIT %s OFFSET %s
-            """, (per_page, offset))
-            articles = cur.fetchall()
 
-            # عدد الصفحات الكلي
-            cur.execute("SELECT COUNT(*) FROM articles")
-            total = cur.fetchone()["count"]
-            total_pages = (total + per_page - 1) // per_page
+    csrf_token = generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
+    # استدعاء الخدمة لجلب البيانات والترقيم
+    articles, total_pages = ArticleService.get_all_articles(page=page, per_page=12)
 
     response = templates.TemplateResponse("articles/list.html", {
         "request": request,
         "user": user,
         "articles": articles,
         "can_add": can_add,
+        "csrf_token": csrf_token,
         "page": page,
         "total_pages": total_pages,
         "has_prev": page > 1,
@@ -66,6 +51,7 @@ async def list_articles(request: Request, page: int = 1):
     })
     set_cache_headers(response)
     return response
+
 
 # === 🌟 التوجيه إلى أحدث مقال (مسار ثابت) 🌟 ===
 @router.get("/latest")
@@ -170,9 +156,10 @@ async def add_article(
     if not can(user, "add_article"):
         return RedirectResponse("/articles")
 
+    # التحقق من CSRF والنظافة (كما في كودك)
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
-
+    
     # تطبيق html.escape لمنع XSS قبل الحفظ
     title_stripped = title.strip()
     content_stripped = content.strip()
@@ -213,47 +200,34 @@ async def add_article(
             "error": error,
             "form_data": {"title": title, "content": content} # تمرير البيانات غير النظيفة ليراها المستخدم
         })
+    try:
+        # في حالة أردت التأكد من إغلاق الملف يدوياً (اختياري لأن FastAPI يقوم بذلك أحياناً)
+        image_data = image.file if image and image.filename else None
+
+        article_id = ArticleService.create_article(
+            title=title_safe,
+            content=content_safe,
+            author_id=user["id"],
+            image_file=image_data
+        )
+
+        if image:
+            await image.close() # إغلاق الملف بعد الانتهاء
+
+        # 2. ✅ إضافة العملية لسجل النشاطات
         
-    # استكمال عملية الرفع والحفظ
-    if image and image.filename:
-        try:
-            with get_db_context() as conn:
-                with conn.cursor() as cur:
-                    # حفظ المقال أولاً للحصول على الـ id
-                    cur.execute("""
-                        INSERT INTO articles (title, content, author_id, image_url)
-                        VALUES (%s, %s, %s, %s) RETURNING id
-                    """, (title_safe, content_safe, user["id"], None)) # image_url = None مؤقتا
-                    article_id = cur.fetchone()[0]
-                    
-                    # حفظ الصورة الآن
-                    filename = f"article_{article_id}_{image.filename}"
-                    path = f"static/uploads/articles/{filename}"
-                    os.makedirs("static/uploads/articles", exist_ok=True)
-                    with open(path, "wb") as f:
-                        shutil.copyfileobj(image.file, f)
-                    image_url = f"/{path}"
-                    
-                    # تحديث رابط الصورة بعد الحفظ
-                    cur.execute("UPDATE articles SET image_url = %s WHERE id = %s", (image_url, article_id))
-                    conn.commit()
-        except Exception:
-            # معالجة فشل الحفظ
-            raise HTTPException(500, "فشل في حفظ المقال في قاعدة البيانات.")
-
-    else:
-        # حفظ المقال بدون صورة
-        with get_db_context() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO articles (title, content, author_id, image_url)
-                    VALUES (%s, %s, %s, %s) RETURNING id
-                """, (title_safe, content_safe, user["id"], None))
-                article_id = cur.fetchone()[0]
-                conn.commit()
-
-    return RedirectResponse(f"/articles/{article_id}", status_code=303)
-
+        log_action(
+            user_id=user["id"], 
+            action="إضافة مقال", 
+            details=f"تم نشر مقال جديد بعنوان: {title_safe}"
+        )    
+        
+        return RedirectResponse(f"/articles/{article_id}", status_code=303)
+        
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        raise HTTPException(500, "حدث خطأ أثناء حفظ المقال")    
+  
 # === تعديل مقال ===
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_article_form(request: Request, id: int):

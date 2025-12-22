@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="/static/icon/favicon.ico">
    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-    <title>{% block title %}عائلة الحوطية{% endblock %}</title>
+    <title>{% block title %}الحوطية{% endblock %}</title>
 </head>
 <body>
     <header class="glass-strong">
@@ -17,6 +17,7 @@
                 <li><a href="/news" {% if request.path.startswith('/news') %}class="active"{% endif %}>الأخبار</a></li>
                 <li><a href="/articles" {% if request.path.startswith('/articles') %}class="active"{% endif %}>المقالات</a></li>
                 <li><a href="/gallery" {% if request.path.startswith('/gallery') %}class="active"{% endif %}>معرض الصور</a></li>
+                <li><a href="/video" {% if request.path.startswith('/video') %}class="active"{% endif %}>معرض الفيديوهات</a></li>
                 <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة العائلة</a></li>
                 <li><a href="/about">عن العائلة</a></li>
                 {% if user and user.role == "admin" %}
@@ -71,6 +72,7 @@
             <a href="/news">الأخبار</a>
             <a href="/articles">المقالات</a>
             <a href="/gallery">معرض الصور</a>
+            <a href="/video">معرض الفيديوهات</a>
             <a href="/names">شجرة العائلة</a>
             <a href="/about">عن العائلة</a>
             {% if user and user.role == "admin" %}<a href="/admin">الإدارة</a>{% endif %}

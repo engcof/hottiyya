@@ -79,6 +79,17 @@ def init_database():
                     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- توقيت العملية بدقة
                 );
             """)
+            cur.execute(""" 
+                CREATE TABLE IF NOT EXISTS videos (
+                    id SERIAL PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,
+                    video_url TEXT NOT NULL,
+                    thumbnail_url TEXT, -- اختياري: صورة مصغرة للفيديو
+                    category VARCHAR(100),
+                    user_id INTEGER REFERENCES users(id),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)           
             print("✅ تم إنشاء جدول معرض الصور وإنهاء التهيئة بنجاح!")
           
         except Exception as e:

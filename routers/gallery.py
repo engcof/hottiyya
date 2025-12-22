@@ -59,8 +59,6 @@ async def add_image_page(request: Request):
     if not user:
         return RedirectResponse("/login")
 
-    # توليد توكن جديد وتخزينه في الجلسة
-    from security.csrf import generate_csrf_token
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
@@ -141,7 +139,7 @@ async def delete_photo(request: Request, image_id: int):
     if not can(user, "delete_gallery"):
         raise HTTPException(status_code=403)
     
-     # 2. التحقق من CSRF
+    # 2. التحقق من CSRF
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
     try:
