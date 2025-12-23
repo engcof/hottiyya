@@ -282,11 +282,11 @@ nav {
     color:var(--danger);
 }
 .all-page {
-    margin: 40px auto 80px auto;
-    padding: 0 20px;
+    margin: 0 auto;
 }
 .container {
-  margin: 0 auto;
+    margin: 40px auto 80px auto;
+    padding: 0 20px;   
 }
 .page-header {
     display: flex;
@@ -298,7 +298,7 @@ nav {
     border-bottom: 2px solid var(--border-light);
 }
 .page-header .page-title {
-    font-size: 3rem;
+    font-size: 2.2rem;
     font-weight: 800;
     color: var(--text-dark);
 }
@@ -1065,7 +1065,7 @@ footer {
     gap: 20px;
 }
 .member-names {
-    font-size: clamp(2.8rem, 6vw, 2.2rem);
+    font-size: clamp(2.2rem, 6vw, 1.1rem);
     font-weight: 900;
     color: #0f172a;
     margin: 0;
@@ -1133,14 +1133,7 @@ footer {
     border-radius: 24px;
     box-shadow: var(--shadow);
 }
-.section-title {
-    font-size: 1.0rem;
-    font-weight: 500;
-    color: #0f172a;
-    margin-bottom: 24px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #e2e8f0;
-}
+
 .info-grid {
     display: grid;
     gap: 10px;
@@ -1887,13 +1880,13 @@ footer {
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
 }
 .section-title {
-    font-size: 2rem;
-    font-weight: 800;
+    font-size: 1.5rem;
+    font-weight: 500;
     color: var(--primary-color-dark);
     margin-bottom: 30px;
 }
 .section-title .count {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     color: var(--text-medium);
     margin-right: 10px;
     font-weight: 600;
