@@ -115,7 +115,7 @@
                         <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <button type="submit" class="btn-delete-comment" title="حذف التعليق"
-                                    onclick="return confirm('متأكد من حذف التعليق؟');">حذف</button>
+                                onclick="return confirm('متأكد من حذف التعليق؟');">حذف</button>
                         </form>
                         {% endif %}
                     </div>

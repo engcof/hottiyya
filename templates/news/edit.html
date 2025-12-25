@@ -1,50 +1,149 @@
 {% extends "base.html" %}
-{% block title %}تعديل الخبر{% endblock %}
+{% block title %}تعديل الخبر: {{ item.title }}{% endblock %}
 
 {% block content %}
-<section class="add-news-page">
+<style>
+    .edit-news-section { padding: 50px 0; background-color: #f8f9fa; min-height: 90vh; }
+    .form-card {
+        background: #fff;
+        padding: 40px;
+        border-radius: 25px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .form-group { margin-bottom: 25px; }
+    .form-group label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: #2c3e50;
+        font-size: 0.95rem;
+    }
+    .form-group input[type="text"], .form-group textarea {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #edf2f7;
+        border-radius: 12px;
+        font-family: inherit;
+        transition: border-color 0.3s;
+    }
+    .form-group input:focus, .form-group textarea:focus {
+        border-color: #007bff;
+        outline: none;
+    }
+
+    /* حاوية معاينة الوسائط الحالية */
+    .current-media-box {
+        background: #fdfdfd;
+        border: 2px dashed #cbd5e0;
+        padding: 15px;
+        border-radius: 15px;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .media-preview {
+        max-height: 250px;
+        max-width: 100%;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 35px;
+    }
+    .btn-save, .btn-cancel {
+        padding: 12px 30px;
+        border-radius: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+    }
+    .btn-save { background: #007bff; color: #fff; border: none; flex: 2; justify-content: center; }
+    .btn-save:hover { background: #0056b3; transform: translateY(-2px); }
+    .btn-cancel { background: #edf2f7; color: #4a5568; flex: 1; justify-content: center; }
+    .btn-cancel:hover { background: #e2e8f0; }
+
+    .error-msg {
+        background: #fff5f5;
+        color: #c53030;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        border-right: 5px solid #c53030;
+    }
+</style>
+
+<section class="edit-news-section">
     <div class="container">
-        <!-- العنوان الملكي -->
-        <div class="page-header">
-            <h1>تعديل الخبر</h1> 
+        <div class="page-header" style="text-align: center; margin-bottom: 40px;">
+            <h1 style="font-weight: 800; color: #1a202c;">تعديل الخبر</h1>
+            <p style="color: #718096;">تحديث بيانات الخبر والوسائط المرفقة</p>
         </div>
-        <!-- النموذج الفاخر -->
-        <div class="form-container">
-            <form method="post" action="/news/edit/{{ item.id }}" enctype="multipart/form-data" class="news-form">
+
+        <div class="form-card">
+            {% if error %}
+            <div class="error-msg">
+                <strong>عذراً:</strong> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="post" action="/news/edit/{{ item.id }}" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
                 <div class="form-group">
-                    <label>العنوان</label>
-                    <input type="text" name="title" value="{{ item.title }}" required>
+                    <label>عنوان الخبر</label>
+                    <input type="text" name="title" value="{{ item.title }}" placeholder="أدخل عنواناً جذاباً..." required>
                 </div>
+
                 <div class="form-group">
-                    <label>المحتوى</label>
-                    <textarea name="content" rows="8" required>{{ item.content }}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>الكاتب</label>
+                    <label>اسم الكاتب</label>
                     <input type="text" name="author" value="{{ item.author }}" required>
                 </div>
+
                 <div class="form-group">
-                    <label>صورة الخبر (اتركه فارغًا إذا لا تريد تغيير الصورة)</label>
+                    <label>تفاصيل الخبر</label>
+                    <textarea name="content" rows="10" placeholder="اكتب تفاصيل الخبر هنا..." required>{{ item.content }}</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>وسائط الخبر (صورة أو فيديو)</label>
+                    
                     {% if item.image_url %}
-                    <p>الصورة الحالية: <img src="{{ item.image_url }}" style="max-height:200px;"></p>
+                    <div class="current-media-box">
+                        <p style="font-size: 0.8rem; color: #a0aec0; margin-bottom: 10px;">المعاينة الحالية:</p>
+                        {% if item.image_url.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) %}
+                            <video src="{{ item.image_url }}" class="media-preview" controls></video>
+                        {% else %}
+                            <img src="{{ item.image_url }}" class="media-preview" alt="Preview">
+                        {% endif %}
+                    </div>
                     {% endif %}
-                    <input type="file" name="image" accept="image/*">
+
+                    <label style="font-size: 0.85rem; color: #4a5568;">تغيير الوسائط (اختياري):</label>
+                    <input type="file" name="image" accept="image/*,video/*" style="padding: 10px 0;">
+                    <small style="color: #a0aec0; display: block;">اتركه فارغاً للاحتفاظ بالملف الحالي.</small>
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="btn-submit">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    <button type="submit" class="btn-save">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
                         </svg>
-                        حفظ التعديلات
+                        تحديث الخبر
                     </button>
-                    <a href="/news" class="btn-cancel">إلغاء</a>
+                    <a href="/news/{{ item.id }}" class="btn-cancel">إلغاء</a>
                 </div>
             </form>
-        </div>    
+        </div>
     </div>
 </section>
 {% endblock %}

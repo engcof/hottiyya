@@ -75,61 +75,25 @@ async def latest_article_redirect():
             # 2. التوجيه إلى صفحة المقال الفعلي باستخدام ID
             return RedirectResponse(f"/articles/{latest['id']}", status_code=303)
 
-
 # === عرض مقال + التعليقات ===
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_article(request: Request, id: int):
     user = request.session.get("user")
+    article, comments = ArticleService.get_article_details(id)
     
-    # الصلاحيات أولاً
-    can_edit = can(user, "edit_article")
-    can_delete = can(user, "delete_article")
-    can_comment = user is not None
+    if not article: raise HTTPException(404, "المقال غير موجود")
 
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # جيب المقال مع كل الحقول بوضوح
-            cur.execute("""
-                SELECT 
-                    a.id,
-                    a.title,
-                    COALESCE(a.content, '') as content,
-                    a.image_url,
-                    a.created_at,
-                    u.username
-                FROM articles a
-                JOIN users u ON a.author_id = u.id
-                WHERE a.id = %s
-            """, (id,))
-            article = cur.fetchone()
+    csrf_token = request.session.get("csrf_token") or generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
 
-            if not article:
-                raise HTTPException(404, "المقال غير موجود")
+    return templates.TemplateResponse("articles/detail.html", {
+        "request": request, "user": user, "article": article, "comments": comments,
+        "csrf_token": csrf_token,
+        "can_edit": can(user, "edit_article"),
+        "can_delete": can(user, "delete_article"),
+        "can_comment": user is not None
+    })
 
-            # جيب التعليقات
-            cur.execute("""
-                SELECT c.*, u.username
-                FROM comments c
-                JOIN users u ON c.user_id = u.id
-                WHERE c.article_id = %s
-                ORDER BY c.created_at DESC
-            """, (id,))
-            comments = cur.fetchall()
-
-            # تأكد من الـ CSRF
-            csrf_token = request.session.get("csrf_token") or generate_csrf_token()
-            request.session["csrf_token"] = csrf_token
-
-            return templates.TemplateResponse("articles/detail.html", {
-                "request": request,
-                "user": user,
-                "article": article,
-                "comments": comments,
-                "csrf_token": csrf_token,
-                "can_edit": can_edit,
-                "can_delete": can_delete,
-                "can_comment": can_comment
-            })
 
 # === إضافة مقال ===
 @router.get("/add", response_class=HTMLResponse)
@@ -192,7 +156,7 @@ async def add_article(
         pass
         
     if error:
-        # إرجاع الخطأ مع البيانات المدخلة سابقاً
+        print(f"⚠️ Validation Error: {error}") # أضف هذا السطر للتشخيص
         csrf_token = generate_csrf_token()
         request.session["csrf_token"] = csrf_token
         return templates.TemplateResponse("articles/add.html", {
@@ -248,22 +212,21 @@ async def edit_article_form(request: Request, id: int):
     return templates.TemplateResponse("articles/edit.html", {
         "request": request,
         "user": user,
-        "article": article,      # صحيح
+        "article": article,      
         "csrf_token": csrf_token
     })
 
 # === حفظ التعديلات ===
 @router.post("/edit/{id:int}")
 async def update_article(
-    request: Request,
-    id: int,
-    title: str = Form(...),
-    content: str = Form(...),
+    request: Request, 
+    id: int, 
+    title: str = Form(...), 
+    content: str = Form(...), 
     image: UploadFile = File(None)
 ):
     user = request.session.get("user")
-    if not can(user, "edit_article"):
-        return RedirectResponse("/articles")
+    if not can(user, "edit_article"): return RedirectResponse("/articles")
 
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -276,9 +239,9 @@ async def update_article(
     
     error = None
 
-    # التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
-    VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
-    VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r]+"
+    # 1. تحديث الرموز المسموحة لتشمل علامات الترقيم الإضافية (مثل : ; " ' / + = _)
+    VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\[\]\{\}\:\/\'\"]+"
+    VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\[\]\{\}\:\/\'\"\+\=\_\%\&\@\*\n\r]+"
 
 
     # 1. التحقق من عدم فراغ العنوان والمحتوى
@@ -319,70 +282,72 @@ async def update_article(
         })
 
     # استكمال عملية حفظ التعديلات
-    
-    image_url = None
-    # محاولة الحصول على image_url القديمة أولاً في حال عدم وجود صورة جديدة
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT image_url FROM articles WHERE id = %s", (id,))
-            old_image = cur.fetchone()
-            if old_image:
-                image_url = old_image["image_url"]
+    ArticleService.update_article(
+        article_id=id, 
+        title=html.escape(title.strip()), 
+        content=html.escape(content.strip()), 
+        image_file=image.file if image and image.filename else None
+    )
 
-    if image and image.filename:
-        filename = f"article_{id}_{image.filename}"
-        path = f"static/uploads/articles/{filename}"
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "wb") as f:
-            shutil.copyfileobj(image.file, f)
-        image_url = f"/{path}" # تحديث الرابط الجديد
-
-    with get_db_context() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                UPDATE articles 
-                SET title = %s, content = %s, image_url = %s 
-                WHERE id = %s
-            """, (title_safe, content_safe, image_url, id))
-            conn.commit()
-
+    # 🌟 إضافة سجل النشاطات (Analytics) 
+    log_action(
+        user_id=user["id"], 
+        action="تعديل مقال", 
+        details=f"قام {user['username']} بتعديل المقال رقم ({id}) بعنوان: {title[:50]}..."
+    )
     return RedirectResponse(f"/articles/{id}", status_code=303)
 
 # === حذف مقال ===
 @router.post("/delete/{id:int}")
 async def delete_article(request: Request, id: int):
-    if not can(request.session.get("user"), "delete_article"):
+    user = request.session.get("user")
+    if not can(user, "delete_article"): 
         return RedirectResponse("/articles")
 
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
-    with get_db_context() as conn:
-        with conn.cursor() as cur:
-            cur.execute("DELETE FROM articles WHERE id = %s", (id,))
-            conn.commit()
-    return RedirectResponse("/articles", status_code=303)
+    # جلب عنوان المقال قبل الحذف لاستخدامه في سجل النشاطات
+    article_data = ArticleService.get_article_details(id)
+    title = article_data[0]['title'] if article_data[0] else "مقال غير معروف"
+
+    # تنفيذ عملية الحذف الشاملة
+    ArticleService.delete_article(id)
+
+    # 🌟 تسجيل عملية الحذف في السجل
+    log_action(
+        user_id=user["id"], 
+        action="حذف مقال", 
+        details=f"قام {user['username']} بحذف المقال رقم ({id}) بعنوان: {title} مع كافة ملحقاته"
+    )
+
+    return RedirectResponse("/articles", status_code=303)    
 
 # === إضافة تعليق ===
 @router.post("/{id:int}/comment")
 async def add_comment(request: Request, id: int, content: str = Form(...)):
     user = request.session.get("user")
-    if not user:
-        return RedirectResponse("/auth/login")
+    if not user: return RedirectResponse("/auth/login")
+
+    # 🌟 التحقق من الصلاحية: يجب أن يكون مسجلاً ويمتلك صلاحية إضافة تعليق
+    if not user or not can(user, "add_comment"):
+        return RedirectResponse(f"/articles/{id}", status_code=303)
+    
 
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
-    # تطبيق html.escape لمنع XSS قبل الحفظ
-    content_safe = html.escape(content)
+    content_safe = html.escape(content.strip())
+    
+    # تنفيذ الإضافة عبر السيرفس
+    ArticleService.add_comment(id, user["id"], content_safe)
 
-    with get_db_context() as conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO comments (article_id, user_id, content)
-                VALUES (%s, %s, %s)
-            """, (id, user["id"], content_safe)) # استخدام المتغير النظيف
-            conn.commit()
+    # 🌟 تسجيل النشاط
+    log_action(
+        user_id=user["id"],
+        action="إضافة تعليق",
+        details=f"قام {user['username']} بالتعليق على المقال رقم ({id})"
+    )
 
     return RedirectResponse(f"/articles/{id}#comments", status_code=303)
 
@@ -390,33 +355,32 @@ async def add_comment(request: Request, id: int, content: str = Form(...)):
 @router.post("/{article_id:int}/comment/{comment_id:int}/delete")
 async def delete_comment(request: Request, article_id: int, comment_id: int):
     user = request.session.get("user")
-    if not user:
-        return RedirectResponse("/auth/login")
+    if not user: return RedirectResponse("/auth/login")
 
-    # تحقق من CSRF
-    form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    verify_csrf_token(request, (await request.form()).get("csrf_token"))
 
-    # جلب معلومات التعليق للتحقق من الصلاحية
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT user_id FROM comments WHERE id = %s", (comment_id,))
-            comment = cur.fetchone()
-            if not comment:
-                raise HTTPException(404, "التعليق غير موجود")
+    # جلب بيانات التعليق للتحقق والتسجيل
+    comment = ArticleService.get_comment_owner(comment_id)
+    if not comment: raise HTTPException(404, "التعليق غير موجود")
+    
+        
+    # التحقق من الصلاحية
+    allowed = (
+        user.get("role") == "admin" or
+        user.get("id") == comment["user_id"] or
+        has_permission(user.get("id"), "delete_comment")
+    )
+    if not allowed: raise HTTPException(403, "غير مسموح لك بالحذف")
 
-            # الشروط المسموح لها بالحذف:
-            allowed = (
-                user.get("role") == "admin" or
-                user.get("id") == comment["user_id"] or
-                has_permission(user.get("id"), "delete_comment")
-            )
+    # تنفيذ الحذف عبر السيرفس
+    ArticleService.delete_comment(comment_id)
 
-            if not allowed:
-                raise HTTPException(403, "غير مسموح لك بحذف هذا التعليق")
-
-            # حذف التعليق
-            cur.execute("DELETE FROM comments WHERE id = %s", (comment_id,))
-            conn.commit()
+    # 🌟 تسجيل النشاط
+    log_action(
+        user_id=user["id"],
+        action="حذف تعليق",
+        details=f"قام {user['username']} بحذف تعليق في المقال ({article_id}). نص التعليق: {comment['content'][:30]}..."
+    )
 
     return RedirectResponse(f"/articles/{article_id}#comments", status_code=303)
+
