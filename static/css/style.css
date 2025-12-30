@@ -281,6 +281,39 @@ nav {
 .mobile-nav .logout { 
     color:var(--danger);
 }
+/* تنسيقات خاصة للجوال عند الرفع على Render */
+@media (max-width: 1024px) {
+    /* 1. إخفاء زر تسجيل الدخول من الهيدر الرئيسي */
+    .user-area .desktop-only-login, 
+    .user-area a[href="/auth/login"]:not(.mobile-nav a) {
+        display: none !important;
+    }
+
+    /* 2. ضمان بقاء اللوجو (الحوطية) ظاهراً يميناً */
+    .logo {
+        display: block !important;
+        font-size: 1.4rem !important;
+        order: 1 !important;
+    }
+
+    /* 3. جعل زر القائمة المنسدلة في أقصى اليسار */
+    .mobile-menu-toggle {
+        display: flex !important;
+        order: 3 !important;
+        margin-right: auto; /* لدفعه لليسار */
+    }
+
+    /* 4. تنسيق زر تسجيل الدخول داخل القائمة المنسدلة */
+    .mobile-nav a[href="/auth/login"] {
+        background-color: var(--accent) !important;
+        color: white !important;
+        font-weight: 700 !important;
+        padding: 15px !important;
+        margin-top: 10px !important;
+        border-radius: var(--radius-sm) !important;
+        text-align: center !important;
+    }
+}
 .all-page {
     margin: 0 auto;
 }
@@ -784,7 +817,6 @@ footer {
     margin: 5px auto 0 auto;
     border-radius: 5px;
 }
-
 /* === 3. تنسيق شبكة المحتوى (Grid) === */
 .about-content {
     margin-top: 50px;
@@ -901,8 +933,7 @@ footer {
 }
 /* ==========    نهاية صفحة عننا  ========== */
 
-/* ========== ✅  صفحة شجرة العائلة ✅ ========== */
-
+/* ========== ✅  صفحة شجرة العائلة ✅ ========== *
 /* === 2. تنسيق شريط البحث (Search Bar) === */
 .search-bar {
     margin-bottom: 32px;

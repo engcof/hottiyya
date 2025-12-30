@@ -90,7 +90,26 @@ def init_database():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)           
-            print("✅ تم إنشاء جدول معرض الصور وإنهاء التهيئة بنجاح!")
+            #print("✅ تم إنشاء جدول معرض الصور وإنهاء التهيئة بنجاح!")
+
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS library (
+                    id SERIAL PRIMARY KEY,
+                    title VARCHAR(255) NOT NULL,           -- اسم الكتاب
+                    author VARCHAR(255),                   -- مؤلف الكتاب (اختياري)
+                    category VARCHAR(100) NOT NULL,        -- (دينية، روايات، علمية، مدرسية، ثقافية)
+                    file_url TEXT NOT NULL,                -- رابط الملف في Cloudinary
+                    cover_url TEXT,                        -- رابط صورة الغلاف (اختياري)
+                    file_size VARCHAR(50),                 -- حجم الملف (مثلاً: 2MB)
+                    uploader_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- لمعرفة صاحب الرفع الحالي
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_library_category ON library(category);")
+           
+            
+            print("✅ تم إنشاء جدول المكتبة وتحديث الهيكلية بنجاح!")
           
         except Exception as e:
             print(f"❌ خطأ أثناء تهيئة قاعدة البيانات: {e}") 

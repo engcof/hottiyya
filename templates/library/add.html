@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}إضافة كتاب جديد{% endblock %}
+
+{% block content %}
+<style>
+    /* تصميم الحاوية الرئيسية */
+    .add-book-container {
+        padding: 60px 20px;
+        display: flex;
+        justify-content: center;
+        background: #f8fafc;
+        min-height: 90vh;
+    }
+
+    .form-card {
+        background: white;
+        width: 100%;
+        max-width: 700px;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        border: 1px solid #edf2f7;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+
+    .form-header h2 {
+        color: #2d3748;
+        font-weight: 800;
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        text-align: right;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 0.95rem;
+    }
+
+    /* تنسيق الحقول */
+    .custom-input, .custom-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    .custom-input:focus, .custom-select:focus {
+        border-color: #27ae60;
+        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+    }
+
+    .file-input-wrapper {
+        position: relative;
+        background: #f8fafc;
+        border: 2px dashed #cbd5e0;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: 0.3s;
+    }
+
+    .file-input-wrapper:hover {
+        border-color: #27ae60;
+        background: #f0fff4;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 15px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 10px;
+    }
+
+    .submit-btn:hover {
+        background: #219150;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+    }
+
+    .cancel-link {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: #718096;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .error-msg {
+        background: #fff5f5;
+        color: #c53030;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        border-right: 4px solid #c53030;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div class="add-book-container">
+    <div class="form-card">
+        <div class="form-header">
+            <h2>إضافة كتاب للمكتبة</h2>
+            <p style="color: #718096;">شارك المعرفة مع العالم</p>
+        </div>
+
+        {% if error %}
+        <div class="error-msg">
+            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+        </div>
+        {% endif %}
+
+        <form action="/library/add" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="form-group">
+                <label>اسم الكتاب *</label>
+                <input type="text" name="title" class="custom-input" placeholder="مثال: صحيح البخاري" required value="{{ title if title else '' }}">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="form-group">
+                    <label>اسم المؤلف</label>
+                    <input type="text" name="author" class="custom-input" placeholder="اسم الكاتب" value="{{ author if author else '' }}">
+                </div>
+                <div class="form-group">
+                    <label>تصنيف الكتاب *</label>
+                    <select name="category" class="custom-select" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>ملف الكتاب (PDF / Word) *</label>
+                <div class="file-input-wrapper">
+                    <input type="file" name="book_file" accept=".pdf,.doc,.docx" required style="width: 100%;">
+                    <p style="font-size: 0.8rem; color: #a0aec0; margin-top: 8px;">الحد الأقصى للملف 40 ميجابايت</p>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>صورة الغلاف (اختياري)</label>
+                <input type="file" name="cover_image" class="custom-input" accept="image/*">
+            </div>
+
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-cloud-upload-alt"></i> رفع الكتاب الآن
+            </button>
+            
+            <a href="/library" class="cancel-link">إلغاء والعودة للمكتبة</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

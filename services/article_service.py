@@ -4,22 +4,27 @@ from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 
 class ArticleService:
+   
     @staticmethod
-    def upload_article_image(file, article_id):
+    async def upload_article_image(image_file, article_id):
         try:
-            # الرفع إلى فولدر خاص بالمقالات hottiyya_articles
-            result = cloudinary.uploader.upload(
-                file,
+            # ✅ الإصلاح: استخدام await لقراءة محتوى الملف
+            file_content = await image_file.read()
+            
+            # رفع الملف إلى Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file_content,
                 folder="hottiyya_articles",
                 public_id=f"article_{article_id}",
                 overwrite=True,
                 resource_type="image"
             )
-            return result.get("secure_url")
+            return upload_result.get("secure_url")
         except Exception as e:
-            print(f"❌ Error uploading article image: {e}")
+            print(f"❌ خطأ في الرفع: {e}")
             return None
-
+      
+          
     @staticmethod
     def create_article(title, content, author_id, image_file=None):
         with get_db_context() as conn:
@@ -93,50 +98,57 @@ class ArticleService:
                 return article, comments
 
     @staticmethod
-    def update_article(article_id, title, content, image_file=None):
+    async def update_article(article_id, title, content, image_file=None):
         with get_db_context() as conn:
             with conn.cursor() as cur:
-                # 1. جلب رابط الصورة القديم
+                # 1. جلب الرابط الحالي للقاعدة (للحفاظ عليه إذا لم يتم رفع جديد)
                 cur.execute("SELECT image_url FROM articles WHERE id = %s", (article_id,))
                 row = cur.fetchone()
                 image_url = row[0] if row else None
 
-                # 2. رفع صورة جديدة إذا وجدت
-                if image_file:
-                    new_url = ArticleService.upload_article_image(image_file, article_id)
-                    if new_url: image_url = new_url
+                # 2. إذا وجد ملف جديد، نرفعه فقط
+                if image_file and image_file.filename:
+                    # الرفع مع Overwrite يغنينا عن دالة destroy اليدوية
+                    new_url = await ArticleService.upload_article_image(image_file, article_id)
+                    if new_url:
+                        image_url = new_url
+                        print(f"✅ تم استبدال الصورة بنجاح في السحابة")
 
-                # 3. التحديث
+                # 3. تحديث البيانات في القاعدة
                 cur.execute("""
-                    UPDATE articles SET title = %s, content = %s, image_url = %s 
+                    UPDATE articles 
+                    SET title = %s, content = %s, image_url = %s 
                     WHERE id = %s
                 """, (title, content, image_url, article_id))
                 conn.commit()
                 return True
-
     @staticmethod
     def delete_article(article_id):
+        """حذف المقال وملفاته من السحابة والتعليقات المرتبطة به"""
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # 1. جلب رابط الصورة قبل حذف المقال للتمكن من حذفها من السحابة
+                # 1. جلب البيانات قبل الحذف
                 cur.execute("SELECT image_url FROM articles WHERE id = %s", (article_id,))
                 article = cur.fetchone()
                 
-                if article and article.get("image_url"):
+                if not article:
+                    return False
+
+                # 2. حذف الصورة من Cloudinary
+                image_url = article.get("image_url")
+                if image_url and "cloudinary.com" in image_url:
                     try:
-                        # استخراج الـ public_id من الرابط (المجلد + اسم الملف بدون الامتداد)
-                        # الرابط يكون عادة: .../hottiyya_articles/article_123.jpg
-                        image_url = article["image_url"]
-                        if "hottiyya_articles" in image_url:
-                            public_id = f"hottiyya_articles/article_{article_id}"
-                            cloudinary.uploader.destroy(public_id)
+                        # استخراج اسم الملف البرمجي من الرابط
+                        filename = image_url.split('/')[-1].split('.')[0]
+                        public_id = f"hottiyya_articles/{filename}"
+                        
+                        cloudinary.uploader.destroy(public_id)
+                        print(f"✅ تم حذف صورة المقال من السحابة: {public_id}")
                     except Exception as e:
-                        print(f"⚠️ Warning: Could not delete image from Cloudinary: {e}")
+                        print(f"⚠️ فشل حذف ملف السحابة: {e}")
 
-                # 2. حذف التعليقات المرتبطة بالمقال أولاً (لتجنب خطأ ForeignKeyConstraint)
+                # 3. العمليات على قاعدة البيانات (التعليقات ثم المقال)
                 cur.execute("DELETE FROM comments WHERE article_id = %s", (article_id,))
-
-                # 3. حذف المقال نفسه
                 cur.execute("DELETE FROM articles WHERE id = %s", (article_id,))
                 
                 conn.commit()

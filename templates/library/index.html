@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% block title %}المكتبة الرقمية{% endblock %}
+
+{% block content %}
+{% if can_add %}
+<a href="/library/add"  title="إضافة كتاب جديد" id="floatingAddBtn"style="display: flex !important;">
+    <i class="fas fa-plus"></i>
+</a>
+{% endif %}
+<style>
+    /* تنسيق المكتبة */
+    .library-section { padding: 60px 0; background: #f4f7f6; min-height: 100vh; }
+    
+    /* الفلتر */
+    .category-filter {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+    }
+    .filter-btn {
+        padding: 10px 20px;
+        border-radius: 30px;
+        background: #fff;
+        color: #2c3e50;
+        text-decoration: none;
+        font-weight: 600;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+    .filter-btn.active, .filter-btn:hover {
+        background: #27ae60;
+        color: white;
+        border-color: #27ae60;
+        box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+    }
+
+    /* شبكة الكتب */
+    .books-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 30px;
+    }
+
+    /* بطاقة الكتاب */
+    .book-card {
+        background: #fff;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        position: relative;
+        border: 1px solid #edf2f7;
+        display: flex;
+        flex-direction: column;
+    }
+    .book-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .book-cover {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+        background: #e2e8f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .no-cover {
+        font-size: 50px;
+        color: #a0aec0;
+        flex-direction: column;
+        display: flex;
+        align-items: center;
+    }
+    .no-cover span { font-size: 14px; margin-top: 10px; }
+
+    .book-info { padding: 15px; flex-grow: 1; text-align: center; }
+    .book-title { font-size: 1.1rem; font-weight: 700; color: #1a202c; margin-bottom: 5px; }
+    .book-author { font-size: 0.9rem; color: #718096; margin-bottom: 10px; }
+    
+    .book-meta {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 15px;
+        background: #f8fafc;
+        border-top: 1px solid #edf2f7;
+        font-size: 0.8rem;
+        color: #4a5568;
+    }
+
+    .book-actions { padding: 15px; display: flex; gap: 10px; }
+    .btn-download {
+        flex: 1;
+        background: #27ae60;
+        color: white;
+        text-align: center;
+        padding: 8px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.3s;
+    }
+    .btn-download:hover { background: #219150; }
+
+    .btn-delete {
+        background: #fff5f5;
+        color: #e53e3e;
+        border: 1px solid #feb2b2;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+    .btn-delete:hover { background: #feb2b2; color: #fff; }
+
+    /* الحل النهائي لظهور الزر في الجوال */
+    .add-btn-fixed {
+        position: fixed !important;
+        bottom: 30px !important;
+        right: 30px !important;
+        width: 65px !important;
+        height: 65px !important;
+        background-color: #10b981 !important; /* استخدام متغير الـ accent الخاص بك */
+        color: #ffffff !important;
+        border-radius: 50% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-decoration: none !important;
+        font-size: 26px !important;
+        
+        /* الـ Z-index يجب أن يتخطى الـ User Area والـ Header */
+        z-index: 99999999 !important; 
+        
+        box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4) !important;
+        border: 2px solid rgba(255,255,255,0.2) !important;
+        
+        /* منع أي عنصر أب من إخفائه */
+        isolation: isolate;
+        transform: translateZ(0); 
+        -webkit-transform: translateZ(0);
+    }
+
+    @media (max-width: 768px) {
+        .add-btn-fixed {
+            /* رفعه للأعلى قليلاً لتجنب تداخله مع شريط التنقل في متصفحات الجوال */
+            bottom: 90px !important; 
+            right: 20px !important;
+            width: 55px !important;
+            height: 55px !important;
+            font-size: 22px !important;
+            display: flex !important; /* التأكيد على الظهور */
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+    }
+    /* تأثير الضغط على الجوال */
+    .add-btn-fixed:active {
+        transform: scale(0.9) translateZ(0);
+        background-color: #059669 !important; /* تغميق اللون قليلاً عند الضغط */
+        transition: all 0.1s ease;
+    }
+    .add-btn-fixed:hover {
+        transform: scale(1.1) rotate(90deg);
+        color: white;
+        background: #2ecc71;
+    }
+    .book-cover-wrapper {
+        position: relative;
+        height: 300px;
+        overflow: hidden;
+    }
+
+    /* ألوان مختلفة حسب التصنيف */
+    .category-روايات { background: linear-gradient(135deg, #e67e22, #d35400); }
+    .category-كتب-دينية { background: linear-gradient(135deg, #2980b9, #1c5980); }
+    .category-كتب-علمية { background: linear-gradient(135deg, #8e44ad, #5e2d71); }
+
+    /* تنسيق الغلاف الذكي عند عدم وجود صورة */
+    .smart-placeholder-cover {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #27ae60 0%, #1a5e38 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .placeholder-content i {
+        font-size: 2.5rem;
+        opacity: 0.8;
+        display: block;
+        margin-bottom: 15px;
+    }
+
+    /* تنسيق نظام الترقيم (Pagination) */
+    .pagination-container {
+        margin-top: 50px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .custom-pagination {
+        display: flex;
+        list-style: none;
+        gap: 10px;
+        padding: 0;
+    }
+
+    .page-link {
+        display: block;
+        padding: 10px 18px;
+        background: white;
+        color: #2d3748;
+        text-decoration: none;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .page-link:hover {
+        border-color: #27ae60;
+        color: #27ae60;
+        background: #f0fff4;
+    }
+
+    .page-link.active {
+        background: #27ae60;
+        color: white;
+        border-color: #27ae60;
+        box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+    }
+    /* تنسيق حاوية البحث */
+    .search-container {
+        margin: 20px auto 40px;
+        max-width: 500px;
+        position: relative;
+    }
+
+    .search-form {
+        display: flex;
+        background: white;
+        padding: 5px;
+        border-radius: 50px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+    }
+
+    .search-form:focus-within {
+        border-color: #27ae60;
+        box-shadow: 0 4px 20px rgba(39, 174, 96, 0.15);
+    }
+
+    .search-input {
+        flex: 1;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 50px;
+        outline: none;
+        font-size: 0.95rem;
+        color: #2d3748;
+    }
+
+    .search-button {
+        background: #27ae60;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .search-button:hover {
+        background: #219150;
+        transform: scale(1.05);
+    }
+    @media (max-width: 768px) {
+        .search-container {
+            padding: 0 15px;
+            margin-top: 10px; /* لمنع الالتصاق بالعنوان */
+        }
+        .library-section {
+            padding: 30px 10px; /* تقليل الحواف الجانبية */
+        }
+    }
+</style>
+
+<section class="library-section">
+    <div class="container">
+        <div class="section-header text-center mb-5">
+            <h2 style="font-weight: 800; color: #2d3748;">المكتبة الرقمية</h2>
+            <p class="text-muted">نشر المعرفة بين الأفراد </p>
+        </div>
+        <div class="search-container">
+            <form action="/library/" method="GET" class="search-form">
+                <input type="hidden" name="category" value="{{ selected_category }}">
+                <input type="text" name="q" class="search-input" 
+                    placeholder="ابحث عن كتاب أو مؤلف..." value="{{ q if q else '' }}">
+                <button type="submit" class="search-button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </form>
+            {% if q %}
+            <div class="text-center mt-2">
+                <small class="text-muted">نتائج البحث عن: <strong>{{ q }}</strong></small>
+                <a href="/library/?category={{ selected_category }}" class="text-danger ms-2" style="font-size: 0.8rem;">إلغاء البحث</a>
+            </div>
+            {% endif %}
+        </div>
+        <div class="category-filter">
+            <a href="/library/?category=الكل" class="filter-btn {% if selected_category == 'الكل' %}active{% endif %}">الكل</a>
+            {% for cat in categories %}
+            <a href="/library/?category={{ cat }}" class="filter-btn {% if selected_category == cat %}active{% endif %}">{{ cat }}</a>
+            {% endfor %}
+        </div>
+
+        <div class="books-grid">
+            {% for book in books %}
+            <div class="book-card">
+                <div class="book-cover-wrapper">
+                    {% if book.cover_url %}
+                        <img src="{{ book.cover_url }}" class="book-cover" alt="{{ book.title }}">
+                    {% else %}
+                        <div class="smart-placeholder-cover category-{{ book.category }}">
+                            <div class="placeholder-content">
+                                <i class="fas fa-file-pdf mb-2" style="font-size: 2rem;"></i>
+                                <h4 class="text-center px-2" style="font-size: 1rem; margin: 10px 0;">{{ book.title[:40] }}</h4>
+                                <span class="badge" style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 15px; font-size: 0.8rem;">
+                                    {{ book.category }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="book-info">
+                    <h3 class="book-title">{{ book.title }}</h3>
+                    <p class="book-author">{{ book.author }}</p>
+                </div>
+
+                <div class="book-meta">
+                    <span><i class="fas fa-layer-group"></i> {{ book.category }}</span>
+                    <span><i class="fas fa-file-alt"></i> {{ book.file_size }}</span>
+                </div>
+
+                <div class="book-actions">
+                    <a href="{{ book.file_url }}" target="_blank" class="btn-download" download>
+                        <i class="fas fa-download"></i> تحميل
+                    </a>
+                    
+                    {% if can_add or user.role == 'admin' %}
+                    <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب؟');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="btn-delete">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center w-100 py-5">
+                <p class="text-muted">لا توجد كتب متاحة في هذا القسم حالياً.</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% if total_pages > 1 %}
+        <div class="pagination-container">
+            <nav>
+                <ul class="custom-pagination">
+                    {# زر الصفحة السابقة #}
+                    {% if current_page > 1 %}
+                    <li>
+                        <a href="/library/?category={{ selected_category }}&page={{ current_page - 1 }}" class="page-link">السابق</a>
+                    </li>
+                    {% endif %}
+
+                    {# أرقام الصفحات #}
+                    {% for p in range(1, total_pages + 1) %}
+                    <li>
+                        <a href="/library/?category={{ selected_category }}&page={{ p }}" 
+                        class="page-link {% if p == current_page %}active{% endif %}">
+                        {{ p }}
+                        </a>
+                    </li>
+                    {% endfor %}
+
+                    {# زر الصفحة التالية #}
+                    {% if current_page < total_pages %}
+                    <li>
+                        <a href="/library/?category={{ selected_category }}&page={{ current_page + 1 }}" class="page-link">التالي</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+      
+    </div>
+</section>
+{% if can_add %}
+<a href="/library/add" class="add-btn-fixed" title="إضافة كتاب جديد" >
+    <i class="fas fa-plus"></i>
+</a>
+{% endif %}
+
+{% endblock %}

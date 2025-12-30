@@ -3,7 +3,6 @@ import cloudinary.uploader
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 
-
 class NewsService:
     @staticmethod
     def upload_news_media(file, news_id):
@@ -61,19 +60,36 @@ class NewsService:
             
     @staticmethod
     def update_news(news_id, title, content, author, media_file=None):
+        """تحديث الخبر مع تنظيف السحابة من الوسائط القديمة عند التغيير"""
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # 1. جلب بيانات الخبر الحالية لمعرفة رابط الوسائط القديم
                 cur.execute("SELECT image_url FROM news WHERE id = %s", (news_id,))
-                old_news = cur.fetchone()
-                if not old_news:
+                old_item = cur.fetchone()
+                if not old_item:
                     return False
 
-                image_url = old_news['image_url']
+                image_url = old_item['image_url']
 
+                # 2. إذا رفع المستخدم ملفاً جديداً (صورة أو فيديو)
                 if media_file:
-                    # ✅ الإصلاح: تمرير news_id للدالة
+                    # حذف الملف القديم من Cloudinary لتوفير المساحة
+                    if image_url and "cloudinary.com" in image_url:
+                        try:
+                            url_parts = image_url.split('/')
+                            filename = url_parts[-1].split('.')[0]
+                            full_public_id = f"hottiyya_news/{filename}"
+                            
+                            # تحديد النوع للحذف الصحيح
+                            res_type = "video" if image_url.lower().endswith(('.mp4', '.mov', '.avi')) else "image"
+                            cloudinary.uploader.destroy(full_public_id, resource_type=res_type)
+                        except Exception as e:
+                            print(f"⚠️ تنبيه: تعذر حذف الملف القديم من السحابة: {e}")
+
+                    # رفع الملف الجديد والحصول على الرابط
                     image_url = NewsService.upload_news_media(media_file, news_id)
 
+                # 3. تحديث البيانات في قاعدة البيانات
                 cur.execute("""
                     UPDATE news 
                     SET title=%s, content=%s, author=%s, image_url=%s
@@ -81,7 +97,6 @@ class NewsService:
                 """, (title, content, author, image_url, news_id))
                 conn.commit()
                 return True
-    
     @staticmethod
     def delete_news(news_id):
         """حذف الخبر وملفه المرفق من السحابة والقاعدة بشكل نهائي"""

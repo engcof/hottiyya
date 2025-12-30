@@ -18,8 +18,10 @@
                 <li><a href="/articles" {% if request.path.startswith('/articles') %}class="active"{% endif %}>المقالات</a></li>
                 <li><a href="/gallery" {% if request.path.startswith('/gallery') %}class="active"{% endif %}>معرض الصور</a></li>
                 <li><a href="/video" {% if request.path.startswith('/video') %}class="active"{% endif %}>معرض الفيديوهات</a></li>
+                <li><a href="/library" {% if request.path.startswith('/library') %}class="active"{% endif %}>المكتبة</a></li>
+                {% if user %}
                 <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة الحوطية</a></li>
-                <li><a href="/about">عن الحوطية</a></li>
+                {% endif %}
                 {% if user and user.role == "admin" %}
                 <li><a href="/admin" {% if request.path.startswith('/admin') %}class="active"{% endif %}>الإدارة</a></li>
                 {% endif %}
@@ -58,7 +60,7 @@
                         <a href="/auth/logout" class="dropdown-link logout">تسجيل الخروج</a>
                     </div>
                 {% else %}
-                    <a href="/auth/login" style="padding:12px 28px;background:var(--accent);color:white;border-radius:50px;font-weight:600;">تسجيل الدخول</a>
+                    <a href="/auth/login" class="desktop-only-login" style="padding:12px 28px;background:var(--accent);color:white;border-radius:50px;font-weight:600;">تسجيل الدخول</a>
                 {% endif %}
             </div>
 
@@ -66,23 +68,23 @@
                 <span></span><span></span><span></span>
             </button>
         </nav>
-
         <div class="mobile-nav" id="mobileNav">
             <a href="/">الرئيسية</a>
             <a href="/news">الأخبار</a>
             <a href="/articles">المقالات</a>
             <a href="/gallery">معرض الصور</a>
             <a href="/video">معرض الفيديوهات</a>
-            <a href="/names">شجرة الحوطية</a>
-            <a href="/about">عن الحوطية</a>
+            <a href="/library">المكتبة</a>
             {% if user and user.role == "admin" %}<a href="/admin">الإدارة</a>{% endif %}
             {% if user %}
+                <a href="/names">شجرة الحوطية</a>
                 <a href="/profile">صفحتي الشخصية</a>
                 <a href="/auth/logout" class="logout">تسجيل الخروج</a>
             {% else %}
                 <a href="/auth/login">تسجيل الدخول</a>
             {% endif %}
         </div>
+        
     </header>
 
     <main>{% block content %}{% endblock %}</main>

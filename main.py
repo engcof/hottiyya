@@ -20,7 +20,7 @@ from security.rate_limit import initialize_rate_limiter
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 from services.notification import get_unread_notification_count
-from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video
+from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -136,6 +136,7 @@ app.include_router(data.router)
 app.include_router(profile.router)
 app.include_router(gallery.router)
 app.include_router(video.router)
+app.include_router(library.router)
 # =========================================
 #         الصفحة الرئيسية
 # =========================================

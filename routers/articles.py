@@ -282,13 +282,12 @@ async def update_article(
         })
 
     # استكمال عملية حفظ التعديلات
-    ArticleService.update_article(
+    await ArticleService.update_article(
         article_id=id, 
-        title=html.escape(title.strip()), 
-        content=html.escape(content.strip()), 
-        image_file=image.file if image and image.filename else None
+        title=title_safe, 
+        content=content_safe, 
+        image_file=image if image and image.filename else None
     )
-
     # 🌟 إضافة سجل النشاطات (Analytics) 
     log_action(
         user_id=user["id"], 
