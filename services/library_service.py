@@ -31,7 +31,7 @@ class LibraryService:
 
                 gs_command = [
                     "gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4",
-                    "-dPDFSETTINGS=/ebook", "-dNOPAUSE", "-dQUIET", "-dBATCH",
+                    "-dPDFSETTINGS=/screen", "-dNOPAUSE", "-dQUIET", "-dBATCH",
                     f"-sOutputFile={temp_output}", temp_input
                 ]
                 
