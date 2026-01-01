@@ -2,11 +2,7 @@
 {% block title %}المكتبة الرقمية{% endblock %}
 
 {% block content %}
-{% if can_add %}
-<a href="/library/add"  title="إضافة كتاب جديد" id="floatingAddBtn"style="display: flex !important;">
-    <i class="fas fa-plus"></i>
-</a>
-{% endif %}
+
 <style>
     /* تنسيق المكتبة */
     .library-section { padding: 60px 0; background: #f4f7f6; min-height: 100vh; }
@@ -412,7 +408,7 @@
     </div>
 </section>
 {% if can_add %}
-<a href="/library/add" class="add-btn-fixed" title="إضافة كتاب جديد" >
+<a href="/library/add" class="add-btn-fixed"id="floatingAddBtn" title="إضافة كتاب جديد" >
     <i class="fas fa-plus"></i>
 </a>
 {% endif %}

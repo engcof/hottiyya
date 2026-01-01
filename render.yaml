@@ -5,11 +5,9 @@ services:
     region: oregon
     plan: free
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    # أمر بناء واحد فقط يشغل السكربت
+    buildCommand: chmod +x render-build.sh && ./render-build.sh
+    startCommand: gunicorn -w 4 -k uvicorn.workers.UvicornWorker main:app
     envVars:
-      DB_HOST: dpg-d4ai3b6mcj7s73ff4810-a
-      DB_NAME: hottiyya_db
-      DB_USER: hottiyya_db_user
-      SECRET_KEY:
-        generator: secret
+      - key: SECRET_KEY
+        generateValue: true # الطريقة الصحيحة لتوليد مفتاح سري في Render

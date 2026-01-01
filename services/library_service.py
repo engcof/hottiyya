@@ -1,28 +1,75 @@
 # library_service.py
+import io
+import os
+import subprocess
 import cloudinary
+from pypdf import PdfReader, PdfWriter
 import cloudinary.uploader
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 
-class LibraryService:
-    
+class LibraryService:  
     @staticmethod
     async def upload_file(file, folder="hottiyya_library"):
-        """رفع الملفات (PDF, Word, etc) إلى Cloudinary"""
         try:
-            content = await file.read()
-            # نستخدم resource_type="raw" للملفات التي ليست صوراً أو فيديوهات
-            upload_result = cloudinary.uploader.upload(
-                content,
+            await file.seek(0)
+            file_content = await file.read()
+            file_size = len(file_content)
+            # هذا المتغير سنحتاجه لإرجاع الحجم النهائي لقاعدة البيانات
+            final_size_formatted = f"{round(file_size / (1024 * 1024), 2)} MB"
+            
+            MAX_SIZE = 10 * 1024 * 1024 
+
+            if file_size > MAX_SIZE and file.filename.lower().endswith('.pdf'):
+                print(f"⚠️ الملف كبير ({final_size_formatted}). جاري الضغط...")
+                
+                temp_input = f"temp_in_{file.filename}" # أضفنا اسم الملف لضمان عدم التداخل
+                temp_output = f"temp_out_{file.filename}"
+                
+                with open(temp_input, "wb") as f:
+                    f.write(file_content)
+
+                gs_command = [
+                    "gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4",
+                    "-dPDFSETTINGS=/ebook", "-dNOPAUSE", "-dQUIET", "-dBATCH",
+                    f"-sOutputFile={temp_output}", temp_input
+                ]
+                
+                subprocess.run(gs_command, check=True)
+
+                if os.path.exists(temp_output):
+                    with open(temp_output, "rb") as f:
+                        file_content = f.read()
+                    
+                    # تحديث الحجم المسجل بعد الضغط
+                    final_size_formatted = f"{round(len(file_content) / (1024 * 1024), 2)} MB"
+                    print(f"✅ تم الضغط بنجاح. الحجم الجديد: {final_size_formatted}")
+
+                    # تنظيف الملفات المؤقتة فوراً بعد القراءة
+                    os.remove(temp_input)
+                    os.remove(temp_output)
+
+            # الرفع إلى Cloudinary
+            final_stream = io.BytesIO(file_content)
+            upload_result = cloudinary.uploader.upload_large(
+                final_stream,
                 folder=folder,
-                resource_type="raw", 
+                resource_type="raw",
                 use_filename=True,
-                unique_filename=True
+                unique_filename=True,
+                chunk_size=5242880
             )
-            return upload_result.get("secure_url")
+            
+            secure_url = upload_result.get("secure_url")
+            # نرجح إرجاع الـ URL والحجم معاً لضمان تسجيل الحجم الصحيح في القاعدة
+            return secure_url, final_size_formatted
+
         except Exception as e:
-            print(f"❌ خطأ في رفع الملف: {e}")
-            return None
+            print(f"❌ خطأ في نظام الرفع/الضغط: {e}")
+            # تنظيف في حالة الفشل لتجنب امتلاء قرص السيرفر
+            for f in [temp_input, temp_output]:
+                if 'f' in locals() and os.path.exists(f): os.remove(f)
+            return None, None
 
     @staticmethod
     async def upload_cover(image_file):

@@ -116,22 +116,18 @@ async def add_book(
             "title": title,
             "author": author
         })    
-    # 1. حساب حجم الملف بصيغة مقروءة
-    file_size_bytes = 0
-    content = await book_file.read()
-    file_size_bytes = len(content)
-    await book_file.seek(0) # إعادة المؤشر للبداية للرفع
+    # 1. لم نعد بحاجة لحساب الحجم هنا لأن LibraryService سيتكفل بالأمر
+    # سننتقل مباشرة للرفع والضغط
     
-    if file_size_bytes < 1024 * 1024:
-        size_str = f"{round(file_size_bytes / 1024, 2)} KB"
-    else:
-        size_str = f"{round(file_size_bytes / (1024 * 1024), 2)} MB"
-
-    # 2. رفع الملف الأساسي (PDF/Word)
-    file_url = await LibraryService.upload_file(book_file)
+    # 2. رفع الملف وضغطه (استقبال الرابط والحجم النهائي)
+    file_url, actual_size_str = await LibraryService.upload_file(book_file)
+    
     if not file_url:
         return templates.TemplateResponse("library/add.html", {
-            "request": request, "user": user, "error": "فشل رفع ملف الكتاب", "categories": CATEGORIES
+            "request": request, 
+            "user": user, 
+            "error": "فشل رفع ملف الكتاب أو ضغطه", 
+            "categories": CATEGORIES
         })
 
     # 3. رفع الغلاف إن وجد
@@ -139,7 +135,7 @@ async def add_book(
     if cover_image and cover_image.filename:
         cover_url = await LibraryService.upload_cover(cover_image)
 
-    # 4. حفظ في قاعدة البيانات (تنظيف المدخلات أولاً)
+    # 4. حفظ في قاعدة البيانات باستخدام actual_size_str (الحجم بعد الضغط)
     book_id = await LibraryService.add_book(
         title=title_safe,
         author=html.escape(author.strip()) if author else "غير معروف",
@@ -147,14 +143,14 @@ async def add_book(
         file_url=file_url,
         cover_url=cover_url,
         uploader_id=user["id"],
-        file_size=size_str
+        file_size=actual_size_str  # هنا سيتم تسجيل الحجم الصحيح
     )
 
     # 5. تسجيل النشاط
     log_action(
         user_id=user["id"],
         action="إضافة كتاب",
-        details=f"قام {user['username']} برفع كتاب جديد: {title} في قسم {category}"
+        details=f"قام {user['username']} برفع كتاب جديد: {title} بحجم {actual_size_str}"
     )
 
     return RedirectResponse("/library", status_code=303)
