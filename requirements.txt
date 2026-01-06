@@ -53,7 +53,7 @@ google-auth-oauthlib==1.2.0
 httplib2==0.22.0
 
 # PDF & Images
-PyMuPDF==1.23.22
+pymupdf==1.24.10
 
 # Database Driver for Render (نسخة متوافقة مع لينكس)
 psycopg2-binary==2.9.11
