@@ -46,3 +46,14 @@ websockets==15.0.1
 gunicorn==22.0.0
 cloudinary==1.41.0
 pypdf==4.0.0
+# Google Drive API
+google-api-python-client==2.115.0
+google-auth-httplib2==0.2.0
+google-auth-oauthlib==1.2.0
+httplib2==0.22.0
+
+# PDF & Images
+PyMuPDF==1.23.22
+
+# Database Driver for Render (نسخة متوافقة مع لينكس)
+psycopg2-binary==2.9.11
