@@ -113,7 +113,8 @@ class LibraryService:
                     file_path, 
                     resource_type="raw", 
                     # استخدام public_id هو ما يحدد اسم الملف النهائي في الرابط
-                    public_id=f"hottiyya_library/books/{clean_filename}", 
+                    public_id=f"hottiyya_library/books/{clean_filename}.pdf", 
+                    folder="hottiyya_library/books",
                     access_control=[{"access_type": "anonymous"}]
                 )
                 final_url = res['secure_url']
