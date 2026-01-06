@@ -64,6 +64,13 @@
         align-items: center;
         justify-content: center;
     }
+    .book-cover {
+        width: 100%;
+        height: 100%; /* اجعلها تملأ الحاوية */
+        object-fit: contain; /* للحفاظ على أبعاد غلاف الكتاب الأصلية */
+        background: #f8fafc; /* خلفية فاتحة للفراغات */
+        display: block;
+    }
     .no-cover {
         font-size: 50px;
         color: #a0aec0;
@@ -76,7 +83,21 @@
     .book-info { padding: 15px; flex-grow: 1; text-align: center; }
     .book-title { font-size: 1.1rem; font-weight: 700; color: #1a202c; margin-bottom: 5px; }
     .book-author { font-size: 0.9rem; color: #718096; margin-bottom: 10px; }
-    
+   
+    .book-title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #1a202c;
+        margin-bottom: 3px;
+        line-height: 1.4;
+        height: 2.8em; /* يضمن مساحة ثابتة لسطرين فقط */
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        line-clamp: 2; 
+        overflow: hidden;
+        text-align: center;
+    }
     .book-meta {
         display: flex;
         justify-content: space-between;
@@ -326,21 +347,15 @@
             {% for book in books %}
             <div class="book-card">
                 <div class="book-cover-wrapper">
-                    {% if book.cover_url %}
-                        <img src="{{ book.cover_url }}" class="book-cover" alt="{{ book.title }}">
-                    {% else %}
-                        <div class="smart-placeholder-cover category-{{ book.category }}">
-                            <div class="placeholder-content">
-                                <i class="fas fa-file-pdf mb-2" style="font-size: 2rem;"></i>
-                                <h4 class="text-center px-2" style="font-size: 1rem; margin: 10px 0;">{{ book.title[:40] }}</h4>
-                                <span class="badge" style="background: rgba(255,255,255,0.2); padding: 5px 10px; border-radius: 15px; font-size: 0.8rem;">
-                                    {{ book.category }}
-                                </span>
-                            </div>
-                        </div>
-                    {% endif %}
+                    {# سيستخدم الغلاف المستخرج الذي رفعناه يدوياً #}
+                    <img src="{{ book.cover_url }}" class="book-cover" alt="{{ book.title }}"
+                        onerror="this.src='https://res.cloudinary.com/demo/image/upload/v1/sample.jpg'">
+                    
+                    <div class="book-overlay">
+                        <a href="{{ book.file_url }}" target="_blank" class="btn-quick-view">قراءة الآن</a>
+                    </div>
                 </div>
-
+              
                 <div class="book-info">
                     <h3 class="book-title">{{ book.title }}</h3>
                     <p class="book-author">{{ book.author }}</p>
@@ -352,9 +367,16 @@
                 </div>
 
                 <div class="book-actions">
-                    <a href="{{ book.file_url }}" target="_blank" class="btn-download" download>
-                        <i class="fas fa-download"></i> تحميل
-                    </a>
+                    {% if book.file_url == 'pending' %}
+                        <button class="btn btn-warning btn-sm disabled w-100" style="cursor: wait;">
+                            <i class="fas fa-spinner fa-spin"></i> جاري الرفع...
+                        </button>
+                    {% else %}
+                        <a href="{{ book.file_url }}" class="btn btn-success btn-sm w-100" target="_blank">
+                            <i class="fas fa-download"></i> تحميل الكتاب
+                        </a>
+                    {% endif %}
+                   
                     
                     {% if can_add or user.role == 'admin' %}
                     <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب؟');">

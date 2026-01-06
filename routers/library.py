@@ -1,4 +1,5 @@
-import re
+import re  
+from fastapi import BackgroundTasks
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from psycopg2.extras import RealDictCursor
@@ -75,6 +76,7 @@ async def add_book_page(request: Request):
 @router.post("/add")
 async def add_book(
     request: Request,
+    background_tasks: BackgroundTasks,
     title: str = Form(...),
     author: str = Form(None),
     category: str = Form(...),
@@ -85,75 +87,72 @@ async def add_book(
     if not can(user, "add_book"):
         raise HTTPException(403, "غير مصرح لك بإضافة كتب")
     
-    # التحقق من CSRF والنظافة (كما في كودك)
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
     
-    # تطبيق html.escape لمنع XSS قبل الحفظ
     title_stripped = title.strip()
     title_safe = html.escape(title_stripped)
+    author_safe = html.escape(author.strip()) if author else "غير معروف"
     
     error = None
-    
-    # 1.التحقق من عدم فراغ العنوان 
     if not title_stripped:
-        error = "عنوان  مطلوب."
-    # 2. التحقق من نظافة العنوان 
+        error = "عنوان الكتاب مطلوب."
     elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
-        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+        error = "العنوان يحتوي على رموز غير مسموح بها."
     
-    # ... بعد التحقق من العنوان والنمط النمطي ...
     if error:
-        csrf_token = generate_csrf_token()
-        request.session["csrf_token"] = csrf_token
         return templates.TemplateResponse("library/add.html", {
-            "request": request, 
-            "user": user, 
-            "error": error, 
-            "categories": CATEGORIES,
-            "csrf_token": csrf_token,
-            # نعيد البيانات التي أدخلها المستخدم لكي لا يكتبها من جديد
-            "title": title,
-            "author": author
+            "request": request, "user": user, "error": error, 
+            "categories": CATEGORIES, "csrf_token": generate_csrf_token(),
+            "title": title, "author": author
         })    
-    # 1. لم نعد بحاجة لحساب الحجم هنا لأن LibraryService سيتكفل بالأمر
-    # سننتقل مباشرة للرفع والضغط
-    
-    # 2. رفع الملف وضغطه (استقبال الرابط والحجم النهائي)
-    file_url, actual_size_str = await LibraryService.upload_file(book_file)
-    
-    if not file_url:
+
+    try:
+        # 1. المرحلة السريعة: ضغط الملف واستخراج الغلاف (تعيد المسار المحلي للملف)
+        # تم استبدال upload_file بـ process_and_get_metadata
+        local_file_path, auto_cover_url, actual_size_str = await LibraryService.process_and_get_metadata(book_file)
+
+        # 2. تحديد الغلاف النهائي (يدوي أو تلقائي)
+        final_cover_url = auto_cover_url
+        if cover_image and cover_image.filename:
+            manual_cover = await LibraryService.upload_cover(cover_image)
+            if manual_cover:
+                final_cover_url = manual_cover
+
+        # 3. حفظ البيانات في القاعدة فوراً برابط مؤقت (pending)
+        # ملاحظة: حذفنا السطر المكرر لـ file_url
+        book_id = await LibraryService.add_book(
+            title=title_safe,
+            author=author_safe,
+            category=category,
+            file_url="pending", # سيتغير لاحقاً في الخلفية
+            cover_url=final_cover_url,
+            uploader_id=user["id"],
+            file_size=actual_size_str 
+        )
+
+        # 4. تشغيل الرفع الحقيقي للسحابة في الخلفية (لن ينتظر المستخدم)
+        background_tasks.add_task(
+            LibraryService.background_upload, 
+            local_file_path,   # المسار المحلي الذي نتج عن المعالجة
+            book_file.filename, 
+            book_id
+        )
+
+        # 5. تسجيل النشاط
+        log_action(user["id"], "إضافة كتاب", f"بدأ {user['username']} رفع كتاب: {title_safe}")
+
+        # إعادة المستخدم للمكتبة فوراً
+        return RedirectResponse("/library", status_code=303)
+
+    except Exception as e:
+        print(f"❌ Error during processing: {e}")
         return templates.TemplateResponse("library/add.html", {
-            "request": request, 
-            "user": user, 
-            "error": "فشل رفع ملف الكتاب أو ضغطه", 
-            "categories": CATEGORIES
+            "request": request, "user": user, 
+            "error": "حدث خطأ أثناء معالجة الملف، تأكد من صلاحية الملف والتوكن.",
+            "categories": CATEGORIES, "csrf_token": generate_csrf_token()
         })
-
-    # 3. رفع الغلاف إن وجد
-    cover_url = None
-    if cover_image and cover_image.filename:
-        cover_url = await LibraryService.upload_cover(cover_image)
-
-    # 4. حفظ في قاعدة البيانات باستخدام actual_size_str (الحجم بعد الضغط)
-    book_id = await LibraryService.add_book(
-        title=title_safe,
-        author=html.escape(author.strip()) if author else "غير معروف",
-        category=category,
-        file_url=file_url,
-        cover_url=cover_url,
-        uploader_id=user["id"],
-        file_size=actual_size_str  # هنا سيتم تسجيل الحجم الصحيح
-    )
-
-    # 5. تسجيل النشاط
-    log_action(
-        user_id=user["id"],
-        action="إضافة كتاب",
-        details=f"قام {user['username']} برفع كتاب جديد: {title} بحجم {actual_size_str}"
-    )
-
-    return RedirectResponse("/library", status_code=303)
+   
 
 @router.post("/delete/{book_id}")
 async def delete_book(request: Request, book_id: int):

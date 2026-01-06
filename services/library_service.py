@@ -1,172 +1,253 @@
 # library_service.py
-import io
 import os
-import subprocess
-import cloudinary
-from pypdf import PdfReader, PdfWriter
+import shutil
+import tempfile
+import asyncio
+import socket
+import httplib2
+import json
+import fitz  # PyMuPDF
 import cloudinary.uploader
+import requests
+from fastapi import UploadFile
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from googleapiclient.http import MediaFileUpload
+from googleapiclient.discovery import build
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 
-class LibraryService:  
+class LibraryService:
+    SCOPES = ['https://www.googleapis.com/auth/drive.file']
+    TOKEN_FILE = 'token.json'
+    GOOGLE_DRIVE_FOLDER_ID = '1nbegMhH8rIQf7mRiNHkv4P5wamwFMbeZ'
+
     @staticmethod
-    async def upload_file(file, folder="hottiyya_library"):
+    def get_drive_service():
+        """بناء خدمة مع معالجة متقدمة لقطع الاتصال وDNS"""
+        from googleapiclient.discovery import build
+        from google.auth.transport.requests import Request
+        from google.oauth2.credentials import Credentials
+        import google_auth_httplib2
+        import httplib2
+        import socket
+
+        # 1. حل مشكلة الـ DNS والاتصال على مستوى النظام لهذه العملية
+        socket.setdefaulttimeout(600) 
+        
+        creds = Credentials.from_authorized_user_file(LibraryService.TOKEN_FILE, LibraryService.SCOPES)
+        
+        if creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+            with open(LibraryService.TOKEN_FILE, 'w') as token:
+                token.write(creds.to_json())
+        
+        # 2. إعداد محول HTTP مع خاصية إعادة المحاولة عند حدوث Timeout
+        # نقوم بضبط disable_ssl_certificate_validation=False لضمان الأمان
+        http_transport = httplib2.Http(timeout=600)
+        
+        # 3. الربط باستخدام مكتبة google_auth_httplib2
+        authorized_http = google_auth_httplib2.AuthorizedHttp(creds, http=http_transport)
+        
+        # 4. بناء الخدمة مع تمكين عدد محاولات إعادة الاتصال (Retries)
+        return build('drive', 'v3', http=authorized_http, static_discovery=False)
+    @staticmethod
+    async def process_and_get_metadata(file: UploadFile):
+        """
+        المرحلة الأولى (سريعة): 
+        تضغط الملف وتستخرج الغلاف وترفع الغلاف فقط.
+        تعيد المسار المحلي للملف المضغوط ليتم رفعه في الخلفية.
+        """
+        temp_input = None
         try:
-            await file.seek(0)
-            file_content = await file.read()
-            file_size = len(file_content)
-            # هذا المتغير سنحتاجه لإرجاع الحجم النهائي لقاعدة البيانات
-            final_size_formatted = f"{round(file_size / (1024 * 1024), 2)} MB"
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+                shutil.copyfileobj(file.file, tmp)
+                temp_input = tmp.name
+
+            temp_output = temp_input.replace(".pdf", "_compressed.pdf")
             
-            MAX_SIZE = 10 * 1024 * 1024 
+            # عملية الضغط باستخدام Ghostscript
+            gs_command = ["gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4", "-dPDFSETTINGS=/ebook", 
+                          "-dNOPAUSE", "-dQUIET", "-dBATCH", f"-sOutputFile={temp_output}", temp_input]
+            process = await asyncio.create_subprocess_exec(*gs_command)
+            await process.wait()
 
-            if file_size > MAX_SIZE and file.filename.lower().endswith('.pdf'):
-                print(f"⚠️ الملف كبير ({final_size_formatted}). جاري الضغط...")
-                
-                temp_input = f"temp_in_{file.filename}" # أضفنا اسم الملف لضمان عدم التداخل
-                temp_output = f"temp_out_{file.filename}"
-                
-                with open(temp_input, "wb") as f:
-                    f.write(file_content)
+            final_local_path = temp_output if os.path.exists(temp_output) else temp_input
+            file_size_mb = os.path.getsize(final_local_path) / (1024 * 1024)
+            size_str = f"{file_size_mb:.2f} MB"
 
-                gs_command = [
-                    "gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4",
-                    "-dPDFSETTINGS=/screen", "-dNOPAUSE", "-dQUIET", "-dBATCH",
-                    f"-sOutputFile={temp_output}", temp_input
-                ]
-                
-                subprocess.run(gs_command, check=True)
-
-                if os.path.exists(temp_output):
-                    with open(temp_output, "rb") as f:
-                        file_content = f.read()
-                    
-                    # تحديث الحجم المسجل بعد الضغط
-                    final_size_formatted = f"{round(len(file_content) / (1024 * 1024), 2)} MB"
-                    print(f"✅ تم الضغط بنجاح. الحجم الجديد: {final_size_formatted}")
-
-                    # تنظيف الملفات المؤقتة فوراً بعد القراءة
-                    os.remove(temp_input)
-                    os.remove(temp_output)
-
-            # الرفع إلى Cloudinary
-            final_stream = io.BytesIO(file_content)
-            upload_result = cloudinary.uploader.upload_large(
-                final_stream,
-                folder=folder,
-                resource_type="raw",
-                use_filename=True,
-                unique_filename=True,
-                chunk_size=5242880
-            )
+            # استخراج الغلاف فوراً
+            temp_cover = final_local_path.replace(".pdf", ".jpg")
+            doc = fitz.open(final_local_path)
+            pix = doc.load_page(0).get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+            pix.save(temp_cover)
+            doc.close()
             
-            secure_url = upload_result.get("secure_url")
-            # نرجح إرجاع الـ URL والحجم معاً لضمان تسجيل الحجم الصحيح في القاعدة
-            return secure_url, final_size_formatted
+            # رفع الغلاف لـ Cloudinary (سريع)
+            cover_res = cloudinary.uploader.upload(temp_cover, folder="hottiyya_library/covers")
+            
+            if os.path.exists(temp_cover): os.remove(temp_cover)
+            if temp_input != final_local_path and os.path.exists(temp_input): os.remove(temp_input)
 
+            return final_local_path, cover_res.get("secure_url"), size_str
         except Exception as e:
-            print(f"❌ خطأ في نظام الرفع/الضغط: {e}")
-            # تنظيف في حالة الفشل لتجنب امتلاء قرص السيرفر
-            for f in [temp_input, temp_output]:
-                if 'f' in locals() and os.path.exists(f): os.remove(f)
-            return None, None
+            if temp_input and os.path.exists(temp_input): os.remove(temp_input)
+            raise e
+
+    @staticmethod
+    def background_upload(file_path: str, filename: str, book_id: int):
+        """
+        المرحلة الثانية (خلفية):
+        تتعامل مع الرفع المستأنف للملفات الكبيرة وتحديث الحالة عند الفشل.
+        """
+        try:
+            file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
+            final_url = None
+
+            if file_size_mb < 10:
+                # الرفع لـ Cloudinary للملفات الصغيرة (سريع ومستقر)
+                res = cloudinary.uploader.upload(file_path, resource_type="raw", folder="hottiyya_library/books")
+                final_url = res['secure_url']
+            else:
+                # الرفع لـ Google Drive للملفات الكبيرة (نظام الأجزاء)
+                service = LibraryService.get_drive_service()
+                media = MediaFileUpload(
+                    file_path, 
+                    mimetype='application/pdf', 
+                    resumable=True, # تفعيل استئناف الرفع للملفات الكبيرة
+                    chunksize=1024*1024 # رفع الملف كأجزاء (1 ميجا لكل جزء) لتقليل حمل الذاكرة والـ Timeout
+                )
+                
+                # داخل دالة background_upload في LibraryService
+                request = service.files().create(
+                    body={'name': filename, 'parents': [LibraryService.GOOGLE_DRIVE_FOLDER_ID]},
+                    media_body=media, fields='id'
+                )
+                
+                response = None
+                retries = 0
+                max_retries = 5
+                
+                while response is None:
+                    try:
+                        status, response = request.next_chunk()
+                        if status:
+                            print(f"🔼 كتاب {book_id}: تم رفع {int(status.progress() * 100)}%")
+                    except (socket.timeout, httplib2.ServerNotFoundError, ConnectionError) as e:
+                        retries += 1
+                        if retries > max_retries:
+                            raise e
+                        print(f"⚠️ انقطع الاتصال... محاولة رقم {retries} لإعادة الاتصال.")
+                        asyncio.sleep(5) # انتظر قليلاً قبل إعادة المحاولة
+
+            # تحديث الرابط في قاعدة البيانات عند النجاح
+            with get_db_context() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE library SET file_url = %s WHERE id = %s", (final_url, book_id))
+                    conn.commit()
+            
+            print(f"✅ تم اكتمال رفع الكتاب رقم {book_id} بنجاح.")
+            
+        except Exception as e:
+            # في حال الفشل: نقوم بتغيير الحالة في القاعدة لكي لا تظل "pending"
+            with get_db_context() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("UPDATE library SET file_url = %s WHERE id = %s", ('error', book_id))
+                    conn.commit()
+            print(f"❌ خطأ في الرفع الخلفي للكتاب {book_id}: {e}")
+            
+        finally:
+            # حذف الملف المحلي دائماً لتوفير مساحة السيرفر
+            if os.path.exists(file_path): 
+                os.remove(file_path)
 
     @staticmethod
     async def upload_cover(image_file):
-        """رفع صورة غلاف الكتاب"""
-        try:
-            content = await image_file.read()
-            upload_result = cloudinary.uploader.upload(
-                content,
-                folder="hottiyya_library/covers",
-                resource_type="image"
-            )
-            return upload_result.get("secure_url")
-        except Exception as e:
-            print(f"❌ خطأ في رفع الغلاف: {e}")
-            return None
+        """رفع صورة غلاف يدوية"""
+        content = await image_file.read()
+        res = cloudinary.uploader.upload(content, folder="hottiyya_library/covers")
+        return res.get("secure_url")
 
     @staticmethod
     async def add_book(title, author, category, file_url, cover_url, uploader_id, file_size):
-        """إضافة بيانات الكتاب إلى قاعدة البيانات"""
+        """إضافة السجل الأولي لقاعدة البيانات"""
         with get_db_context() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
                     INSERT INTO library (title, author, category, file_url, cover_url, uploader_id, file_size)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    RETURNING id
+                    VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id
                 """, (title, author, category, file_url, cover_url, uploader_id, file_size))
                 book_id = cur.fetchone()[0]
                 conn.commit()
                 return book_id
-    
+
     @staticmethod
-    def get_books_paginated(category="الكل", page=1, per_page=12, search_query=None):
-        """جلب الكتب مع دعم البحث، الترقيم، والتصنيفات"""
-        offset = (page - 1) * per_page
-        
+    def delete_book(book_id):
+        """حذف الكتاب نهائياً من القاعدة والسحاب (Cloudinary & Drive)"""
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # بناء جملة الاستعلام الأساسية
+                cur.execute("SELECT title, file_url, cover_url FROM library WHERE id = %s", (book_id,))
+                book = cur.fetchone()
+                if not book: return None
+
+                # 1. حذف السجل من قاعدة البيانات أولاً
+                cur.execute("DELETE FROM library WHERE id = %s", (book_id,))
+                conn.commit()
+
+                # 2. حذف ملف الكتاب (PDF)
+                if book.get('file_url') and book['file_url'] != 'pending' and book['file_url'] != 'error':
+                    try:
+                        if "drive.google.com" in book['file_url']:
+                            # استخراج الـ ID بدقة من الرابط
+                            import urllib.parse as urlparse
+                            url_data = urlparse.urlparse(book['file_url'])
+                            query = urlparse.parse_qs(url_data.query)
+                            file_id = query.get('id', [None])[0]
+                            
+                            if file_id:
+                                service = LibraryService.get_drive_service()
+                                service.files().delete(fileId=file_id).execute()
+                                print(f"✅ تم حذف الملف من Google Drive: {file_id}")
+                        else:
+                            # حذف من Cloudinary: يجب إرسال المسار الكامل والمجلد
+                            # استخراج اسم الملف بدون الامتداد
+                            filename = book['file_url'].split('/')[-1].split('.')[0]
+                            public_id = f"hottiyya_library/books/{filename}"
+                            cloudinary.uploader.destroy(public_id, resource_type="raw")
+                            print(f"✅ تم حذف الملف من Cloudinary: {public_id}")
+                    except Exception as e:
+                        print(f"⚠️ خطأ أثناء حذف ملف الكتاب: {e}")
+
+                # 3. حذف صورة الغلاف
+                if book.get('cover_url'):
+                    try:
+                        # استخراج اسم ملف الغلاف
+                        cover_name = book['cover_url'].split('/')[-1].split('.')[0]
+                        cover_public_id = f"hottiyya_library/covers/{cover_name}"
+                        cloudinary.uploader.destroy(cover_public_id)
+                        print(f"✅ تم حذف الغلاف من Cloudinary: {cover_public_id}")
+                    except Exception as e:
+                        print(f"⚠️ خطأ أثناء حذف الغلاف: {e}")
+                
+                return book
+
+    @staticmethod
+    def get_books_paginated(category="الكل", page=1, per_page=12, search_query=None):
+        offset = (page - 1) * per_page
+        with get_db_context() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 base_query = "SELECT * FROM library WHERE 1=1"
                 count_query = "SELECT COUNT(*) FROM library WHERE 1=1"
                 params = []
-
-                # إضافة فلتر التصنيف
                 if category and category != "الكل":
-                    base_query += " AND category = %s"
-                    count_query += " AND category = %s"
+                    base_query += " AND category = %s"; count_query += " AND category = %s"
                     params.append(category)
-
-                # إضافة فلتر البحث (البحث في العنوان أو المؤلف)
                 if search_query:
                     search_pattern = f"%{search_query}%"
                     base_query += " AND (title ILIKE %s OR author ILIKE %s)"
                     count_query += " AND (title ILIKE %s OR author ILIKE %s)"
                     params.extend([search_pattern, search_pattern])
-
-                # جلب العدد الإجمالي
                 cur.execute(count_query, params)
                 total_count = cur.fetchone()['count']
-                
-                # جلب البيانات مع الترتيب والترقيم
-                final_query = base_query + " ORDER BY created_at DESC LIMIT %s OFFSET %s"
-                final_params = params + [per_page, offset]
-                
-                cur.execute(final_query, final_params)
-                books = cur.fetchall()
-                
-                total_pages = (total_count + per_page - 1) // per_page
-                return books, total_pages
-
-    @staticmethod
-    def delete_book(book_id):
-        """حذف الكتاب نهائياً من القاعدة والسحابة"""
-        with get_db_context() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # جلب الروابط قبل الحذف لمسحها من Cloudinary
-                cur.execute("SELECT title, file_url, cover_url FROM library WHERE id = %s", (book_id,))
-                book = cur.fetchone()
-                
-                if not book:
-                    return None
-
-                # حذف الملف الأساسي (Raw)
-                if book['file_url']:
-                    try:
-                        # استخراج الـ public_id للملفات الخام (يحتاج معالجة خاصة أحياناً)
-                        file_public_id = "hottiyya_library/" + book['file_url'].split('/')[-1]
-                        cloudinary.uploader.destroy(file_public_id, resource_type="raw")
-                    except: pass
-
-                # حذف الغلاف (Image)
-                if book['cover_url']:
-                    try:
-                        cover_id = "hottiyya_library/covers/" + book['cover_url'].split('/')[-1].split('.')[0]
-                        cloudinary.uploader.destroy(cover_id)
-                    except: pass
-
-                # الحذف من القاعدة
-                cur.execute("DELETE FROM library WHERE id = %s", (book_id,))
-                conn.commit()
-                return book # نعيد بيانات الكتاب لاستخدامها في سجل النشاطات
+                cur.execute(base_query + " ORDER BY created_at DESC LIMIT %s OFFSET %s", params + [per_page, offset])
+                return cur.fetchall(), (total_count + per_page - 1) // per_page

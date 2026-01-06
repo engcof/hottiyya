@@ -117,10 +117,32 @@
         border-right: 4px solid #c53030;
         font-size: 0.9rem;
     }
+    #overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .spinner {
+        width: 50px; height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #2ecc71;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 
 <div class="add-book-container">
     <div class="form-card">
+        <div id="overlay">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; color: #2d3748; font-weight: bold;">جاري معالجة الكتاب ورفعه... يرجى الانتظار</p>
+        </div>
         <div class="form-header">
             <h2>إضافة كتاب للمكتبة</h2>
             <p style="color: #718096;">شارك المعرفة مع العالم</p>
@@ -132,7 +154,7 @@
         </div>
         {% endif %}
 
-        <form action="/library/add" method="POST" enctype="multipart/form-data">
+        <form action="/library/add" method="POST" enctype="multipart/form-data" id="uploadForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
             <div class="form-group">
@@ -176,4 +198,14 @@
         </form>
     </div>
 </div>
+<script>
+    document.getElementById('uploadForm').onsubmit = function() {
+        // إظهار الشاشة
+        document.getElementById('overlay').style.display = 'flex';
+        // تغيير النص ليكون متوافقاً مع الرفع السريع
+        const statusText = document.querySelector('#overlay p');
+        statusText.innerHTML = "جاري تحضير الكتاب... سيتم تحويلك للمكتبة خلال لحظات";
+    };
+</script>
+
 {% endblock %}
