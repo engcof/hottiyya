@@ -2,7 +2,7 @@ import re
 from fastapi import BackgroundTasks
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
-from psycopg2.extras import RealDictCursor
+from urllib.parse import quote
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.permission import has_permission
@@ -173,3 +173,52 @@ async def delete_book(request: Request, book_id: int):
         )
 
     return RedirectResponse("/library", status_code=303)
+
+@router.get("/admin/system-cleanup")
+async def admin_system_cleanup(request: Request):
+    # التأكد من الصلاحيات
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="غير مصرح لك")
+
+    # استدعاء الخدمة
+    count = LibraryService.cleanup_orphaned_cloudinary_files()
+    
+    return {"status": "success", "deleted_files_count": count}
+
+
+@router.get("/view/{book_id}")
+async def view_book(book_id: int):
+    # 1. زيادة العداد وجلب الرابط من قاعدة البيانات
+    file_url = LibraryService.increment_view(book_id)
+    
+    if not file_url:
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
+    
+    # 2. تنظيف الرابط (إزالة أي معاملات بعد علامة الاستفهام إن وجدت)
+    clean_url = file_url.split('?')[0]
+    
+    # 3. التأكد من عدم وجود fl_attachment في رابط القراءة
+    clean_url = clean_url.replace('/fl_attachment', '')
+    
+    # 4. التوجيه للفيور
+    viewer_url = f"https://docs.google.com/viewer?url={clean_url}&embedded=true"
+    return RedirectResponse(viewer_url)
+
+
+
+@router.get("/download/{book_id}")
+async def download_book(book_id: int):
+    book_data = LibraryService.increment_download(book_id)
+    if not book_data:
+        raise HTTPException(status_code=404)
+
+    file_url = book_data['file_url']
+    
+    # التحميل المباشر من Cloudinary بدون تعديلات في الرابط لتجنب خطأ 400
+    if "cloudinary" in file_url:
+        final_url = file_url.replace('/upload/', '/upload/fl_attachment/')
+    else:
+        final_url = file_url
+
+    return RedirectResponse(url=final_url)

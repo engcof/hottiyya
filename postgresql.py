@@ -95,18 +95,26 @@ def init_database():
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS library (
                     id SERIAL PRIMARY KEY,
-                    title VARCHAR(255) NOT NULL,           -- اسم الكتاب
-                    author VARCHAR(255),                   -- مؤلف الكتاب (اختياري)
-                    category VARCHAR(100) NOT NULL,        -- (دينية، روايات، علمية، مدرسية، ثقافية)
-                    file_url TEXT NOT NULL,                -- رابط الملف في Cloudinary
-                    cover_url TEXT,                        -- رابط صورة الغلاف (اختياري)
-                    file_size VARCHAR(50),                 -- حجم الملف (مثلاً: 2MB)
-                    uploader_id INTEGER REFERENCES users(id) ON DELETE SET NULL, -- لمعرفة صاحب الرفع الحالي
+                    title VARCHAR(255) NOT NULL,
+                    author VARCHAR(255),
+                    category VARCHAR(100) NOT NULL,
+                    file_url TEXT NOT NULL,
+                    cover_url TEXT,
+                    file_size VARCHAR(50),
+                    uploader_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                    views_count INTEGER DEFAULT 0,         -- العمود الجديد لعداد القراءة
+                    downloads_count INTEGER DEFAULT 0,     -- العمود الجديد لعداد التحميل
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)
 
+            # 💡 كود إضافي لضمان إضافة الأعمدة إذا كان الجدول موجوداً مسبقاً
+            cur.execute("ALTER TABLE library ADD COLUMN IF NOT EXISTS views_count INTEGER DEFAULT 0;")
+            cur.execute("ALTER TABLE library ADD COLUMN IF NOT EXISTS downloads_count INTEGER DEFAULT 0;")
+
             cur.execute("CREATE INDEX IF NOT EXISTS idx_library_category ON library(category);")
+            print("✅ تم تحديث هيكلية المكتبة وإضافة العدادات بنجاح!")
+           
            
             
             print("✅ تم إنشاء جدول المكتبة وتحديث الهيكلية بنجاح!")
