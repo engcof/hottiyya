@@ -150,6 +150,20 @@ class LibraryService:
                             raise e
                         print(f"⚠️ انقطع الاتصال... محاولة رقم {retries} لإعادة الاتصال.")
                         time.sleep(5)
+                
+                if response and 'id' in response:
+                    file_id = response.get('id')
+                    
+                    # جعل الملف متاحاً للجميع (Public)
+                    try:
+                        service.permissions().create(
+                            fileId=file_id,
+                            body={'type': 'anyone', 'role': 'reader'}
+                        ).execute()
+                    except Exception as e:
+                        print(f"⚠️ فشل جعل الملف عاماً: {e}")
+
+                    final_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
             # تحديث الرابط في قاعدة البيانات عند النجاح
             with get_db_context() as conn:
@@ -246,7 +260,7 @@ class LibraryService:
                 return book
 
     @staticmethod
-    def get_books_paginated(category="الكل", page=1, per_page=12, search_query=None):
+    def get_books_paginated(category="الكل", page=1, per_page=10, search_query=None):
         offset = (page - 1) * per_page
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
