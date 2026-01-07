@@ -424,6 +424,15 @@
                         <button class="btn-delete-full" style="cursor: default; background: #fff;">
                             <i class="fas fa-exclamation-circle"></i> فشل الرفع
                         </button>
+                         {% if can_delete or user.role == 'admin' %}
+                        <form action="/library/delete/{{ book.id }}" method="POST" 
+                            onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');" style="width: 100%;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn-delete-full">
+                                <i class="fas fa-trash-alt"></i> حذف الكتاب
+                            </button>
+                        </form>
+                        {% endif %}
                     {% else %}
                         <div class="action-buttons-row">
                             {# زر القراءة المرتبط بالعداد #}
@@ -443,7 +452,7 @@
                         </div>
                         
                         {# زر الحذف للمسؤولين #}
-                        {% if can_add or user.role == 'admin' %}
+                        {% if can_delete or user.role == 'admin' %}
                         <form action="/library/delete/{{ book.id }}" method="POST" 
                             onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');" style="width: 100%;">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -503,24 +512,34 @@
 {% endif %}
 
 <script>
-    // 1. مراقبة الرفع: تحديث الصفحة تلقائياً عند انتهاء معالجة الكتاب
+    // مراقبة الرفع بشكل ذكي وموفر للموارد
     async function monitorUploads() {
         const pendingBooks = document.querySelectorAll('.btn-pending');
-        if (pendingBooks.length === 0) return;
+        if (pendingBooks.length === 0) return; // لا يوجد رفع، لا داعي لإزعاج السيرفر
 
+        console.log("🔍 مراقبة عمليات الرفع الجارية...");
+        
         const interval = setInterval(async () => {
             try {
-                const response = await fetch(window.location.href);
+                // نقوم بجلب الصفحة ولكن نفحص فقط العناصر المطلوبة
+                const response = await fetch(window.location.href, { cache: "no-store" });
                 const html = await response.text();
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
                 
-                if (doc.querySelectorAll('.btn-pending').length < pendingBooks.length) {
+                const stillPending = doc.querySelectorAll('.btn-pending').length;
+                
+                // إذا تغير عدد الكتب التي تحت الرفع، نقوم بتحديث الصفحة
+                if (stillPending < pendingBooks.length) {
+                    console.log("✅ اكتمل رفع أحد الكتب، جاري تحديث المكتبة...");
                     clearInterval(interval);
                     window.location.reload(); 
                 }
-            } catch (error) { console.error("خطأ في مراقبة الرفع:", error); }
-        }, 5000);
+            } catch (error) { 
+                console.error("خطأ في مراقبة الرفع:", error);
+                clearInterval(interval); // التوقف عند حدوث خطأ متكرر
+            }
+        }, 10000); // زيادة المدة لـ 10 ثوانٍ لتقليل الضغط على السيرفر
     }
 
     // 2. التحميل الذكي: محاولة إجبار المتصفح على الاسم العربي

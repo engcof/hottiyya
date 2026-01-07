@@ -2,23 +2,29 @@
 import os
 import re
 import time
+import json
+import fitz  # PyMuPDF
 import shutil
 import tempfile
 import asyncio
 import socket
 import httplib2
-import json
-import fitz  # PyMuPDF
+import traceback
 import cloudinary.uploader
-import requests
+import google_auth_httplib2
 from fastapi import UploadFile
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.http import MediaFileUpload
 from googleapiclient.discovery import build
-from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
-
+from postgresql import get_db_context
+import socket
+# إجبار النظام على استخدام IPv4 فقط لاتصالات Google API
+orig_getaddrinfo = socket.getaddrinfo
+def getaddrinfo_ipv4(host, port, family=0, type=0, proto=0, flags=0):
+    return orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+socket.getaddrinfo = getaddrinfo_ipv4
 class LibraryService:
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
     TOKEN_FILE = 'token.json'
@@ -26,17 +32,8 @@ class LibraryService:
 
     @staticmethod
     def get_drive_service():
-        """بناء خدمة مع معالجة متقدمة لقطع الاتصال وDNS"""
-        from googleapiclient.discovery import build
-        from google.auth.transport.requests import Request
-        from google.oauth2.credentials import Credentials
-        import google_auth_httplib2
-        import httplib2
-        import socket
-
-        # 1. حل مشكلة الـ DNS والاتصال على مستوى النظام لهذه العملية
-        socket.setdefaulttimeout(600) 
-        
+        """بناء خدمة مع تعطيل إعادة التوجيه التلقائي واستخدام الملفات السرية في الإنتاج"""
+        # Render يضع ملفات الـ Secrets في المسار الجذري للمشروع افتراضياً
         creds = Credentials.from_authorized_user_file(LibraryService.TOKEN_FILE, LibraryService.SCOPES)
         
         if creds.expired and creds.refresh_token:
@@ -44,15 +41,22 @@ class LibraryService:
             with open(LibraryService.TOKEN_FILE, 'w') as token:
                 token.write(creds.to_json())
         
-        # 2. إعداد محول HTTP مع خاصية إعادة المحاولة عند حدوث Timeout
-        # نقوم بضبط disable_ssl_certificate_validation=False لضمان الأمان
-        http_transport = httplib2.Http(timeout=600)
+        # تحسين إعدادات الاتصال لتجنب أخطاء الشبكة في السحاب
+        http_transport = httplib2.Http(timeout=120)
+        http_transport.follow_redirects = False 
         
-        # 3. الربط باستخدام مكتبة google_auth_httplib2
         authorized_http = google_auth_httplib2.AuthorizedHttp(creds, http=http_transport)
         
-        # 4. بناء الخدمة مع تمكين عدد محاولات إعادة الاتصال (Retries)
-        return build('drive', 'v3', http=authorized_http, static_discovery=False)
+        DRIVE_DISCOVERY_URL = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+        
+        return build(
+            'drive', 
+            'v3', 
+            http=authorized_http, 
+            discoveryServiceUrl=DRIVE_DISCOVERY_URL,
+            static_discovery=False
+        )
+    
     @staticmethod
     async def process_and_get_metadata(file: UploadFile):
         """
@@ -102,6 +106,7 @@ class LibraryService:
         المرحلة الثانية (خلفية):
         تتعامل مع الرفع المستأنف للملفات الكبيرة وتحديث الحالة عند الفشل.
         """
+        os.environ['no_proxy'] = '*'
         try:
             file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
             final_url = None
@@ -118,38 +123,52 @@ class LibraryService:
                     access_control=[{"access_type": "anonymous"}]
                 )
                 final_url = res['secure_url']
+            # داخل دالة background_upload
             else:
-                # الرفع لـ Google Drive للملفات الكبيرة (نظام الأجزاء)
+                # الرفع لـ Google Drive للملفات الكبيرة (أكبر من 10MB)
                 service = LibraryService.get_drive_service()
+                
+                # استخدام أصغر حجم ممكن للـ Chunk لضمان عدم حدوث Timeout أثناء الرفع
+                chunk_size = 1024 * 1024  
+                
                 media = MediaFileUpload(
                     file_path, 
                     mimetype='application/pdf', 
-                   
-                    resumable=True, # تفعيل استئناف الرفع للملفات الكبيرة
-                    chunksize=1024*1024 # رفع الملف كأجزاء (1 ميجا لكل جزء) لتقليل حمل الذاكرة والـ Timeout
+                    resumable=True, 
+                    chunksize=chunk_size
                 )
                 
-                # داخل دالة background_upload في LibraryService
                 request = service.files().create(
                     body={'name': filename, 'parents': [LibraryService.GOOGLE_DRIVE_FOLDER_ID]},
-                    media_body=media, fields='id'
+                    media_body=media, 
+                    fields='id'
                 )
                 
                 response = None
                 retries = 0
-                max_retries = 5
+                max_retries = 20 # زدنا المحاولات لضمان عدم الفشل
                 
                 while response is None:
                     try:
+                        # تنفيذ رفع الجزء الحالي
                         status, response = request.next_chunk()
                         if status:
-                            print(f"🔼 كتاب {book_id}: تم رفع {int(status.progress() * 100)}%")
-                    except (socket.timeout, httplib2.ServerNotFoundError, ConnectionError) as e:
+                            progress = int(status.progress() * 100)
+                            print(f"🔼 جاري رفع كتاب {book_id}: {progress}%")
+                            
+                    except (socket.timeout, httplib2.ServerNotFoundError, Exception) as e:
                         retries += 1
                         if retries > max_retries:
                             raise e
-                        print(f"⚠️ انقطع الاتصال... محاولة رقم {retries} لإعادة الاتصال.")
-                        time.sleep(5)
+                        
+                        # انتظار تصاعدي قبل المحاولة القادمة
+                        wait_time = min(retries * 5, 30) 
+                        print(f"⚠️ انقطاع مؤقت: {e}. محاولة رقم {retries}...")
+                        time.sleep(wait_time)
+                        
+                        # إعادة بناء الخدمة إذا تكرر الخطأ لضمان تجديد الاتصال
+                        if retries % 3 == 0:
+                            service = LibraryService.get_drive_service()
                 
                 if response and 'id' in response:
                     file_id = response.get('id')
@@ -174,6 +193,8 @@ class LibraryService:
             print(f"✅ تم اكتمال رفع الكتاب رقم {book_id} بنجاح.")
             
         except Exception as e:
+            
+            traceback.print_exc()
             # في حال الفشل: نقوم بتغيير الحالة في القاعدة لكي لا تظل "pending"
             with get_db_context() as conn:
                 with conn.cursor() as cur:
@@ -355,3 +376,35 @@ class LibraryService:
         except Exception as e:
             print(f"❌ فشل تنظيف سجلات الخطأ: {e}")
             return False        
+        
+    @staticmethod
+    def cleanup_stuck_uploads():
+        """تنظيف شامل للسجلات العالقة وحذف ملفاتها من السحاب"""
+        try:
+            with get_db_context() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # جلب معرفات الكتب التي علقت في حالة pending لأكثر من ساعتين
+                    # أو التي تحمل حالة error (اختياري حسب رغبتك)
+                    cur.execute("""
+                        SELECT id FROM library 
+                        WHERE (file_url = 'pending' AND created_at < NOW() - INTERVAL '2 hours')
+                           OR (file_url = 'error')
+                    """)
+                    stuck_books = cur.fetchall()
+            
+            if not stuck_books:
+                return 0
+
+            cleaned_count = 0
+            for book in stuck_books:
+                # نستخدم دالة delete_book الحالية لأنها مجهزة تماماً 
+                # لحذف الغلاف من Cloudinary وحذف السجل من القاعدة
+                LibraryService.delete_book(book['id'])
+                cleaned_count += 1
+            
+            print(f"🧹 تم إجراء تنظيف شامل لـ {cleaned_count} سجلات وملفات يتيمة.")
+            return cleaned_count
+            
+        except Exception as e:
+            print(f"❌ خطأ أثناء التنظيف التلقائي: {e}")
+            return 0
