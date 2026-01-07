@@ -16,9 +16,8 @@ import html
 
 router = APIRouter(prefix="/library", tags=["Library"])
 
-
 # التصنيفات المعتمدة
-CATEGORIES = ["كتب دينية", "روايات", "كتب علمية", "كتب طبية", "كتب مدرسية", "كتب ثقافية"]
+CATEGORIES = ["كتب دينية", "كتب علمية", "كتب طبية", "كتب هندسية", "كتب مدرسية", "روايات"]
 # التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
 VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
 
@@ -57,7 +56,7 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     set_cache_headers(response)
     return response
    
-
+   
 @router.get("/add", response_class=HTMLResponse)
 async def add_book_page(request: Request):
     user = request.session.get("user")
@@ -187,24 +186,39 @@ async def admin_system_cleanup(request: Request):
     return {"status": "success", "deleted_files_count": count}
 
 
-@router.get("/view/{book_id}")
-async def view_book(book_id: int):
-    # 1. زيادة العداد وجلب الرابط من قاعدة البيانات
+@router.get("/view/{book_id}", response_class=HTMLResponse)
+async def view_book(request: Request, book_id: int):
+    # 1. زيادة العداد وجلب الرابط
     file_url = LibraryService.increment_view(book_id)
     
-    if not file_url:
-        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
-    
-    # 2. تنظيف الرابط (إزالة أي معاملات بعد علامة الاستفهام إن وجدت)
-    clean_url = file_url.split('?')[0]
-    
-    # 3. التأكد من عدم وجود fl_attachment في رابط القراءة
-    clean_url = clean_url.replace('/fl_attachment', '')
-    
-    # 4. التوجيه للفيور
-    viewer_url = f"https://docs.google.com/viewer?url={clean_url}&embedded=true"
-    return RedirectResponse(viewer_url)
+    if not file_url or file_url in ['pending', 'error']:
+        return RedirectResponse(url="/library?error=not_ready")
 
+    # 2. تحديد نوع المشغل (Viewer) بناءً على مصدر الملف
+    # ملفات جوجل درايف تحتاج لمشغل جوجل لضمان تخطي قيود CORS
+    if "drive.google.com" in file_url:
+        # استخراج المعرف لضمان نظافة الرابط
+        import urllib.parse as urlparse
+        url_data = urlparse.urlparse(file_url)
+        query = urlparse.parse_qs(url_data.query)
+        file_id = query.get('id', [None])[0]
+        
+        # الرابط المخصص للعرض داخل iframe
+        embed_url = f"https://docs.google.com/viewer?srcid={file_id}&embedded=true"
+        
+        return templates.TemplateResponse("library/viewer_google.html", {
+            "request": request,
+            "embed_url": embed_url,
+            "book_id": book_id
+        })
+    
+    # 3. ملفات Cloudinary نستخدم لها القارئ الشامل PDF.js
+    else:
+        return templates.TemplateResponse("library/viewer_pdfjs.html", {
+            "request": request,
+            "file_url": file_url,
+            "book_id": book_id
+        })
 
 
 @router.get("/download/{book_id}")

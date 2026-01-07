@@ -361,6 +361,33 @@
             padding: 30px 10px; /* تقليل الحواف الجانبية */
         }
     }
+    /* تحسين شكل القارئ الشامل */
+    .btn-read i {
+        color: #2b6cb0;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-read:hover i {
+        transform: scale(1.2);
+    }
+
+    /* تنسيق زر العرض السريع على الغلاف */
+    .btn-quick-view {
+        background: rgba(39, 174, 96, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-weight: bold;
+        backdrop-filter: blur(5px);
+        transition: 0.3s;
+    }
+
+    .btn-quick-view:hover {
+        background: #219150;
+        color: white;
+        transform: scale(1.1);
+    }
 </style>
 
 <section class="library-section">
@@ -401,7 +428,7 @@
                         onerror="this.src='https://res.cloudinary.com/demo/image/upload/v1/sample.jpg'">
                     
                     <div class="book-overlay">
-                        <a href="{{ book.file_url }}" target="_blank" class="btn-quick-view">قراءة الآن</a>
+                        <a href="/library/view/{{ book.id }}" class="btn-quick-view">قراءة الآن</a>
                     </div>
                 </div>
               
