@@ -35,7 +35,7 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     user = request.session.get("user")
     can_add = can(user, "add_book")
     
-    PER_PAGE = 12
+    PER_PAGE = 10
     # تمرير نص البحث للسيرفس
     books, total_pages = LibraryService.get_books_paginated(category, page, PER_PAGE, q)
     
@@ -222,3 +222,18 @@ async def download_book(book_id: int):
         final_url = file_url
 
     return RedirectResponse(url=final_url)
+
+@router.get("/admin/fix-errors")
+async def admin_fix_errors(request: Request):
+    """حذف كل سجلات الكتب التي فشل رفعها (status: error)"""
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="غير مصرح لك")
+
+    # استدعاء الدالة الجديدة التي أضفناها في LibraryService
+    success = LibraryService.cleanup_error_records()
+    
+    if success:
+        return {"status": "success", "message": "تم تنظيف سجلات الأخطاء بنجاح"}
+    else:
+        return {"status": "error", "message": "فشل تنظيف السجلات، تحقق من الاتصال بقاعدة البيانات"}

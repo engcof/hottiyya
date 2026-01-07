@@ -342,3 +342,16 @@ class LibraryService:
                 result = cur.fetchone()
                 conn.commit()
                 return result if result else None  
+            
+    @staticmethod
+    def cleanup_error_records():
+        """حذف السجلات التي تحمل حالة 'error' من قاعدة البيانات لتنظيف الواجهة"""
+        try:
+            with get_db_context() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("DELETE FROM library WHERE file_url = 'error'")
+                    conn.commit()
+            return True
+        except Exception as e:
+            print(f"❌ فشل تنظيف سجلات الخطأ: {e}")
+            return False        
