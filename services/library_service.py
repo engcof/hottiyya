@@ -278,7 +278,7 @@ class LibraryService:
 
         # 1. جلب البيانات من القاعدة
         with get_db_context() as conn:
-            with conn.cursor() as cur:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("SELECT file_url, cover_url FROM library")
                 rows = cur.fetchall()
                 for row in rows:
