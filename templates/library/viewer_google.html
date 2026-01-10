@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}قراءة: {{ book_title }}{% endblock %}
+
+{% block content %}
+<style>
+    /* إخفاء العناصر غير الضرورية */
+    nav, footer, .floating-btn { display: none !important; }
+    body, html { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: #2d3748; }
+    
+    .viewer-header {
+        height: 56px;
+        background: #1a202c;
+        display: flex;
+        align-items: center;
+        padding: 0 20px;
+        justify-content: space-between;
+        border-bottom: 1px solid #4a5568;
+    }
+    .iframe-container {
+        height: calc(100vh - 56px);
+        width: 100%;
+    }
+</style>
+
+<div class="viewer-header">
+    <a href="/library/" class="btn btn-sm btn-outline-light">
+        <i class="fas fa-arrow-right ml-2"></i> عودة للمكتبة
+    </a>
+    <h6 class="text-white m-0 text-truncate px-3">{{ book_title }}</h6>
+    <a href="/library/download/{{ book_id }}" class="btn btn-sm btn-success">
+        <i class="fas fa-download"></i>
+    </a>
+</div>
+
+<div class="iframe-container">
+    <iframe src="{{ embed_url }}" width="100%" height="100%" style="border: none;" allow="autoplay"></iframe>
+</div>
+{% endblock %}

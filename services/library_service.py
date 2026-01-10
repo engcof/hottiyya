@@ -19,12 +19,13 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.discovery import build
 from psycopg2.extras import RealDictCursor
 from postgresql import get_db_context
-import socket
-# إجبار النظام على استخدام IPv4 فقط لاتصالات Google API
+
+# إجبار النظام على استخدام IPv4 فقط لاتصالات Google API لضمان الاستقرار في Render
 orig_getaddrinfo = socket.getaddrinfo
 def getaddrinfo_ipv4(host, port, family=0, type=0, proto=0, flags=0):
     return orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
 socket.getaddrinfo = getaddrinfo_ipv4
+
 class LibraryService:
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
     TOKEN_FILE = 'token.json'
@@ -46,7 +47,6 @@ class LibraryService:
         http_transport.follow_redirects = False 
         
         authorized_http = google_auth_httplib2.AuthorizedHttp(creds, http=http_transport)
-        
         DRIVE_DISCOVERY_URL = 'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
         
         return build(
@@ -59,11 +59,6 @@ class LibraryService:
     
     @staticmethod
     async def process_and_get_metadata(file: UploadFile):
-        """
-        المرحلة الأولى (سريعة): 
-        تضغط الملف وتستخرج الغلاف وترفع الغلاف فقط.
-        تعيد المسار المحلي للملف المضغوط ليتم رفعه في الخلفية.
-        """
         temp_input = None
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
@@ -78,7 +73,24 @@ class LibraryService:
             process = await asyncio.create_subprocess_exec(*gs_command)
             await process.wait()
 
-            final_local_path = temp_output if os.path.exists(temp_output) else temp_input
+            # --- التعديل الجديد: مقارنة الحجم واختيار الأصغر ---
+            if os.path.exists(temp_output):
+                compressed_size = os.path.getsize(temp_output)
+                original_size = os.path.getsize(temp_input)
+                
+                # إذا كان الضغط سيئاً وزاد الحجم، نعتمد الأصلي
+                if compressed_size > original_size:
+                    os.remove(temp_output)
+                    final_local_path = temp_input
+                    print(f"ℹ️ تم استخدام الملف الأصلي لأن الضغط زاد الحجم ({original_size/1024/1024:.2f}MB)")
+                else:
+                    final_local_path = temp_output
+                    if os.path.exists(temp_input): os.remove(temp_input)
+                    print(f"✅ تم ضغط الملف بنجاح ({compressed_size/1024/1024:.2f}MB)")
+            else:
+                final_local_path = temp_input
+            # ------------------------------------------------
+
             file_size_mb = os.path.getsize(final_local_path) / (1024 * 1024)
             size_str = f"{file_size_mb:.2f} MB"
 
@@ -89,12 +101,10 @@ class LibraryService:
             pix.save(temp_cover)
             doc.close()
             
-            # رفع الغلاف لـ Cloudinary (سريع)
             cover_res = cloudinary.uploader.upload(temp_cover, folder="hottiyya_library/covers")
             
             if os.path.exists(temp_cover): os.remove(temp_cover)
-            if temp_input != final_local_path and os.path.exists(temp_input): os.remove(temp_input)
-
+            
             return final_local_path, cover_res.get("secure_url"), size_str
         except Exception as e:
             if temp_input and os.path.exists(temp_input): os.remove(temp_input)
@@ -129,7 +139,7 @@ class LibraryService:
                 service = LibraryService.get_drive_service()
                 
                 # استخدام أصغر حجم ممكن للـ Chunk لضمان عدم حدوث Timeout أثناء الرفع
-                chunk_size = 1024 * 1024  
+                chunk_size = 2 * 1024 * 1024  
                 
                 media = MediaFileUpload(
                     file_path, 
@@ -346,13 +356,19 @@ class LibraryService:
 
     @staticmethod
     def increment_view(book_id):
-        """زيادة عداد القراءة وإعادة رابط الملف"""
+        """زيادة عداد القراءة وإعادة بيانات الكتاب (الرابط والعنوان)"""
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("UPDATE library SET views_count = views_count + 1 WHERE id = %s RETURNING file_url", (book_id,))
+                # نعدل الاستعلام ليعيد الرابط والعنوان معاً
+                cur.execute("""
+                    UPDATE library 
+                    SET views_count = views_count + 1 
+                    WHERE id = %s 
+                    RETURNING file_url, title
+                """, (book_id,))
                 result = cur.fetchone()
                 conn.commit()
-                return result['file_url'] if result else None
+                return result  # سيعيد dict يحتوي على file_url و title
 
     @staticmethod
     def increment_download(book_id):

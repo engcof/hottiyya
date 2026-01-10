@@ -188,39 +188,41 @@ async def admin_system_cleanup(request: Request):
 
 @router.get("/view/{book_id}", response_class=HTMLResponse)
 async def view_book(request: Request, book_id: int):
-    # 1. زيادة العداد وجلب الرابط
-    file_url = LibraryService.increment_view(book_id)
+    # 1. جلب البيانات من السيرفس (تأكد من تحديث دالة increment_view لتعيد dict)
+    book_data = LibraryService.increment_view(book_id)
     
-    if not file_url or file_url in ['pending', 'error']:
+    if not book_data or book_data['file_url'] in ['pending', 'error']:
         return RedirectResponse(url="/library?error=not_ready")
 
-    # 2. تحديد نوع المشغل (Viewer) بناءً على مصدر الملف
-    # ملفات جوجل درايف تحتاج لمشغل جوجل لضمان تخطي قيود CORS
+    file_url = book_data['file_url']
+    book_title = book_data['title']
+
     if "drive.google.com" in file_url:
-        # استخراج المعرف لضمان نظافة الرابط
         import urllib.parse as urlparse
         url_data = urlparse.urlparse(file_url)
         query = urlparse.parse_qs(url_data.query)
         file_id = query.get('id', [None])[0]
         
-        # الرابط المخصص للعرض داخل iframe
-        embed_url = f"https://docs.google.com/viewer?srcid={file_id}&embedded=true"
+        # استخدام رابط الـ preview المباشر لضمان التوافق مع iframe ومنع خطأ 400
+        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
         
+        # تصحيح المسار: حذف المائلة الأولى "library/..." وليس "/library/..."
         return templates.TemplateResponse("library/viewer_google.html", {
             "request": request,
             "embed_url": embed_url,
-            "book_id": book_id
+            "book_id": book_id,
+            "book_title": book_title
         })
     
-    # 3. ملفات Cloudinary نستخدم لها القارئ الشامل PDF.js
     else:
+        # تصحيح المسار لـ Cloudinary أيضاً
         return templates.TemplateResponse("library/viewer_pdfjs.html", {
             "request": request,
             "file_url": file_url,
-            "book_id": book_id
+            "book_id": book_id,
+            "book_title": book_title
         })
-
-
+    
 @router.get("/download/{book_id}")
 async def download_book(book_id: int):
     book_data = LibraryService.increment_download(book_id)

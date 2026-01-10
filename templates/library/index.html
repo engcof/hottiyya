@@ -388,6 +388,40 @@
         color: white;
         transform: scale(1.1);
     }
+    /* إصلاح ظهور الزر فوق الغلاف */
+    .book-cover-wrapper {
+        position: relative;
+        height: 300px;
+        overflow: hidden;
+    }
+
+    .book-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5); /* تعتيم الغلاف */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0; /* مخفي افتراضياً */
+        transition: all 0.3s ease;
+        backdrop-filter: blur(3px);
+    }
+
+    .book-card:hover .book-overlay {
+        opacity: 1; /* يظهر عند التحويم */
+    }
+
+    .btn-quick-view {
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+    }
+
+    .book-card:hover .btn-quick-view {
+        transform: translateY(0);
+    }
 </style>
 
 <section class="library-section">
