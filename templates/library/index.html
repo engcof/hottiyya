@@ -531,32 +531,33 @@
             {% endfor %}
         </div>
         {% if total_pages > 1 %}
-        <div class="pagination-container">
-            <nav>
-                <ul class="custom-pagination">
-                    {# زر الصفحة السابقة #}
-                    {% if current_page > 1 %}
-                    <li>
-                        <a href="/library/?category={{ selected_category }}&page={{ current_page - 1 }}" class="page-link">السابق</a>
-                    </li>
-                    {% endif %}
+        <div class="card-footer d-flex justify-content-center bg-transparent border-0 my-3">
+            <nav aria-label="ترقيم المكتبة">
+                <ul class="pagination pagination-sm shadow-sm">
+                    {# تجهيز متغيرات البحث والفئة لضمان عدم ضياع الفلترة عند التنقل #}
+                    {% set query_params = "&category=" + selected_category %}
+                    {% if q %}{% set query_params = query_params + "&q=" + q %}{% endif %}
 
-                    {# أرقام الصفحات #}
-                    {% for p in range(1, total_pages + 1) %}
-                    <li>
-                        <a href="/library/?category={{ selected_category }}&page={{ p }}" 
-                        class="page-link {% if p == current_page %}active{% endif %}">
-                        {{ p }}
-                        </a>
+                    {# زر الصفحة السابقة #}
+                    <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="/library/?page={{ current_page - 1 }}{{ query_params }}">السابق</a>
                     </li>
+
+                    {# الترقيم الذكي #}
+                    {% for p in page_numbers %}
+                        <li class="page-item {% if p == current_page %}active{% endif %} 
+                            {# إخفاء الأرقام المتوسطة في الموبايل لعدم تمدد الشاشة #}
+                            {% if p != current_page and p != 1 and p != total_pages %}
+                                d-none d-sm-inline-block 
+                            {% endif %}">
+                            <a class="page-link" href="/library/?page={{ p }}{{ query_params }}">{{ p }}</a>
+                        </li>
                     {% endfor %}
 
                     {# زر الصفحة التالية #}
-                    {% if current_page < total_pages %}
-                    <li>
-                        <a href="/library/?category={{ selected_category }}&page={{ current_page + 1 }}" class="page-link">التالي</a>
+                    <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="/library/?page={{ current_page + 1 }}{{ query_params }}">التالي</a>
                     </li>
-                    {% endif %}
                 </ul>
             </nav>
         </div>
