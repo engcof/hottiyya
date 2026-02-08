@@ -35,10 +35,14 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     
     PER_PAGE = 10
     # تمرير نص البحث للسيرفس
-    books, total_pages = LibraryService.get_books_paginated(category, page, PER_PAGE, q)
-    
+    books, total_pages , page_numbers= LibraryService.get_books_paginated(category, page, PER_PAGE, q)
+   
+
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
+
+
+    # ثم مرر page_numbers في الـ TemplateResponse
     
     response = templates.TemplateResponse("library/index.html", {
         "request": request, 
@@ -48,6 +52,7 @@ async def list_library(request: Request, category: str = "الكل", page: int =
         "books": books, 
         "categories": CATEGORIES,
         "selected_category": category,
+        "page_numbers": page_numbers, 
         "current_page": page,
         "total_pages": total_pages,
         "q": q  

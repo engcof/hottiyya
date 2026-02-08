@@ -291,26 +291,49 @@ class LibraryService:
                 return book
 
     @staticmethod
-    def get_books_paginated(category="الكل", page=1, per_page=10, search_query=None):
+    def get_books_paginated(category="الكل", page=1, per_page=12, search_query=None):
         offset = (page - 1) * per_page
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 base_query = "SELECT * FROM library WHERE 1=1"
                 count_query = "SELECT COUNT(*) FROM library WHERE 1=1"
                 params = []
+                
                 if category and category != "الكل":
-                    base_query += " AND category = %s"; count_query += " AND category = %s"
+                    base_query += " AND category = %s"
+                    count_query += " AND category = %s"
                     params.append(category)
+                    
                 if search_query:
                     search_pattern = f"%{search_query}%"
                     base_query += " AND (title ILIKE %s OR author ILIKE %s)"
                     count_query += " AND (title ILIKE %s OR author ILIKE %s)"
                     params.extend([search_pattern, search_pattern])
+                
                 cur.execute(count_query, params)
                 total_count = cur.fetchone()['count']
+                total_pages = (total_count + per_page - 1) // per_page
+                
                 cur.execute(base_query + " ORDER BY created_at DESC LIMIT %s OFFSET %s", params + [per_page, offset])
-                return cur.fetchall(), (total_count + per_page - 1) // per_page
-            
+                books = cur.fetchall()
+
+                # --- منطق توليد أرقام الصفحات الذكي ---
+                PAGES_TO_SHOW = 5
+                page_numbers = set()
+                if total_pages > 0:
+                    page_numbers.add(1)
+                    page_numbers.add(total_pages)
+                    
+                    start = max(2, page - PAGES_TO_SHOW // 2)
+                    end = min(total_pages - 1, page + PAGES_TO_SHOW // 2)
+                    
+                    for p in range(start, end + 1):
+                        page_numbers.add(p)
+                
+                sorted_pages = sorted(list(page_numbers))
+                # ------------------------------------
+
+                return books, total_pages, sorted_pages
     @staticmethod
     def cleanup_orphaned_cloudinary_files():
         """دالة فحص وحذف الملفات التي ليس لها سجل في قاعدة البيانات"""
