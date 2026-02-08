@@ -420,6 +420,36 @@
     .book-card:hover .btn-quick-view {
         transform: translateY(0);
     }
+    /* تنسيق زر التعديل */
+    .btn-edit-full {
+        flex: 1;
+        background: #ebf4ff;
+        color: #3182ce;
+        border: 1px solid #90cdf4;
+        padding: 8px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+    .btn-edit-full:hover { 
+        background: #3182ce; 
+        color: #fff; 
+        transform: translateY(-2px);
+    }
+
+    /* حاوية أزرار الإدارة لترتيب التعديل والحذف بجانب بعضهما */
+    .admin-actions-row {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        margin-top: 5px;
+    }
 </style>
 
 <section class="all-page">
@@ -480,45 +510,52 @@
                             <i class="fas fa-spinner fa-spin"></i> جاري الرفع...
                         </button>
                     {% elif book.file_url == 'error' %}
-                        <button class="btn-delete-full" style="cursor: default; background: #fff;">
+                        <div class="alert alert-danger py-1 px-2 mb-2 text-center" style="font-size: 0.8rem;">
                             <i class="fas fa-exclamation-circle"></i> فشل الرفع
-                        </button>
-                         {% if can_delete or user.role == 'admin' %}
-                        <form action="/library/delete/{{ book.id }}" method="POST" 
-                            onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');" style="width: 100%;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <button type="submit" class="btn-delete-full">
-                                <i class="fas fa-trash-alt"></i> حذف الكتاب
-                            </button>
-                        </form>
-                        {% endif %}
-                    {% else %}
-                        <div class="action-buttons-row">
-                            {# زر القراءة المرتبط بالعداد #}
-                            <a href="/library/view/{{ book.id }}" 
-                            class="btn-read" target="_blank">
-                                <i class="fas fa-eye"></i> 
-                                قراءة (<span class="read-count">{{ book.views_count if book.views_count else 0 }}</span>)
+                        </div>
+                        {# أزرار الإدارة في حالة الخطأ لإصلاح البيانات أو الحذف #}
+                        {% if user.role == 'admin' or can_add %}
+                        <div class="admin-actions-row">
+                            <a href="/library/edit/{{ book.id }}" class="btn-edit-full">
+                                <i class="fas fa-edit"></i> تعديل
                             </a>
+                            <form action="/library/delete/{{ book.id }}" method="POST" 
+                                onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');" style="flex: 1;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="btn-delete-full" style="width: 100%;">
+                                    <i class="fas fa-trash-alt"></i> حذف
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
 
-                            {# زر التحميل المرتبط بالعداد #}
-                            {# نترك خاصية download للمتصفح كاحتياط لتسمية الملف #}
-                           
+                    {% else %}
+                        {# الحالة الطبيعية: الرفع ناجح #}
+                        <div class="action-buttons-row">
+                            <a href="/library/view/{{ book.id }}" class="btn-read" target="_blank">
+                                <i class="fas fa-eye"></i> 
+                                قراءة (<span class="read-count">{{ book.views_count or 0 }}</span>)
+                            </a>
                             <a href="/library/download/{{ book.id }}" class="btn-download-new">
                                 <i class="fas fa-download"></i> 
                                 تحميل (<span class="download-count">{{ book.downloads_count or 0 }}</span>)
                             </a>
                         </div>
                         
-                        {# زر الحذف للمسؤولين #}
-                        {% if can_delete or user.role == 'admin' %}
-                        <form action="/library/delete/{{ book.id }}" method="POST" 
-                            onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');" style="width: 100%;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <button type="submit" class="btn-delete-full">
-                                <i class="fas fa-trash-alt"></i> حذف الكتاب
-                            </button>
-                        </form>
+                        {# أزرار التحكم للمسؤولين (تعديل وحذف) بجانب بعضهما #}
+                        {% if user.role == 'admin' or can_add %}
+                        <div class="admin-actions-row">
+                            <a href="/library/edit/{{ book.id }}" class="btn-edit-full">
+                                <i class="fas fa-edit"></i> تعديل
+                            </a>
+                            <form action="/library/delete/{{ book.id }}" method="POST" 
+                                onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');" style="flex: 1;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="btn-delete-full" style="width: 100%;">
+                                    <i class="fas fa-trash-alt"></i> حذف
+                                </button>
+                            </form>
+                        </div>
                         {% endif %}
                     {% endif %}
                 </div>

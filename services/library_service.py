@@ -223,6 +223,14 @@ class LibraryService:
         content = await image_file.read()
         res = cloudinary.uploader.upload(content, folder="hottiyya_library/covers")
         return res.get("secure_url")
+    
+    @staticmethod
+    def get_book_by_id(book_id: int):
+        """جلب بيانات كتاب واحد بواسطة معرفه"""
+        with get_db_context() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM library WHERE id = %s", (book_id,))
+                return cur.fetchone()
 
     @staticmethod
     async def add_book(title, author, category, file_url, cover_url, uploader_id, file_size):
@@ -236,7 +244,25 @@ class LibraryService:
                 book_id = cur.fetchone()[0]
                 conn.commit()
                 return book_id
-
+            
+    @staticmethod
+    def update_book(book_id: int, title: str, author: str, category: str):
+        """تحديث بيانات الكتاب في قاعدة البيانات"""
+        try:
+            with get_db_context() as conn:
+                with conn.cursor() as cur:
+                    # نستخدم استعلام UPDATE لتعديل الحقول المحددة
+                    cur.execute("""
+                        UPDATE library 
+                        SET title = %s, author = %s, category = %s
+                        WHERE id = %s
+                    """, (title, author, category, book_id))
+                    conn.commit()
+            return True
+        except Exception as e:
+            print(f"❌ خطأ أثناء تحديث بيانات الكتاب {book_id}: {e}")
+            return False
+        
     @staticmethod
     def delete_book(book_id):
         """حذف الكتاب نهائياً من القاعدة والسحاب (Cloudinary & Drive)"""
@@ -340,6 +366,7 @@ class LibraryService:
                 # ------------------------------------
 
                 return books, total_pages, sorted_pages
+    
     @staticmethod
     def cleanup_orphaned_cloudinary_files():
         """دالة فحص وحذف الملفات التي ليس لها سجل في قاعدة البيانات"""

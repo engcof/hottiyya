@@ -152,7 +152,58 @@ async def add_book(
             "error": "حدث خطأ أثناء معالجة الملف، تأكد من صلاحية الملف والتوكن.",
             "categories": CATEGORIES, "csrf_token": generate_csrf_token()
         })
-   
+
+@router.get("/edit/{book_id}", response_class=HTMLResponse)
+async def edit_book_page(request: Request, book_id: int):
+    user = request.session.get("user")
+    if not can(user, "add_book"): # نفترض أن من يملك حق الإضافة يملك حق التعديل
+        return RedirectResponse("/library")
+    
+    # جلب بيانات الكتاب الحالية من قاعدة البيانات
+    book = LibraryService.get_book_by_id(book_id)
+    
+    if not book:
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
+
+    csrf_token = generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
+    
+    return templates.TemplateResponse("library/edit.html", {
+        "request": request,
+        "user": user,
+        "book": book,
+        "csrf_token": csrf_token,
+        "categories": CATEGORIES
+    })
+
+@router.post("/edit/{book_id}")
+async def edit_book(
+    request: Request,
+    book_id: int,
+    title: str = Form(...),
+    author: str = Form(None),
+    category: str = Form(...)
+):
+    user = request.session.get("user")
+    if not can(user, "add_book"):
+        raise HTTPException(403, "غير مصرح لك بتعديل الكتب")
+    
+    form = await request.form()
+    verify_csrf_token(request, form.get("csrf_token"))
+    
+    # تنظيف البيانات
+    title_safe = html.escape(title.strip())
+    author_safe = html.escape(author.strip()) if author else "غير معروف"
+
+    # استدعاء دالة التحديث من السيرفس (التي أضفناها سابقاً)
+    success = LibraryService.update_book(book_id, title_safe, author_safe, category)
+    
+    if success:
+        log_action(user["id"], "تعديل كتاب", f"قام {user['username']} بتعديل بيانات الكتاب رقم: {book_id}")
+        return RedirectResponse("/library?success=updated", status_code=303)
+    else:
+        return RedirectResponse(f"/library/edit/{book_id}?error=failed", status_code=303)
+
 @router.post("/delete/{book_id}")
 async def delete_book(request: Request, book_id: int):
     user = request.session.get("user")
