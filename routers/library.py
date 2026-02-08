@@ -13,7 +13,6 @@ import os
 from core.templates import templates
 import html 
 
-
 router = APIRouter(prefix="/library", tags=["Library"])
 
 # التصنيفات المعتمدة
@@ -55,8 +54,7 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     })
     set_cache_headers(response)
     return response
-   
-   
+    
 @router.get("/add", response_class=HTMLResponse)
 async def add_book_page(request: Request):
     user = request.session.get("user")
@@ -152,7 +150,6 @@ async def add_book(
             "categories": CATEGORIES, "csrf_token": generate_csrf_token()
         })
    
-
 @router.post("/delete/{book_id}")
 async def delete_book(request: Request, book_id: int):
     user = request.session.get("user")
@@ -184,7 +181,6 @@ async def admin_system_cleanup(request: Request):
     count = LibraryService.cleanup_orphaned_cloudinary_files()
     
     return {"status": "success", "deleted_files_count": count}
-
 
 @router.get("/view/{book_id}", response_class=HTMLResponse)
 async def view_book(request: Request, book_id: int):

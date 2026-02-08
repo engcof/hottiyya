@@ -5,7 +5,12 @@
 
 <style>
     /* تنسيق المكتبة */
-    .library-section { padding: 60px 0; background: #f4f7f6; min-height: 100vh; }
+    .library-section { 
+        padding: 60px 20px;
+        display: flex;
+        background: #f4f7f6; 
+        min-height: 100vh; 
+    }
     
     /* الفلتر */
     .category-filter {
@@ -57,16 +62,10 @@
 
     .book-cover {
         width: 100%;
-        height: 300px;
-        object-fit: cover;
-        background: #e2e8f0;
+        height: 100%; /* اجعلها تملأ الحاوية */
         display: flex;
         align-items: center;
         justify-content: center;
-    }
-    .book-cover {
-        width: 100%;
-        height: 100%; /* اجعلها تملأ الحاوية */
         object-fit: contain; /* للحفاظ على أبعاد غلاف الكتاب الأصلية */
         background: #f8fafc; /* خلفية فاتحة للفراغات */
         display: block;
