@@ -16,7 +16,7 @@ import html
 router = APIRouter(prefix="/library", tags=["Library"])
 
 # التصنيفات المعتمدة
-CATEGORIES = ["كتب دينية", "كتب علمية", "كتب طبية", "كتب هندسية", "كتب ثقافية","كتب مدرسية", "روايات"]
+CATEGORIES = ["كتب دينية", "كتب علمية", "كتب طبية", "كتب هندسية", "كتب ثقافية","مقرارات ومناهج سودانية", "روايات"]
 # التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
 VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
 
@@ -41,8 +41,6 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
-
-    # ثم مرر page_numbers في الـ TemplateResponse
     
     response = templates.TemplateResponse("library/index.html", {
         "request": request, 

@@ -318,16 +318,22 @@ class LibraryService:
                 books = cur.fetchall()
 
                 # --- منطق توليد أرقام الصفحات الذكي ---
-                PAGES_TO_SHOW = 5
+                PAGES_TO_SHOW = 7
                 page_numbers = set()
-                if total_pages > 0:
-                    page_numbers.add(1)
+                page_numbers.add(1)
+                if total_pages > 1:
                     page_numbers.add(total_pages)
                     
-                    start = max(2, page - PAGES_TO_SHOW // 2)
-                    end = min(total_pages - 1, page + PAGES_TO_SHOW // 2)
+                start = max(2, page - PAGES_TO_SHOW // 2)
+                end = min(total_pages - 1, page + PAGES_TO_SHOW // 2)
+                
+                if start <= 2:
+                    end = min(total_pages - 1, PAGES_TO_SHOW + 1)
+                if end >= total_pages - 1:
+                    start = max(2, total_pages - PAGES_TO_SHOW)
                     
-                    for p in range(start, end + 1):
+                for p in range(start, end + 1):
+                    if p > 1 and p < total_pages:
                         page_numbers.add(p)
                 
                 sorted_pages = sorted(list(page_numbers))
