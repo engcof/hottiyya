@@ -6,7 +6,7 @@ from services.analytics import log_action
 from postgresql import get_db_context
 
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permission import has_permission
+from utils.permission import can
 from security.session import set_cache_headers
 from core.templates import templates
 import shutil
@@ -24,21 +24,6 @@ VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
 VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r]+"
 VALID_AUTHOR_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
 
-def check_permission(request: Request, perm: str) -> bool:
-    user = request.session.get("user")
-    if not user:
-        return False
-    
-    # الأدمن عنده كل الصلاحيات تلقائيًا
-    if user.get("role") == "admin":
-        return True
-    
-    # تأكد من وجود id قبل الاستخدام
-    user_id = user.get("id")
-    if not user_id:
-        return False  # لو ما فيه id → ما نعطيه صلاحية
-    
-    return has_permission(user_id, perm)
 
 
 # === عرض الأخبار (القائمة) ===
@@ -46,7 +31,7 @@ def check_permission(request: Request, perm: str) -> bool:
 async def list_news(request: Request):
     user = request.session.get("user")
     # التحقق من صلاحية الإضافة لغرض عرض الزر في القالب
-    can_add = check_permission(request, "add_news")
+    can_add = can(user, "add_news")
     
     # استخدام السيرفس لجلب الأخبار
     news = NewsService.get_all_news()
@@ -71,8 +56,8 @@ async def view_news(request: Request, id: int):
         raise HTTPException(404, "الخبر غير موجود")
             
     # تحديد صلاحيات التعديل والحذف لهذا المستخدم
-    can_edit = check_permission(request, "edit_news")
-    can_delete = check_permission(request, "delete_news")
+    can_edit = can(user, "edit_news")
+    can_delete = can(user,  "delete_news")
 
     # إدارة توكن CSRF للحذف الآمن
     csrf_token = request.session.get("csrf_token") or generate_csrf_token()
@@ -92,7 +77,8 @@ async def view_news(request: Request, id: int):
 # === إضافة خبر ===
 @router.get("/add", response_class=HTMLResponse)
 async def add_news_form(request: Request):
-    if not check_permission(request, "add_news"):
+    user = request.session.get("user")
+    if not can(user, "add_news"):
         return RedirectResponse("/auth/login", status_code=303)
 
     csrf_token = generate_csrf_token()
@@ -115,7 +101,7 @@ async def add_news(
     image: UploadFile = File(None) # هذا الحقل سيستقبل الصورة أو الفيديو
 ):
     user = request.session.get("user")
-    if not check_permission(request, "add_news"):
+    if not can(user,  "add_news"):
         return RedirectResponse("/auth/login")
 
     form = await request.form()
@@ -187,7 +173,7 @@ async def add_news(
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_news_form(request: Request, id: int):
     user = request.session.get("user")
-    if not check_permission(request, "edit_news"):
+    if not can(user,  "edit_news"):
         return RedirectResponse("/news")
 
     with get_db_context() as conn:
@@ -219,7 +205,7 @@ async def update_news(
     image: UploadFile = File(None)
 ):
     user = request.session.get("user")
-    if not check_permission(request, "edit_news"):
+    if not can(user, "edit_news"):
         return RedirectResponse("/news")
 
     # تحقق من CSRF
@@ -303,7 +289,7 @@ async def update_news(
 @router.post("/delete/{id:int}")
 async def delete_news(request: Request, id: int):
     user = request.session.get("user")
-    if not check_permission(request, "delete_news"):
+    if not can(user, "delete_news"):
         return RedirectResponse("/news")
 
     # التحقق من CSRF

@@ -17,6 +17,8 @@ from postgresql import init_database, get_db_context
 from security.session import set_cache_headers
 from security.rate_limit import initialize_rate_limiter
 
+from utils.permission import can
+
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 from services.notification import get_unread_notification_count
@@ -86,6 +88,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan, # 💡 تم إضافة lifespan لتهيئة قاعدة البيانات
 )
+
+templates.env.globals.update(can=can)
 
 # =========================================
 # Middleware Logic - تحليلات الزوار

@@ -233,30 +233,32 @@ class LibraryService:
                 return cur.fetchone()
 
     @staticmethod
-    async def add_book(title, author, category, file_url, cover_url, uploader_id, file_size):
-        """إضافة السجل الأولي لقاعدة البيانات مع تصفير العدادات"""
+    async def add_book(title, author, category, file_url, cover_url, uploader_id, file_size, allow_download=True):
+        """إضافة السجل الأولي لقاعدة البيانات مع تصفير العدادات وحالة التحميل"""
         with get_db_context() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO library (title, author, category, file_url, cover_url, uploader_id, file_size, views_count, downloads_count)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0) RETURNING id
-                """, (title, author, category, file_url, cover_url, uploader_id, file_size))
+                    INSERT INTO library (
+                        title, author, category, file_url, cover_url, 
+                        uploader_id, file_size, views_count, downloads_count, allow_download
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, 0, 0, %s) RETURNING id
+                """, (title, author, category, file_url, cover_url, uploader_id, file_size, allow_download))
                 book_id = cur.fetchone()[0]
                 conn.commit()
                 return book_id
             
     @staticmethod
-    def update_book(book_id: int, title: str, author: str, category: str):
-        """تحديث بيانات الكتاب في قاعدة البيانات"""
+    def update_book(book_id: int, title: str, author: str, category: str, allow_download: bool):
+        """تحديث بيانات الكتاب بما في ذلك صلاحية التحميل"""
         try:
             with get_db_context() as conn:
                 with conn.cursor() as cur:
-                    # نستخدم استعلام UPDATE لتعديل الحقول المحددة
                     cur.execute("""
                         UPDATE library 
-                        SET title = %s, author = %s, category = %s
+                        SET title = %s, author = %s, category = %s, allow_download = %s
                         WHERE id = %s
-                    """, (title, author, category, book_id))
+                    """, (title, author, category, allow_download, book_id))
                     conn.commit()
             return True
         except Exception as e:

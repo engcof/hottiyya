@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from urllib.parse import quote
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permission import has_permission
+from utils.permission import can
 from services.analytics import log_action
 from services.library_service import LibraryService
 import shutil
@@ -19,14 +19,6 @@ router = APIRouter(prefix="/library", tags=["Library"])
 CATEGORIES = ["كتب دينية", "كتب علمية", "كتب طبية", "كتب هندسية", "كتب ثقافية","مقرارات ومناهج سودانية", "روايات"]
 # التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
 VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
-
-def can(user: dict | None, perm: str) -> bool:
-    if not user:
-        return False
-    if user.get("role") == "admin":
-        return True
-    user_id = user.get("id")
-    return user_id and has_permission(user_id, perm)
 
 @router.get("/", response_class=HTMLResponse)
 async def list_library(request: Request, category: str = "الكل", page: int = 1, q: str = None):
@@ -80,6 +72,7 @@ async def add_book(
     title: str = Form(...),
     author: str = Form(None),
     category: str = Form(...),
+    allow_download: bool = Form(True),
     book_file: UploadFile = File(...),
     cover_image: UploadFile = File(None)
 ):
@@ -125,6 +118,7 @@ async def add_book(
             title=title_safe,
             author=author_safe,
             category=category,
+            allow_download=allow_download,
             file_url="pending", # سيتغير لاحقاً في الخلفية
             cover_url=final_cover_url,
             uploader_id=user["id"],
@@ -182,7 +176,8 @@ async def edit_book(
     book_id: int,
     title: str = Form(...),
     author: str = Form(None),
-    category: str = Form(...)
+    category: str = Form(...),
+    allow_download: bool = Form(False)
 ):
     user = request.session.get("user")
     if not can(user, "add_book"):
@@ -196,7 +191,7 @@ async def edit_book(
     author_safe = html.escape(author.strip()) if author else "غير معروف"
 
     # استدعاء دالة التحديث من السيرفس (التي أضفناها سابقاً)
-    success = LibraryService.update_book(book_id, title_safe, author_safe, category)
+    success = LibraryService.update_book(book_id, title_safe, author_safe, category, allow_download)
     
     if success:
         log_action(user["id"], "تعديل كتاب", f"قام {user['username']} بتعديل بيانات الكتاب رقم: {book_id}")

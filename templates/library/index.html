@@ -443,12 +443,58 @@
         transform: translateY(-2px);
     }
 
-    /* حاوية أزرار الإدارة لترتيب التعديل والحذف بجانب بعضهما */
+  
+    /* تحسين حاوية الأزرار لتكون مرنة */
+    .action-buttons-row {
+        display: flex;
+        gap: 8px;
+        width: 100%;
+        align-items: stretch; /* لضمان تساوي ارتفاع الأزرار */
+    }
+
+    .btn-read, .btn-download-new {
+        flex: 1;
+        padding: 12px 5px; /* زيادة الحشو الرأسي */
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: flex;
+        flex-direction: column; /* ترتيب الأيقونة والنص عمودياً عند الحاجة */
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        transition: 0.3s;
+        line-height: 1.2; /* تقليل المسافة بين السطور للنصوص المتعددة */
+    }
+
+    /* زر التحميل الخاص بالأدمن */
+    .admin-badge-text {
+        font-size: 0.65rem;
+        font-weight: normal;
+        display: block;
+        margin-top: 2px;
+        opacity: 0.9;
+    }
+
+    /* تحسين أزرار الإدارة السفلية */
     .admin-actions-row {
         display: flex;
         gap: 8px;
         width: 100%;
-        margin-top: 5px;
+        margin-top: 10px;
+    }
+
+    .btn-edit-full, .btn-delete-full {
+        flex: 1;
+        padding: 8px 5px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
     }
 </style>
 
@@ -530,26 +576,39 @@
                         {% endif %}
 
                     {% else %}
-                        {# الحالة الطبيعية: الرفع ناجح #}
+                       {# الحالة الطبيعية: الرفع ناجح #}
                         <div class="action-buttons-row">
                             <a href="/library/view/{{ book.id }}" class="btn-read" target="_blank">
-                                <i class="fas fa-eye"></i> 
-                                قراءة (<span class="read-count">{{ book.views_count or 0 }}</span>)
+                                <span><i class="fas fa-eye"></i> قراءة</span>
+                                <small>({{ book.views_count or 0 }})</small>
                             </a>
-                            <a href="/library/download/{{ book.id }}" class="btn-download-new">
-                                <i class="fas fa-download"></i> 
-                                تحميل (<span class="download-count">{{ book.downloads_count or 0 }}</span>)
-                            </a>
+
+                            {% if book.allow_download or user.role == 'admin' %}
+                                <a href="/library/download/{{ book.id }}" class="btn-download-new">
+                                    <span>
+                                        <i class="fas {% if not book.allow_download %}fa-unlock-alt{% else %}fa-download{% endif %}"></i> 
+                                        تحميل
+                                    </span>
+                                    <small>({{ book.downloads_count or 0 }})</small>
+                                    
+                                    {% if user.role == 'admin' and not book.allow_download %}
+                                        <span class="admin-badge-text">(خاص بالأدمن)</span>
+                                    {% endif %}
+                                </a>
+                            {% else %}
+                                <button class="btn-download-new" style="background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed;">
+                                    <i class="fas fa-lock"></i> 
+                                    <span>مغلق</span>
+                                </button>
+                            {% endif %}
                         </div>
-                        
-                        {# أزرار التحكم للمسؤولين (تعديل وحذف) بجانب بعضهما #}
+
                         {% if user.role == 'admin' or can_add %}
                         <div class="admin-actions-row">
                             <a href="/library/edit/{{ book.id }}" class="btn-edit-full">
                                 <i class="fas fa-edit"></i> تعديل
                             </a>
-                            <form action="/library/delete/{{ book.id }}" method="POST" 
-                                onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');" style="flex: 1;">
+                            <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('حذف نهائي؟');" style="flex: 1;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button type="submit" class="btn-delete-full" style="width: 100%;">
                                     <i class="fas fa-trash-alt"></i> حذف

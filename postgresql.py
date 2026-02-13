@@ -112,8 +112,9 @@ def init_database():
             # 💡 كود إضافي لضمان إضافة الأعمدة إذا كان الجدول موجوداً مسبقاً
             cur.execute("ALTER TABLE library ADD COLUMN IF NOT EXISTS views_count INTEGER DEFAULT 0;")
             cur.execute("ALTER TABLE library ADD COLUMN IF NOT EXISTS downloads_count INTEGER DEFAULT 0;")
-
+            cur.execute("ALTER TABLE library ADD COLUMN IF NOT EXISTS allow_download BOOLEAN DEFAULT TRUE;")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_library_category ON library(category);")
+            
             print("✅ تم تحديث هيكلية المكتبة وإضافة العدادات بنجاح!")
            
            

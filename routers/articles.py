@@ -4,7 +4,7 @@ from psycopg2.extras import RealDictCursor
 from security.session import set_cache_headers
 from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permission import has_permission
+from utils.permission import can
 from services.analytics import log_action
 from services.article_service import ArticleService
 import shutil
@@ -14,16 +14,6 @@ import html
 import re # تم إضافة استيراد المكتبة للتحقق من الصيغة
 
 router = APIRouter(prefix="/articles", tags=["articles"])
-
-
-# دالة مساعدة للصلاحيات (الأدمن عنده كل شيء)
-def can(user: dict | None, perm: str) -> bool:
-    if not user:
-        return False
-    if user.get("role") == "admin":
-        return True
-    user_id = user.get("id")
-    return user_id and has_permission(user_id, perm)
 
 # === عرض قائمة المقالات (باستخدام الخدمة) ===
 @router.get("/", response_class=HTMLResponse)
@@ -363,11 +353,9 @@ async def delete_comment(request: Request, article_id: int, comment_id: int):
     if not comment: raise HTTPException(404, "التعليق غير موجود")
     
         
-    # التحقق من الصلاحية
     allowed = (
-        user.get("role") == "admin" or
-        user.get("id") == comment["user_id"] or
-        has_permission(user.get("id"), "delete_comment")
+        user.get("id") == comment["user_id"] or 
+        can(user, "delete_comment") # دالة can ستغطي الأدمن وصاحب الصلاحية
     )
     if not allowed: raise HTTPException(403, "غير مسموح لك بالحذف")
 

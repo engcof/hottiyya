@@ -41,43 +41,27 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)): # 💡 ت�
     admin_id = None
     all_users = []
     
-    # 💡 منطق الترقيم وجلب البيانات (الكتلة الصحيحة والوحيدة)
     try:
-        # 1.1. جلب العدد الكلي للرسائل
+        # 1. حساب الترقيم
         total_messages_count = get_total_inbox_messages_count(user["id"]) 
-        
-        # 1.2. حساب إجمالي عدد الصفحات
         total_pages = math.ceil(total_messages_count / PAGE_SIZE) if total_messages_count > 0 else 1
-        
-        # 1.3. التحقق من أن رقم الصفحة ضمن الحدود
-        current_page = min(page, total_pages)
-        if current_page < 1:
-            current_page = 1
-            
-        # 1.4. حساب الإزاحة (OFFSET) لقاعدة البيانات
+        current_page = min(page, total_pages) if total_pages > 0 else 1
         offset = (current_page - 1) * PAGE_SIZE
         
-        # 1.5. جلب الرسائل للصفحة الحالية (الاستدعاء الصحيح)
-        inbox_messages = get_inbox_messages(
-            user_id=user["id"], 
-            limit=PAGE_SIZE, # حجم الصفحة
-            offset=offset    # الإزاحة
-        )
+        # 2. جلب الرسائل (استدعاء واحد فقط)
+        inbox_messages = get_inbox_messages(user_id=user["id"], limit=PAGE_SIZE, offset=offset)
 
-        # 1.6. جلب عدد الرسائل غير المقروءة (لإشعار الهيدر)
+        # 3. جلب عدد التنبيهات للهيدر
         unread_count = get_unread_notification_count(user["id"])
 
-    except Exception as e:
-        # تسجيل الخطأ إن حدث
-        print(f"Error fetching profile data: {e}")
-        # لا تفعل شيئاً، سيعرض القيم الافتراضية
+        # 4. جلب المستخدمين للمدير فقط
+        if user.get("role") == "admin":
+            all_users = get_all_users_for_admin()
 
-    # 2. جلب رسائل الصفحة الحالية
-    inbox_messages = get_inbox_messages(
-        user_id=user["id"], 
-        limit=PAGE_SIZE, 
-        offset=offset
-    )
+    except Exception as e:
+        print(f"Error fetching profile data: {e}")
+
+    
    
     # 1. جلب الإشعارات غير المقروءة للمستخدم الحالي
     notifications = get_unread_notification_count(user["id"])

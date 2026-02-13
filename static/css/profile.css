@@ -1,0 +1,89 @@
+/* Container & Wrapper */
+.profile-page-wrapper {
+    padding: 40px 20px;
+    background-color: #f9f9f9;
+}
+.custom-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* User Header */
+.user-profile-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+.username-highlight {
+    color: #2c3e50;
+    border-bottom: 3px solid #3498db;
+}
+
+/* Card Style */
+.profile-section-card {
+    background: #fff;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    overflow: hidden;
+    border: 1px solid #eee;
+}
+.section-header {
+    background: #fcfcfc;
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Inbox Items */
+.message-item {
+    padding: 20px;
+    border-bottom: 1px solid #f1f1f1;
+}
+.unread-msg {
+    background-color: #fffef0; /* تمييز الرسائل الجديدة */
+    border-right: 5px solid #f1c40f;
+}
+.msg-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    margin-bottom: 10px;
+}
+.msg-controls {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+/* Forms & Inputs */
+.form-group-custom { margin-bottom: 15px; }
+.input-field {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box; /* هام جداً للحفاظ على الأبعاد */
+}
+.submit-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+.primary-bg { background: #27ae60; }
+.secondary-bg { background: #3498db; }
+
+/* Pagination */
+.custom-pagination {
+    display: flex;
+    list-style: none;
+    padding: 15px;
+    justify-content: center;
+    gap: 10px;
+}
+.active-page a {
+    background: #3498db;
+    color: #fff;
+    border-radius: 4px;
+}

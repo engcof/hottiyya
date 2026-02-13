@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="/static/icon/favicon.ico">
    <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+   <link rel="stylesheet" href="{{ url_for('static', path='css/profile.css') }}">
     <title>{% block title %}الحوطية{% endblock %}</title>
 </head>
 <body>
@@ -19,7 +20,7 @@
                 <li><a href="/gallery" {% if request.path.startswith('/gallery') %}class="active"{% endif %}>معرض الصور</a></li>
                 <li><a href="/video" {% if request.path.startswith('/video') %}class="active"{% endif %}>معرض الفيديوهات</a></li>
                 <li><a href="/library" {% if request.path.startswith('/library') %}class="active"{% endif %}>المكتبة</a></li>
-                {% if user %}
+                {% if user and can(user, 'view_tree') %}
                 <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة الحوطية</a></li>
                 {% endif %}
                 {% if user and user.role == "admin" %}

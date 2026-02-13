@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
-from utils.permission import has_permission
+from utils.permission import can
 from utils.time_utils import calculate_age_details
 from services.analytics import log_action
 from services.family_service import ( 
@@ -36,15 +36,6 @@ router = APIRouter(prefix="/names", tags=["family"])
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# ====================== مساعد الصلاحيات (الأقوى) ======================
-def can(user: dict, perm: str) -> bool:
-    if not user:
-        return False
-    if user.get("role") == "admin":
-        return True
-    return bool(user.get("id") and has_permission(user.get("id"), perm))
-
-
 # ضعه داخل دالة add_name أو update_name
 def validate_parent_code(code_value, code_name):
     parent_pattern = r"[A-Z]\d{0,3}-\d{3}-\d{3}"
@@ -62,6 +53,11 @@ async def show_names(
     user = request.session.get("user")
     if not user:
         return RedirectResponse("/auth/login")
+    
+    # 2. التحقق من صلاحية view_tree (الأدمن مستثنى تلقائياً داخل دالة can)
+    if not can(user, "view_tree"):
+        # تحويل المستخدم للرئيسية مع رسالة خطأ إذا لم يملك الصلاحية
+        return RedirectResponse("/?error=no_permission")
 
     can_add    = can(user, "add_member")
     can_edit   = can(user, "edit_member")

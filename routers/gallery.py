@@ -7,17 +7,12 @@ from urllib.parse import urlparse
 from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
-from utils.permission import has_permission
+from utils.permission import can
 from services.gallery_service import upload_to_cloudinary, GalleryService
 from services.analytics import log_action
 
 router = APIRouter(prefix="/gallery", tags=["gallery"])
 
-# ====================== مساعد الصلاحيات ======================
-def can(user: dict, perm: str) -> bool:
-    if not user: return False
-    if user.get("role") == "admin": return True
-    return bool(user.get("id") and has_permission(user.get("id"), perm))
 
 # 1. عرض المعرض (تم تحديثه لإضافة CSRF والصلاحيات للواجهة)
 @router.get("/", response_class=HTMLResponse)
@@ -88,8 +83,10 @@ async def add_new_image(
     # 2. تنظيف العنوان والتحقق منه
     title = title.strip()
     if not title or len(title) < 3:
-        raise HTTPException(status_code=400, detail="العنوان قصير جداً")
-    
+        return templates.TemplateResponse("gallery/add.html", {
+            "request": request, "user": user, "error": "العنوان قصير جداً", "csrf_token": generate_csrf_token()
+        })
+        
    
     if title[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", title):
         raise HTTPException(status_code=400, detail="العنوان لا يجب أن يبدأ برمز أو رقم (ابدأ بوصف واضح)")

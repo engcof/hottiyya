@@ -7,17 +7,11 @@ from urllib.parse import urlparse
 from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
-from utils.permission import has_permission
+from utils.permission import can
 from services.video_service import upload_video_to_cloudinary, VideoService
 from services.analytics import log_action
 
 router = APIRouter(prefix="/video", tags=["video"])
-
-# ====================== مساعد الصلاحيات ======================
-def can(user: dict, perm: str) -> bool:
-    if not user: return False
-    if user.get("role") == "admin": return True
-    return bool(user.get("id") and has_permission(user.get("id"), perm))
 
 # 1. عرض المعرض (تم تحديثه لإضافة CSRF والصلاحيات للواجهة)
 @router.get("/", response_class=HTMLResponse)

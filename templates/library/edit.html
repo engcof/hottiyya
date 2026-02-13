@@ -36,12 +36,25 @@
                             </select>
                         </div>
 
-                        <div class="alert alert-info small">
-                            <i class="fas fa-info-circle"></i> ملاحظة: هذا التعديل يشمل البيانات النصية فقط. لتغيير ملف الكتاب أو الغلاف، يرجى حذف الكتاب ورفعه من جديد.
+                        <div class="form-group mb-4 p-3 bg-light rounded border">
+                            <div class="custom-control custom-switch d-flex align-items-center justify-content-between">
+                                <label class="custom-control-label font-weight-bold" for="allow_download">
+                                    <i class="fas fa-file-download text-primary mr-1"></i> السماح بتحميل الكتاب للجمهور
+                                </label>
+                                <input type="checkbox" class="custom-control-input" id="allow_download" name="allow_download" 
+                                    {% if book.allow_download %}checked{% endif %}>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-info-circle"></i> في حال إلغاء التفعيل، سيتم إخفاء زر التحميل عن المستخدمين العاديين.
+                            </small>
                         </div>
 
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-success flex-grow-1">
+                        <div class="alert alert-info small border-0 shadow-sm" style="background-color: #e3f2fd;">
+                            <i class="fas fa-lightbulb"></i> ملاحظة: التعديل يشمل النصوص والصلاحيات فقط. لتغيير ملف الـ PDF، يرجى إعادة رفع الكتاب.
+                        </div>
+
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-success flex-grow-1 shadow-sm">
                                 <i class="fas fa-save ml-1"></i> حفظ التعديلات
                             </button>
                             <a href="/library" class="btn btn-outline-secondary">إلغاء</a>
@@ -53,8 +66,8 @@
             <div class="text-center mt-4">
                 <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <button type="submit" class="btn btn-link text-danger p-0">
-                        <i class="fas fa-trash-alt"></i> حذف الكتاب نهائياً
+                    <button type="submit" class="btn btn-link text-danger p-0" style="font-size: 0.9rem;">
+                        <i class="fas fa-trash-alt"></i> حذف السجل نهائياً
                     </button>
                 </form>
             </div>
@@ -63,9 +76,16 @@
 </div>
 
 <style>
-    .card { border-radius: 15px; overflow: hidden; }
-    .form-control { border-radius: 8px; padding: 12px; border: 1px solid #e2e8f0; }
-    .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; }
+    .card { border-radius: 15px; overflow: hidden; border: none; }
+    .form-control { border-radius: 10px; padding: 12px; border: 1px solid #e0e0e0; transition: 0.3s; }
+    .form-control:focus { box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.1); border-color: #007bff; }
+    .btn { padding: 12px 20px; border-radius: 10px; font-weight: 700; transition: 0.3s; }
     .gap-2 { gap: 10px; }
+    
+    /* تنسيق الـ Switch ليكون أكبر وأوضح */
+    .custom-switch .custom-control-label::before { height: 1.5rem; width: 2.75rem; border-radius: 1rem; cursor: pointer; }
+    .custom-switch .custom-control-label::after { width: calc(1.5rem - 4px); height: calc(1.5rem - 4px); background-color: #adb5bd; border-radius: 50%; cursor: pointer; }
+    .custom-switch .custom-control-input:checked ~ .custom-control-label::after { transform: translateX(1.25rem); background-color: #fff; }
+    .custom-switch .custom-control-input:checked ~ .custom-control-label::before { border-color: #28a745; background-color: #28a745; }
 </style>
 {% endblock %}
