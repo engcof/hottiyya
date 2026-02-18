@@ -1,0 +1,473 @@
+/* --- 1. أساسيات القسم والحاويات --- */
+.library-section { 
+    padding: 60px 20px;
+    background: #f4f7f6; 
+    min-height: 100vh; 
+}
+
+@media (max-width: 768px) {
+    .library-section { padding: 30px 10px; }
+}
+
+/* --- 2. البحث والفلترة --- */
+.search-container {
+    margin: 20px auto 40px;
+    max-width: 500px;
+    position: relative;
+}
+
+.search-form {
+    display: flex;
+    background: white;
+    padding: 5px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.search-form:focus-within {
+    border-color: #27ae60;
+    box-shadow: 0 4px 20px rgba(39, 174, 96, 0.15);
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 50px;
+    outline: none;
+    font-size: 0.95rem;
+    color: #2d3748;
+}
+
+.search-button {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.category-filter {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 10px 20px;
+    border-radius: 30px;
+    background: #fff;
+    color: #2c3e50;
+    text-decoration: none;
+    font-weight: 600;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.filter-btn.active, .filter-btn:hover {
+    background: #27ae60;
+    color: white;
+    border-color: #27ae60;
+    box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+}
+
+/* --- 3. شبكة الكتب والبطاقات --- */
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 30px;
+}
+
+.book-card {
+    background: #fff;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    border: 1px solid #edf2f7;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* غلاف الكتاب */
+.book-cover-wrapper {
+    position: relative;
+    height: 300px;
+    overflow: hidden;
+}
+
+.book-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #f8fafc;
+    display: block;
+}
+
+.book-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(3px);
+}
+
+.book-card:hover .book-overlay { opacity: 1; }
+
+.btn-quick-view {
+    background: rgba(39, 174, 96, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: bold;
+    backdrop-filter: blur(5px);
+    transition: 0.3s;
+    transform: translateY(20px);
+}
+
+.book-card:hover .btn-quick-view { transform: translateY(0); }
+.btn-quick-view:hover { background: #219150; transform: scale(1.1); }
+
+/* نصوص المعلومات */
+.book-info { padding: 15px; flex-grow: 1; text-align: center; }
+
+.book-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 3px;
+    line-height: 1.4;
+    height: 2.8em; 
+    text-align: center;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; /* الخاصية القياسية الحديثة */
+}
+.book-author { font-size: 0.9rem; color: #718096; margin-bottom: 10px; }
+
+.book-meta {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 15px;
+    background: #f8fafc;
+    border-top: 1px solid #edf2f7;
+    font-size: 0.8rem;
+    color: #4a5568;
+}
+
+/* --- 4. الأزرار والإجراءات --- */
+.book-actions { padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+
+/* --- تحسين حاوية الأزرار لتكون متناسقة تماماً --- */
+.action-buttons-row, .admin-actions-row {
+    display: grid; /* استخدام Grid بدلاً من Flex لضمان تساوي الأبعاد */
+    grid-template-columns: 1fr 1fr; /* تقسيم الصف لعمودين متساويين بدقة */
+    gap: 10px;
+    width: 100%;
+}
+
+/* التنسيق الموحد لجميع أنواع الأزرار داخل البطاقة */
+.btn-read, 
+.btn-download-new, 
+.btn-edit-full, 
+.btn-delete-full {
+    width: 100%;
+    height: 55px; /* تحديد ارتفاع ثابت لضمان التناسق البصري */
+    padding: 5px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column; /* ترتيب الأيقونة فوق النص لضمان المساحة */
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: 0.3s;
+    line-height: 1.1;
+    box-sizing: border-box; /* لضمان عدم خروج الحواف عن الحاوية */
+}
+
+/* تعديل خاص لزر الحذف ليتناسب مع الـ Grid إذا كان وحيداً في صف */
+.btn-delete-full {
+    grid-column: span 2; /* إذا أردته أن يأخذ العرض كاملاً تحت الأزرار الأخرى */
+    height: 45px; /* يمكن تقليل ارتفاعه قليلاً لأنه يحتوي نصاً بسيطاً */
+    margin-top: 5px;
+}
+
+/* إذا كنت تضع الحذف بجانب التعديل في admin-actions-row */
+.admin-actions-row .btn-delete-full {
+    grid-column: span 1; /* يعود لحجمه الطبيعي بجانب التعديل */
+    margin-top: 0;
+    height: 55px;
+}
+
+/* أيقونات الأزرار */
+.btn-read i, .btn-download-new i, .btn-edit-full i, .btn-delete-full i {
+    font-size: 1.1rem;
+}
+/* ألوان الأزرار */
+.btn-read { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; flex-direction: column; }
+.btn-read:hover { background: #bee3f8; }
+.btn-read i { transition: transform 0.3s ease; }
+.btn-read:hover i { transform: scale(1.2); }
+
+.btn-download-new { background: #27ae60; color: white; border: none; flex-direction: column; }
+.btn-download-new:hover { background: #219150; transform: translateY(-2px); }
+
+.btn-edit-full { background: #ebf4ff; color: #3182ce; border: 1px solid #90cdf4; }
+.btn-edit-full:hover { background: #3182ce; color: #fff; transform: translateY(-2px); }
+
+.btn-delete-full { background: #fff5f5; color: #e53e3e; border: 1px solid #feb2b2; cursor: pointer; }
+.btn-delete-full:hover { background: #e53e3e; color: #fff; }
+
+.btn-pending {
+    width: 100%; background: #fefcbf; color: #b7791f; border: 1px solid #faf089;
+    padding: 10px; border-radius: 8px; font-weight: 600; cursor: wait;
+}
+
+/* --- 5. نظام الترقيم (Pagination) --- */
+.pagination-container { margin-top: 50px; display: flex; justify-content: center; }
+.custom-pagination { display: flex; list-style: none; gap: 10px; padding: 0; }
+.page-link {
+    display: block; padding: 10px 18px; background: white; color: #2d3748;
+    text-decoration: none; border-radius: 8px; border: 1px solid #e2e8f0;
+    font-weight: 600; transition: all 0.3s ease;
+}
+.page-link:hover { border-color: #27ae60; color: #27ae60; background: #f0fff4; }
+.page-link.active { background: #27ae60; color: white; border-color: #27ae60; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3); }
+
+/* --- 6. الزر العائم (Add Button) --- */
+.add-btn-fixed {
+    position: fixed !important; bottom: 30px !important; right: 30px !important;
+    width: 65px !important; height: 65px !important;
+    background-color: #10b981 !important; color: #ffffff !important;
+    border-radius: 50% !important; display: flex !important;
+    align-items: center !important; justify-content: center !important;
+    text-decoration: none !important; font-size: 26px !important;
+    z-index: 999999 !important; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4) !important;
+    transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .add-btn-fixed { bottom: 90px !important; right: 20px !important; width: 55px !important; height: 55px !important; font-size: 22px !important; }
+}
+
+.add-btn-fixed:hover { transform: scale(1.1) rotate(90deg); background: #2ecc71; }
+.add-btn-fixed:active { transform: scale(0.9); background-color: #059669 !important; }
+
+/* --- 7. الأغلفة البديلة والتصنيفات --- */
+.smart-placeholder-cover {
+    width: 100%; height: 100%; color: white; display: flex;
+    align-items: center; justify-content: center; padding: 20px;
+    border-radius: 12px 12px 0 0; background: linear-gradient(135deg, #27ae60 0%, #1a5e38 100%);
+}
+
+.category-روايات { background: linear-gradient(135deg, #e67e22, #d35400); }
+.category-كتب-دينية { background: linear-gradient(135deg, #2980b9, #1c5980); }
+.category-كتب-علمية { background: linear-gradient(135deg, #8e44ad, #5e2d71); }
+
+
+ /* تصميم الحاوية الرئيسية */
+    .add-book-container {
+        padding: 60px 20px;
+        display: flex;
+        justify-content: center;
+        background: #f8fafc;
+        min-height: 90vh;
+    }
+
+    .form-card {
+        background: white;
+        width: 100%;
+        max-width: 700px;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        border: 1px solid #edf2f7;
+    }
+
+    .form-header {
+        text-align: center;
+        margin-bottom: 35px;
+    }
+
+    .form-header h2 {
+        color: #2d3748;
+        font-weight: 800;
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+        text-align: right;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 0.95rem;
+    }
+
+    /* تنسيق الحقول */
+    .custom-input, .custom-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    .custom-input:focus, .custom-select:focus {
+        border-color: #27ae60;
+        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+    }
+
+    .file-input-wrapper {
+        position: relative;
+        background: #f8fafc;
+        border: 2px dashed #cbd5e0;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: 0.3s;
+    }
+
+    .file-input-wrapper:hover {
+        border-color: #27ae60;
+        background: #f0fff4;
+    }
+
+    .submit-labrary-btn {
+        width: 100%;
+        padding: 15px;
+        background: #27ae60;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 10px;
+    }
+
+    .submit-labrary-btn:hover {
+        background: #219150;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+    }
+
+    .delete-labrary-btn {
+        width: 100%;
+        padding: 15px;
+        background: #e53e3e;
+        color: white;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 10px;
+    }
+
+    .delete-labrary-btn:hover {
+        background: #e53e3e;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(39, 174, 96, 0.3);
+    }
+
+    .cancel-link {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: #718096;
+        text-decoration: none;
+        font-size: 0.9rem;
+    }
+
+    .error-msg {
+        background: #fff5f5;
+        color: #c53030;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        border-right: 4px solid #c53030;
+        font-size: 0.9rem;
+    }
+    #overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    .spinner {
+        width: 50px; height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #2ecc71;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    /* تنسيق مفتاح التبديل (Switch) */
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-color: #cbd5e0;
+        transition: .4s;
+        border-radius: 34px;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px; width: 18px;
+        left: 4px; bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #27ae60; }
+    input:checked + .slider:before { transform: translateX(24px); }
