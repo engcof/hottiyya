@@ -2807,7 +2807,7 @@ footer {
     border-radius: var(--radius-sm);
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     margin-top: 50px;
 }
 
@@ -2852,7 +2852,7 @@ footer {
 .pagination-container { margin-top: 50px; display: flex; justify-content: center; }
 .custom-pagination { display: flex; list-style: none; gap: 10px; padding: 0; }
 .page-link {
-    display: block; padding: 0.75rem 1rem; background: white; color: var(--text-dark);
+    display: block; padding: 0.75rem 1.2rem; background: white; color: var(--text-dark);
     text-decoration: none; border-radius: 8px; border: 1px solid var(--border);
     font-weight: 600; transition: var(--transition);
 }
@@ -2885,6 +2885,11 @@ footer {
     border-color: var(--accent);
     font-weight: 600;
 }
+@media (max-width: 768px) {
+    .page-link {
+        padding: 0.40rem 0.65rem;
+    }
+ }
 /* ========== ✅ تنسيقات معرض الفيديوهات الموحدة ✅ ========== */
 
 /* 1. حاوية المعرض (الشبكة) */
