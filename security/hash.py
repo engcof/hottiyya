@@ -1,3 +1,4 @@
+#security/hash.py
 import bcrypt
 
 def hash_password(password: str) -> str:

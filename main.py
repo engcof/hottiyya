@@ -210,8 +210,9 @@ async def debug_db_count():
                 cur.execute("""
                     SELECT  code, name     
                     FROM family_name 
+                            
                     ORDER BY name DESC 
-                    LIMIT 15
+                    
                 """)
                 latest = cur.fetchall()
 
@@ -238,6 +239,6 @@ if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
 
-# uvicorn main:app --reload
+# uvicorn main:app --reload LIMIT 15
 
 

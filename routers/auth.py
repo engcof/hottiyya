@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from security.hash import check_password
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token, verify_csrf_token
-from services.auth_service import get_user
+from services.auth_service import AuthService
 from core.templates import templates
 import re  # 💡 تم استيراد مكتبة re
 from security.rate_limit import rate_limit_attempt, reset_attempts # 💡 استيراد جديد
@@ -72,7 +72,7 @@ async def login(
     # ----------------------------------------
 
     # 4. محاولة تسجيل الدخول (بعد نجاح التحقق الأولي)
-    user_data = get_user("username = %s", (username,))
+    user_data = AuthService.get_user("username = %s", (username,))
     
     if user_data and check_password(password, user_data["password"]):
         # 💡 إعادة تعيين العداد عند النجاح
@@ -103,4 +103,49 @@ async def logout(request: Request):
     set_cache_headers(response)
     return response
    
+# ------------------------------
+# GET /register
+# ------------------------------
+@router.get("/register")
+async def register_page(request: Request, error: str = None, success: str = None):
+    csrf_token = generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
+    response = templates.TemplateResponse(
+        "auth/register.html", 
+        {
+            "request": request, 
+            "csrf_token": csrf_token,
+            "error": error,
+            "success": success
+        }
+    )
+    set_cache_headers(response)
+    return response
 
+# ------------------------------
+# POST /register
+# ------------------------------
+@router.post("/register")
+async def register(
+    request: Request,
+    username: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+    csrf_token: str = Form(...),
+):
+    # 1. التحقق من CSRF
+    verify_csrf_token(request, csrf_token)
+    
+    # 2. التحقق من تطابق كلمات المرور قبل الذهاب للسيرفس
+    if password != confirm_password:
+        return await register_page(request, error="كلمات المرور غير متطابقة")
+
+    # 3. استدعاء السيرفس (الذي يحتوي على التحقق من الـ Regex والتكرار)
+    # ملاحظة: نرسل دور 'user' تلقائياً للمسجلين الجدد
+    success, message = AuthService.add_new_user(username, password, role="user")
+    
+    if not success:
+        return await register_page(request, error=message)
+    
+    # 4. في حال النجاح، يمكن توجيهه لصفحة اللوجن مع رسالة نجاح
+    return await login_page(request, error=f"تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول.")

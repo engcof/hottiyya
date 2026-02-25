@@ -1,3 +1,4 @@
+  
 {% extends "base.html" %}
 {% block title %}لوحة الإدارة {% endblock %}
 {% block content %}
@@ -6,54 +7,32 @@
         <div class="page-header">
             <h1 class="page-title">الإدارية</h1>
             <div class="header-actions" style="display: flex; gap: 10px;">
-                <a href="/admin/logs" class="btn-add" style="background-color: #6c757d;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" style="margin-left: 5px;">
-                        <path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/>
-                    </svg>
-                    سجل العمليات 
-                </a>
-                <a href="/permissions" class="btn-add">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                    صلاحية جديدة      
-                </a>
-                  <a href="/data/import-data" class="btn-add">
-                    <svg viewBox="0 0 24 24" width="20" height="20">
-                        <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                قاعدة بيانات       
-                </a>
+                <a href="/admin/logs" class="btn-add" style="background-color: #6c757d;">سجل العمليات</a>
+                <a href="/permissions" class="btn-add">صلاحية جديدة</a>
+                <a href="/data/import-data" class="btn-add"> قاعدة بيانات</a>
             </div>
         </div>
-        <!-- رسائل النجاح أو الخطأ - تم إضافة فئة 'flash-message' لسهولة الوصول إليها عبر JS -->
+
         {% if success_message %}
-            <div class="alert success flash-message">
-                <p>✅ **تم بنجاح:** {{ success_message }}</p>
-            </div>
+            <div class="alert success flash-message">✅ {{ success_message }}</div>
         {% endif %}
         {% if error_message %}
-            <div class="alert error flash-message">
-                <p>❌ **خطأ في الإجراء:** {{ error_message }}</p>
-            </div>
+            <div class="alert error flash-message">❌ {{ error_message }}</div>
         {% endif %}
 
-
         <div class="admin-grid">
-            <!-- بطاقة إضافة مستخدم جديد -->
             <div class="admin-card">
                 <h2>إضافة مستخدم جديد</h2>
                 <form method="post" action="/admin/add_user" class="admin-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                     <div class="form-group">
                         <label>اسم المستخدم</label>
-                        <input type="text" name="username" required placeholder="أدخل اسم المستخدم">
+                        <input type="text" name="username" required>
                     </div>
                     <div class="form-group">
                         <label>كلمة المرور</label>
-                        <input type="password" name="password" required placeholder="كلمة مرور قوية">
+                        <input type="password" name="password" required>
                     </div>
                     <div class="form-group">
                         <label>الدور</label>
@@ -66,32 +45,28 @@
                 </form>
             </div>
 
-            <!-- تغيير كلمة مرور مستخدم -->
             <div class="admin-card">
                 <h2>تغيير كلمة المرور</h2>
                 <form method="POST" action="/admin/change_password" class="admin-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                     <div class="form-group">
                         <label>اختر المستخدم</label>
                         <select name="user_id" required>
-                            {% for user in users %}
-                            <option value="{{ user[0] }}">{{ user[1] }} ({{ user[2] }})</option>
+                            {% for u in users %}
+                            <option value="{{ u.id }}">{{ u.username }} ({{ u.role }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="form-group">
                         <label>كلمة المرور الجديدة</label>
-                        <input type="password" name="new_password" required placeholder="كلمة مرور جديدة">
+                        <input type="password" name="new_password" required>
                     </div>
                     <button type="submit" class="submit-btn large warning">تغيير كلمة المرور</button>
                 </form>
             </div>
-
         </div>
 
-        <!-- جدول المستخدمين الكامل -->
         <div class="admin-card full">
             <h2>قائمة المستخدمين والصلاحيات</h2>
             <div class="table-wrapper">
@@ -108,20 +83,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for user in users %}
+                        {% for u in users %}
                         <tr>
-                            <td><strong>{{ user[1] }}</strong></td>
+                            <td><strong>{{ u.username }}</strong></td>
                             <td>
-                                <span class="role-badge {{ user[2] }}">{{ user[2] | title }}</span>
+                                <span class="role-badge {{ u.role }}">{{ u.role | title }}</span>
                             </td>
-                           <td>
-                                {% if user_permissions[user[0]] %}
+                            <td>
+                                {% if user_permissions[u.id] %}
                                 <details class="permissions-dropdown">
                                     <summary class="permissions-summary">
-                                        {{ user_permissions[user[0]]|length }} صلاحية
+                                        {{ user_permissions[u.id]|length }} صلاحية
                                     </summary>
                                     <div class="permission-list-content">
-                                        {% for perm in user_permissions[user[0]] %}
+                                        {% for perm in user_permissions[u.id] %}
                                         <span class="perm-tag">{{ perm }}</span>
                                         {% endfor %}
                                     </div>
@@ -133,31 +108,24 @@
                             <td>
                                 <form method="post" action="/admin/edit_user" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
-                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                                    <input type="hidden" name="user_id" value="{{ user[0] }}">
-                                    <input type="text" name="username" value="{{ user[1] }}" class="small-input">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    <input type="text" name="username" value="{{ u.username }}" class="small-input">
                                     <select name="role" class="small-select">
-                                       
-                                        <option value="manager" {% if user[2]=='manager' %}selected{% endif %}>مدير</option>
-                                        <option value="user" {% if user[2]=='user' %}selected{% endif %}>مستخدم</option>
+                                        <option value="manager" {% if u.role == 'manager' %}selected{% endif %}>مدير</option>
+                                        <option value="user" {% if u.role == 'user' %}selected{% endif %}>مستخدم</option>
                                     </select>
-                                    {% if user[2] == 'admin' %}
-                                        <span class="role-badge admin">إدمن أساسي (محمي)</span>
-                                        <input type="hidden" name="role" value="admin">
-                                    {% endif %}
                                     <button type="submit" class="btn-small edit">تعديل</button>
                                 </form>
                             </td>
                             <td>
                                 <form method="post" action="/admin/give_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                                    <input type="hidden" name="user_id" value="{{ user[0] }}">
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
                                     <select name="permission_id" class="small-select">
                                         {% for perm in permissions %}
-                                        <option value="{{ perm[0] }}">{{ perm[1] }}</option>
+                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
                                         {% endfor %}
                                     </select>
                                     <button type="submit" class="btn-small add">إضافة</button>
@@ -166,33 +134,34 @@
                             <td>
                                 <form method="post" action="/admin/remove_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <input type="hidden" name="user_id" value="{{ user[0] }}">
-                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
                                     <select name="permission_id" class="small-select">
                                         {% for perm in permissions %}
-                                        <option value="{{ perm[0] }}">{{ perm[1] }}</option>
+                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
                                         {% endfor %}
                                     </select>
                                     <button type="submit" class="btn-small remove">إزالة</button>
                                 </form>
                             </td>
                             <td>
-                                <form method="post" action="/admin/delete_user" onsubmit="return confirm('هل أنت متأكد من حذف هذا المستخدم نهائيًا؟')">
+                                <form method="post" action="/admin/delete_user">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <!-- إضافة حقل رقم الصفحة لضمان العودة لنفس المكان -->
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                                    <input type="hidden" name="user_id" value="{{ user[0] }}">
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
                                     <button type="submit" class="btn-small delete">حذف</button>
                                 </form>
                             </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">لا توجد بيانات متاحة حالياً.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-
-            <!-- ترقيم الصفحات -->
+            
             <div class="pagination">
                 {% if current_page > 1 %}
                 <a href="/admin?page={{ current_page - 1 }}" class="page-btn">السابق</a>
@@ -203,7 +172,7 @@
                 {% endif %}
             </div>
         </div>
-    
+   
         <div class="admin-card full">
             <h2>سجل نشاط تسجيل الدخول (آخر 50)</h2>
             <p class="page-subtitle">يتم تنظيف هذه السجلات تلقائيًا بعد 7 أيام.   </p>
