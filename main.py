@@ -22,6 +22,7 @@ from utils.permission import can
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 from services.notification import get_unread_notification_count
+from services.home_service import HomeService
 from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library
 from dotenv import load_dotenv
 
@@ -166,16 +167,14 @@ app.include_router(library.router)
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     user = request.session.get("user")
-    unread_count = 0 # القيمة الافتراضية
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+    
+    # استدعاء السيرفس الجديد
+    home_data = HomeService.get_homepage_data()
+    
+    unread_count = 0
+    if user:
+        unread_count = get_unread_notification_count(user["id"])
 
-            # 💡 جلب عدد الرسائل غير المقروءة إذا كان المستخدم مسجلاً
-            if user:
-                unread_count = get_unread_notification_count(user["id"]) # 💡 استخدام الدالة الجديدة
-            # جلب العنوان لأحدث مقال لعرضه في الشريط المتحرك
-            cur.execute("SELECT title FROM articles ORDER BY created_at DESC LIMIT 1")
-            latest_article_title = cur.fetchone()
     response = templates.TemplateResponse("index.html", {
         "request": request,
         "user": user,
@@ -184,7 +183,9 @@ async def home(request: Request):
         "total_visitors": get_total_visitors(),
         "online_count": get_online_count(),
         "online_users": get_online_users()[:18],
-        "latest_article_title": latest_article_title['title'] if latest_article_title else 'لا توجد مقالات بعد',
+        # تمرير البيانات الجديدة
+        "latest_article": home_data['latest_article'],
+        "latest_book": home_data['latest_book'],
     })
     set_cache_headers(response)
     return response

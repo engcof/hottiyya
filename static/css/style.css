@@ -674,6 +674,130 @@ footer {
     color: var(--text-medium);
     margin-bottom: 15px;
 }
+.latest-book-preview {
+    display: inline-block;
+    padding: 15px;
+    border-radius: 12px;
+    margin: 20px 0;
+    max-width: 400px;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+.book-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-align: right;
+}
+.book-info img {
+    width: 70px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.btn-library {
+    display: inline-block;
+    background: #10b981;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    margin-top: 8px;
+}
+/* --- تنسيق الشريط المتحرك المحسن --- */
+.news-ticker-bar {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    height: 40px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.ticker-inner {
+    display: flex;
+    white-space: nowrap;
+    animation: ticker-scroll 30s linear infinite; /* تحكم في السرعة من هنا */
+}
+
+@keyframes ticker-scroll {
+    0% { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+}
+
+.ticker-badge {
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+    margin-left: 8px;
+}
+.badge-article { background: var(--accent-color, #10b981); }
+.badge-book { background: #3b82f6; }
+
+/* --- تنسيق بطاقة أحدث كتاب (Hero Book Card) --- */
+.latest-book-preview {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 12px 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    border: 1px solid white;
+    margin-top: 25px;
+    transition: transform 0.3s ease;
+}
+
+.latest-book-preview:hover {
+    transform: translateY(-5px);
+}
+
+.book-info img {
+    width: 60px;
+    height: 85px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 2px 4px 10px rgba(0,0,0,0.2);
+}
+
+.book-text {
+    text-align: right;
+}
+
+.book-text span {
+    font-size: 0.8rem;
+    color: #666;
+    display: block;
+}
+
+.book-text h4 {
+    margin: 4px 0;
+    font-size: 1rem;
+    color: #333;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-library-small {
+    background: #10b981;
+    color: white !important;
+    padding: 4px 15px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.2s;
+}
+
+.btn-library-small:hover {
+    background: #059669;
+}
 /*  تنسيقات شبكة أحدث المقالات في الصفحة الرئيسية  */
 .latest-articles-grid {
     max-width: 1200px;

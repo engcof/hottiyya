@@ -4,26 +4,42 @@
 {% block content %}
 <div class="news-ticker-bar">
     <div class="ticker-inner">
-        <span class="ticker-badge">جديد</span>
-        <span class="ticker-content">آخر مقال: {{ latest_article_title }} - <a href="/articles/latest">اقرأ الآن</a></span>
-        <span class="ticker-separator">•</span>
-        <span class="ticker-content">ألاخبار: تم تحديث شجرة الأنساب بإضافة 54 عضوًا جديدًا.</span>
+       
+        <span class="ticker-item">
+            <span class="ticker-badge badge-article">جديد</span>
+            آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
+        </span>
         <span class="ticker-separator">•</span>
         
-        <span class="ticker-badge">جديد</span>
-        <span class="ticker-content">آخر مقال: {{ latest_article_title }} -<a href="/articles/latest">اقرأ الآن</a></span>
+        <span class="ticker-item">
+            <span class="ticker-badge badge-book">كتاب</span>
+            أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
+        </span>
         <span class="ticker-separator">•</span>
-        <span class="ticker-content">ألاخبار: تم تحديث شجرة الأنساب بإضافة 54 عضوًا جديدًا.</span>
+         <span class="ticker-item">
+            <span class="ticker-badge badge-article">جديد</span>
+            آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
+        </span>
         <span class="ticker-separator">•</span>
-
-        <span class="ticker-badge">جديد</span>
-        <span class="ticker-content">آخر مقال: {{ latest_article_title }} -<a href="/articles/latest">اقرأ الآن</a></span>
+        
+        <span class="ticker-item">
+            <span class="ticker-badge badge-book">كتاب</span>
+            أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
+        </span>
         <span class="ticker-separator">•</span>
-        <span class="ticker-content">ألاخبار: تم تحديث شجرة الأنساب بإضافة 54 عضوًا جديدًا.</span>
+        <span class="ticker-item">
+            <span class="ticker-badge badge-article">جديد</span>
+            آخر مقال: {{latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
+        </span>
         <span class="ticker-separator">•</span>
-
+        
+        <span class="ticker-item">
+            <span class="ticker-badge badge-book">كتاب</span>
+              أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
+        </span>
     </div>
 </div>
+
 <main>
     <section class="hero-section">
         <div class="hero-content">
@@ -32,8 +48,27 @@
             <p class="hero-description">
                
             </p>
+          
             <a href="/about" class="cta-button">اقرأ المزيد </a>
         </div>
+         
+    </section>
+    <section class="auth-section">
+        <div class="container">
+     {% if latest_book %}
+            <div class="latest-book-preview glass">
+                <div class="book-info">
+                    <img src="{{ latest_book.cover_url or '/static/images/default-book.png' }}" alt="غلاف الكتاب">
+                    <div class="book-text">
+                        <span>أحدث كتاب في المكتبة:</span>
+                        <h4>{{ latest_book.title }}</h4>
+                        <a href="/library" class="btn-library">الانتقال للمكتبة</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+              </div>
+         
     </section>
     <section class="stats-section stats-grid">
         <div class="stat-card note-style today-stat">
@@ -121,4 +156,11 @@
 </main>
 <div id="onlineDropdownPortal">
 </div>
+<script>
+// توقف الحركة عند وضع الماوس (اختياري لراحة المستخدم)
+const ticker = document.querySelector('.ticker-inner');
+ticker.addEventListener('mouseenter', () => ticker.style.animationPlayState = 'paused');
+ticker.addEventListener('mouseleave', () => ticker.style.animationPlayState = 'running');
+</script>
+
 {% endblock %}
