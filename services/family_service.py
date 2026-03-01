@@ -47,19 +47,19 @@ def search_and_fetch_names(q: str, page: int) -> Tuple[List[Dict[str, Any]], int
             
             # البحث بالكود (الأولوية القصوى)
             if re.fullmatch(r"[A-Z]\d{0,3}-\d{3}-\d{3}", phrase.upper()):
-                sql_condition = "code = %s AND level >= 2"
+                sql_condition = "code = %s AND level >= 0"
                 count_params = (phrase.upper(),)
             # البحث بالكود الجزئي
             elif "-" in phrase and len(phrase.split()) == 1:
-                sql_condition = "code ILIKE %s AND level >= 2"
+                sql_condition = "code ILIKE %s AND level >= 0"
                 count_params = (f"%{phrase}%",)
             # البحث باللقب (إذا كانت كلمة واحدة وليست كود)
             elif len(phrase.split()) == 1 and not re.search(r"\d", phrase):
-                sql_condition = "nick_name ILIKE %s AND level >= 2"
+                sql_condition = "nick_name ILIKE %s AND level >= 0"
                 count_params = (f"%{phrase}%",)
             # البحث بجملة كاملة (Full Text Search) - الحالة الافتراضية
             else:
-                sql_condition = "public.normalize_arabic(TRIM(full_name)) ILIKE %s AND level >= 2"
+                sql_condition = "public.normalize_arabic(TRIM(full_name)) ILIKE %s AND level >= 0"
                 count_params = (search_term_like,)
 
             # 3. جلب العدد الكلي
@@ -115,7 +115,7 @@ def fetch_names_no_search(page: int) -> Tuple[List[Dict[str, Any]], int, int, in
             cur.execute("""
                 SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
                 FROM family_search 
-                WHERE level >= 2
+                WHERE level >= 0
                 ORDER BY full_name 
                 LIMIT %s OFFSET %s
             """, (PAGE_SIZE, offset))
