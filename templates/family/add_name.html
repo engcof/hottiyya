@@ -149,4 +149,24 @@
         </div>
     </div>
 </section>
+<script>
+document.querySelector('input[name="code"]').addEventListener('input', async function(e) {
+    let val = e.target.value.trim().toUpperCase(); // تحويل للحرف الكبير
+    e.target.value = val; // تحديث الحقل بالحرف الكبير
+    
+    if (val.length === 1 && /^[A-Z]$/.test(val)) {
+        try {
+            const response = await fetch(`/names/get-next-code?letter=${val}`);
+            const data = await response.json();
+            if (data.next_code) {
+                e.target.value = data.next_code;
+                // اختياري: تحديد النص المضاف ليسهل على المستخدم مسحه إذا أراد
+                e.target.setSelectionRange(1, data.next_code.length);
+            }
+        } catch (error) {
+            console.error("خطأ في جلب الكود المقترح:", error);
+        }
+    }
+});
+</script>
 {% endblock %}

@@ -103,29 +103,39 @@
                     </div>
 
                     <!-- الزوج/الزوجة -->
-                    {% if gender == "ذكر" and wives %}
+                   {% if gender == "ذكر" and wives %}
                     <div class="relation-card wife">
-                        <h5>الزوجات ({{ wives|length }})</h5>
+                        {# تعديل العنوان ليصبح "الزوجة" للمفرد و"الزوجات" للجمع #}
+                        <h5>{% if wives|length > 1 %}الزوجات ({{ wives|length }}){% else %}الزوجة{% endif %}</h5>
+                        
                         {% for wife in wives %}
-                        <a href="/names/details/{{ wife.code }}" class="relation-link">
-                            {{ wife.name }}{% if loop.length > 1 %} ({{ loop.index }}){% endif %}
-                        </a>
+                            <a href="/names/details/{{ wife.code }}" class="relation-link">
+                                {{ wife.name }}
+                                {% if wives|length > 1 %} 
+                                    <small class="text-muted">({{ loop.index }})</small> 
+                                {% endif %}
+                            </a>
                         {% endfor %}
                     </div>
                     {% elif gender == "أنثى" and husbands %}
-                    <div class="relation-card husband">
-                        <h5>الزوج</h5>
-                        {% for h in husbands %}
-                        <a href="/names/details/{{ h.code }}" class="relation-link">{{ h.name }}</a>
-                        {% endfor %}
-                    </div>
+                        <div class="relation-card husband">
+                            {# تعديل العنوان ليصبح "الأزواج" في حال تعددوا #}
+                            <h5>{% if husbands|length > 1 %}الأزواج ({{ husbands|length }}){% else %}الزوج{% endif %}</h5>
+                            {% for h in husbands %}
+                                <a href="/names/details/{{ h.code }}" class="relation-link">
+                                    {{ h.name }}{% if husbands|length > 1 %} <small>({{ loop.index }})</small>{% endif %}
+                                </a>
+                            {% endfor %}
+                        </div>
                     {% else %}
-                    <div class="relation-card spouse">
-                        <h5>الزوج / الزوجة</h5>
-                        <span class="text-muted">لا يوجد</span>
-                    </div>
+                        {# حالة عدم وجود بيانات مسجلة #}
+                        <div class="relation-card spouse">
+                            <h5>الزوج / الزوجة</h5>
+                            <div class="relation-link text-center">
+                                <span class="text-muted" style="font-size: 0.85rem;">غير مسجل</span>
+                            </div>
+                        </div>
                     {% endif %}
-
                     <!-- الأبناء -->
                     <div class="relation-card children">
                         <h5>الأبناء ({{ children|length }})</h5>

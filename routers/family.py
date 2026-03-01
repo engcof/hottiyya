@@ -25,7 +25,8 @@ from services.family_service import (
     add_new_member,
     update_member_data,
     get_member_for_edit,
-    delete_member
+    delete_member,
+    get_next_available_code
 )
 
 load_dotenv()
@@ -423,6 +424,14 @@ async def add_name(
             "status": status or "",
         }
     })
+
+@router.get("/get-next-code")
+async def suggest_code(letter: str):
+    if not letter or not letter.isalpha():
+        return {"next_code": ""}
+    
+    next_code = get_next_available_code(letter[0])
+    return {"next_code": next_code}
 
 # ====================== تعديل عضو ======================
 @router.get("/edit/{code}", response_class=HTMLResponse)

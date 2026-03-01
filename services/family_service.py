@@ -203,18 +203,58 @@ def get_member_details(code: str) -> Optional[Dict[str, Any]]:
 
             # جلب الزوجات إذا كان العضو ذكر
             if gender == "ذكر":
+                wife_ids = set()
+                
+                # 1. الزوجة الحالية المسجلة مباشرة في بياناته (إذا كان لجدولك حقل w_code)
+                current_w = info_data.get("w_code")
+                if current_w:
+                    wife_ids.add(current_w)
+                
+                # 2. الزوجات اللاتي أنجب منهن (عن طريق البحث عن أكواد الأمهات للأبناء المرتبطين به)
+                cur.execute("SELECT DISTINCT m_code FROM family_name WHERE f_code = %s AND m_code IS NOT NULL", (code,))
+                for r in cur.fetchall():
+                    wife_ids.add(r["m_code"])
+
+                # 3. البحث العكسي: أي أنثى مسجل في خانة زوجها (h_code) كود هذا الذكر
                 cur.execute("SELECT code FROM family_name WHERE h_code = %s", (code,))
-                wives_codes = cur.fetchall()
-                for r in wives_codes:
-                    cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS wife_name", (r["code"],))
-                    wife_name = cur.fetchone()["wife_name"]
-                    wives.append({"code": r["code"], "name": wife_name})
+                for r in cur.fetchall():
+                    wife_ids.add(r["code"])
+                
+                # جلب الأسماء النهائية للزوجات
+                for w_id in wife_ids:
+                    cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS wife_name", (w_id,))
+                    res = cur.fetchone()
+                    if res:
+                        wives.append({"code": w_id, "name": res["wife_name"]})
             
-            # جلب الزوج/الأزواج إذا كان العضو أنثى (نفترض زوج واحد حالياً حسب حقل h_code)
-            if gender == "أنثى" and info_data.get("h_code"):
-                cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS husband_name", (info_data["h_code"],))
-                husband_name = cur.fetchone()["husband_name"]
-                husbands = [{"code": info_data["h_code"], "name": husband_name}]
+           # جلب الزوج/الأزواج إذا كان العضو أنثى 
+            if gender == "أنثى":
+                husband_ids = set()
+                
+                # 1. الزوج الحالي المسجل مباشرة في بياناتها
+                current_h = info_data.get("h_code")
+                if current_h:
+                    husband_ids.add(current_h)
+                
+                # 2. الأزواج الذين أنجبت منهم (عن طريق الأبناء)
+                cur.execute("SELECT DISTINCT f_code FROM family_name WHERE m_code = %s AND f_code IS NOT NULL", (code,))
+                for r in cur.fetchall():
+                    husband_ids.add(r["f_code"])
+
+                # 3. الإضافة الهامة: البحث عن أي ذكر مسجل في النظام أن هذه الأنثى هي زوجته (حتى لو لم ينجبوا)
+                # في بعض الأنظمة يكون الزوج مسجل في خانة h_code لدى الزوجة، وفي أنظمة أخرى العكس
+                cur.execute("SELECT code FROM family_name WHERE code = (SELECT h_code FROM family_name WHERE code = %s)", (code,))
+                # وأيضاً نبحث عن أي ذكر كود زوجته (w_code) هو كود هذه الأنثى
+                cur.execute("SELECT code FROM family_name WHERE w_code = %s", (code,))
+                for r in cur.fetchall():
+                    husband_ids.add(r["code"])
+                
+                # جلب الأسماء النهائية
+                for h_id in husband_ids:
+                    cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS husband_name", (h_id,))
+                    res = cur.fetchone()
+                    if res:
+                        husbands.append({"code": h_id, "name": res["husband_name"]})
                 
             # الأبناء
             cur.execute("SELECT code, name FROM family_name WHERE f_code = %s OR m_code = %s", (code, code))
@@ -432,3 +472,36 @@ def delete_member(code: str) -> None:
             cur.execute("DELETE FROM family_name WHERE code = %s", (code,))
             
             conn.commit()
+
+def get_next_available_code(prefix: str) -> str:
+    """جلب الكود التالي بناءً على الحرف الأول (مثلاً A أو B)."""
+    prefix = prefix.upper()
+    with get_db_context() as conn:
+        with conn.cursor() as cur:
+            # البحث عن أكبر كود يبدأ بهذا الحرف
+            # نستخدم regex للتأكد من جلب الأكواد التي تتبع نفس الصيغة فقط
+            query = "SELECT code FROM family_name WHERE code LIKE %s ORDER BY code DESC LIMIT 1"
+            cur.execute(query, (f"{prefix}%",))
+            row = cur.fetchone()
+
+            if not row:
+                # إذا لم يوجد أي كود بهذا الحرف، نبدأ من أول رقم
+                return f"{prefix}0-000-001"
+
+            last_code = row[0] # مثال: A0-000-005
+            
+            # استخراج الأرقام فقط من الكود (إزالة الحرف والشرطات)
+            import re
+            nums = re.findall(r'\d', last_code)
+            if not nums:
+                return f"{prefix}0-000-001"
+            
+            # تحويل قائمة الأرقام إلى رقم صحيح وزيادته
+            current_num = int("".join(nums))
+            next_num = current_num + 1
+            
+            # إعادة تشكيل الكود بالصيغة المطلوبة X0-000-000
+            # نستخدم zfill لضمان وجود الأصفار على اليسار (7 أرقام بعد الحرف الأول)
+            s = str(next_num).zfill(7)
+            # تنسيق السلسلة لتصبح: A0-000-006
+            return f"{prefix}{s[0]}-{s[1:4]}-{s[4:]}"

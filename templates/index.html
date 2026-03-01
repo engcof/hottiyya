@@ -1,75 +1,92 @@
 {% extends "base.html" %}
 {% block title %}الحوطية{% endblock %}
-
 {% block content %}
-<div class="news-ticker-bar">
-    <div class="ticker-inner">
-       
-        <span class="ticker-item">
-            <span class="ticker-badge badge-article">جديد</span>
-            آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
-        </span>
-        <span class="ticker-separator">•</span>
-        
-        <span class="ticker-item">
-            <span class="ticker-badge badge-book">كتاب</span>
-            أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
-        </span>
-        <span class="ticker-separator">•</span>
-         <span class="ticker-item">
-            <span class="ticker-badge badge-article">جديد</span>
-            آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
-        </span>
-        <span class="ticker-separator">•</span>
-        
-        <span class="ticker-item">
-            <span class="ticker-badge badge-book">كتاب</span>
-            أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
-        </span>
-        <span class="ticker-separator">•</span>
-        <span class="ticker-item">
-            <span class="ticker-badge badge-article">جديد</span>
-            آخر مقال: {{latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
-        </span>
-        <span class="ticker-separator">•</span>
-        
-        <span class="ticker-item">
-            <span class="ticker-badge badge-book">كتاب</span>
-              أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
-        </span>
+<div class="home-news-ticker-bar">
+    <div class="home-ticker-inner">
+        <div class="home-ticker-group" style="display: flex; align-items: center;">
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-article">مقال</span>
+                آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+            
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-book">كتاب</span>
+                أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+        </div>
+         <div class="home-ticker-group" style="display: flex; align-items: center;">
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-article">مقال</span>
+                آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+            
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-book">كتاب</span>
+                أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+        </div>
+        <div class="home-ticker-group" style="display: flex; align-items: center;">
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-article">مقال</span>
+                آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+            
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-book">كتاب</span>
+                أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+        </div>
+        <div class="home-ticker-group" style="display: flex; align-items: center;">
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-article">مقال</span>
+                آخر مقال: {{ latest_article.title if latest_article.title else 'لا توجد مقالات بعد'}} - <a href="/articles/{{ latest_article.id }}">اقرأ الآن</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+            
+            <span class="home-ticker-item">
+                <span class="home-ticker-badge home-badge-book">كتاب</span>
+                أضيف حديثاً: {{ latest_book.title }} - <a href="/library">تصفح المكتبة</a>
+            </span>
+            <span class="home-ticker-separator">•</span>
+        </div>
     </div>
 </div>
 
 <main>
     <section class="hero-section">
-        <div class="hero-content">
+        <div class="home-content">
             <h3 class="basmala">بِسْمِ اللهِ الرَّحْمَنِ الرَّحِيمِ</h3>
             <h1 class="hero-title">الحوطية</h1>
-            <p class="hero-description">
-               
-            </p>
-          
+            <p class="hero-description"></p>
             <a href="/about" class="cta-button">اقرأ المزيد </a>
-        </div>
-         
-    </section>
-    <section class="auth-section">
-        <div class="container">
-     {% if latest_book %}
-            <div class="latest-book-preview glass">
-                <div class="book-info">
-                    <img src="{{ latest_book.cover_url or '/static/images/default-book.png' }}" alt="غلاف الكتاب">
-                    <div class="book-text">
-                        <span>أحدث كتاب في المكتبة:</span>
-                        <h4>{{ latest_book.title }}</h4>
-                        <a href="/library" class="btn-library">الانتقال للمكتبة</a>
+            {% if latest_book %}
+            <div class="latest-book-container">
+                <div class="latest-book-card-glass">
+                    <div class="latest-book-cover-wrapper">
+                        <img src="{{ latest_book.cover_url or '/static/images/default-book.png' }}" alt="غلاف الكتاب">
+                        <div class="latest-book-badge">أحدث إصدار</div>
+                    </div>
+                    <div class="latest-book-details">
+                        <span class="latest-book-label">أحدث كتاب في المكتبة:</span>
+                        <h4 class="latest-book-title">{{ latest_book.title }}</h4>
+                        <div class="latest-book-actions">
+                            <a href="/library" class="latest-btn-primary-sm">الانتقال للمكتبة</a>
+                           
+                        </div>
                     </div>
                 </div>
             </div>
-            {% endif %}
-              </div>
+           {% endif %}
+        </div>
          
     </section>
+    
     <section class="stats-section stats-grid">
         <div class="stat-card note-style today-stat">
             <span class="num" style="color:#10b981">{{ today_visitors }}</span>
@@ -158,7 +175,7 @@
 </div>
 <script>
 // توقف الحركة عند وضع الماوس (اختياري لراحة المستخدم)
-const ticker = document.querySelector('.ticker-inner');
+const ticker = document.querySelector('.home-ticker-inner');
 ticker.addEventListener('mouseenter', () => ticker.style.animationPlayState = 'paused');
 ticker.addEventListener('mouseleave', () => ticker.style.animationPlayState = 'running');
 </script>
