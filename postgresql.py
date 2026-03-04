@@ -184,16 +184,16 @@ def init_database():
             ''')
             # ز. 💡 تحديث البيانات الموجودة حالياً لضمان ظهورها في البحث فوراً
           
-            cur.execute('''
-                INSERT INTO family_search (code, full_name, nick_name, level)
-                SELECT code, public.get_full_name(code, NULL, FALSE), nick_name, level 
-                FROM family_name
-                ON CONFLICT (code) DO UPDATE SET
-                    full_name = EXCLUDED.full_name,
-                    nick_name = EXCLUDED.nick_name,
-                    level = EXCLUDED.level,
-                    updated_at = NOW();
-            ''')
+            #cur.execute('''
+                #INSERT INTO family_search (code, full_name, nick_name, level)
+                #SELECT code, public.get_full_name(code, NULL, FALSE), nick_name, level 
+                #FROM family_name
+                #ON CONFLICT (code) DO UPDATE SET
+                    #full_name = EXCLUDED.full_name,
+                    #nick_name = EXCLUDED.nick_name,
+                    #level = EXCLUDED.level,
+                    #updated_at = NOW();
+            #''')
 
             print("✅ تم تحديث كافة المكونات ونظام البحث يعمل الآن تلقائياً!")
            
