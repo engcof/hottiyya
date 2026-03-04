@@ -57,3 +57,8 @@ pymupdf==1.24.10
 
 # Database Driver for Render (نسخة متوافقة مع لينكس)
 psycopg2-binary==2.9.11
+
+
+
+pandas
+openpyxl
