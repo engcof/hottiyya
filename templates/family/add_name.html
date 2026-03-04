@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}إضافة عضو جديد{% endblock %}
 {% block content %}
+
 <section class="form-page-section">
     <div class="container">
         <div class="form-card glass-strong">
@@ -45,11 +46,15 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>الكود <span class="required">*</span></label>
-                    <input type="text" name="code" required placeholder="مثال: A0-000-123">
+                    <div class="input-with-status" style="position: relative;">
+                        <input type="text" name="code" id="memberCode" required placeholder="مثال: A0-000-123" value="{{ form_data.code or '' }}">
+                        <span id="codeStatusIcon" class="status-icon"></span>
+                    </div>
+                    <small id="codeFeedback" class="feedback-text"></small>
                 </div>
                 <div class="form-group">
                     <label>الاسم <span class="required">*</span></label>
-                    <input type="text" name="name" required placeholder="مثال: الحوطي" class="form-control">
+                    <input type="text" name="name" required value="{{ form_data.name or '' }}" placeholder="مثال: الحوطي" class="form-control">
                 </div>
                 <div class="form-group">
                     <label>العلاقة</label>
@@ -67,11 +72,11 @@
                 </div>
                 <div class="form-group">
                     <label>كود الأب</label>
-                    <input type="text" name="f_code" placeholder="مثال: A0-001-001" >
+                    <input type="text" name="f_code" placeholder="مثال: A0-001-001" value="{{ form_data.f_code or '' }}">
                 </div>
                 <div class="form-group">
                     <label>كود الأم</label>
-                    <input type="text" name="m_code" placeholder="مثال: A0-001-001">
+                    <input type="text" name="m_code" placeholder="مثال: A0-001-001"value="{{ form_data.m_code or '' }}">
                 </div>
                 <div class="form-group">
                     <label>كود الزوج (للأنثى)</label>
@@ -168,5 +173,55 @@ document.querySelector('input[name="code"]').addEventListener('input', async fun
         }
     }
 });
+const codeInput = document.getElementById('memberCode');
+const statusIcon = document.getElementById('codeStatusIcon');
+const feedback = document.getElementById('codeFeedback');
+
+// 1. ميزة الاقتراح التلقائي (عند الكتابة)
+codeInput.addEventListener('input', async function(e) {
+    let val = e.target.value.trim().toUpperCase();
+    e.target.value = val;
+
+    if (val.length === 1 && /^[A-Z]$/.test(val)) {
+        const res = await fetch(`/names/get-next-code?letter=${val}`);
+        const data = await res.json();
+        if (data.next_code) {
+            e.target.value = data.next_code;
+            e.target.setSelectionRange(1, data.next_code.length);
+            // تحفيز التحقق فوراً بعد الاقتراح
+            validateCode(data.next_code);
+        }
+    }
+});
+
+// 2. ميزة التحقق الفوري (عند الخروج من الحقل)
+codeInput.addEventListener('blur', function() {
+    validateCode(this.value);
+});
+
+async function validateCode(code) {
+    if (code.length < 3) return; // لا نتحقق من النصوص القصيرة جداً
+
+    try {
+        const response = await fetch(`/names/check-code-availability?code=${code}`);
+        const data = await response.json();
+
+        if (data.available) {
+            statusIcon.innerHTML = '✅';
+            statusIcon.style.color = '#10b981';
+            feedback.innerText = 'هذا الكود متاح للاستخدام';
+            feedback.style.color = '#10b981';
+            codeInput.style.borderColor = '#10b981';
+        } else {
+            statusIcon.innerHTML = '❌';
+            statusIcon.style.color = '#ef4444';
+            feedback.innerText = 'عذراً، هذا الكود محجوز مسبقاً!';
+            feedback.style.color = '#ef4444';
+            codeInput.style.borderColor = '#ef4444';
+        }
+    } catch (err) {
+        console.error("خطأ في التحقق:", err);
+    }
+}
 </script>
 {% endblock %}

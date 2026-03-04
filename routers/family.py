@@ -3,10 +3,13 @@ import html
 import os
 import re
 from typing import Optional
-from datetime import date # 💡 تمت إضافتها هنا
+from datetime import date 
+import pandas as pd
+from io import BytesIO
+from fastapi.responses import StreamingResponse
 
 # المكتبات الخارجية (Third-party)
-from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Query, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from dotenv import load_dotenv
 
@@ -26,7 +29,9 @@ from services.family_service import (
     update_member_data,
     get_member_for_edit,
     delete_member,
-    get_next_available_code
+    get_next_available_code,
+    get_family_data_for_export,
+    get_family_table_backup_text
 )
 
 load_dotenv()
@@ -203,8 +208,18 @@ async def add_name_form(request: Request):
         return RedirectResponse("/names")
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
+    # 🟢 الحل هنا: تعريف قاموس فارغ لكي لا يظهر خطأ Undefined في القالب
+    empty_form_data = {
+        "code": "", "name": "", "f_code": "", "m_code": "", "w_code": "", "h_code": "", 
+        "relation": "", "level": "", "nick_name": "", "gender": "", "d_o_b": "", 
+        "d_o_d": "", "email": "", "phone": "", "address": "", "p_o_b": "", "status": ""
+    }
     response = templates.TemplateResponse("family/add_name.html", {
-        "request": request, "user": user, "csrf_token": csrf_token, "error": None
+        "request": request, 
+        "user": user, 
+        "csrf_token": csrf_token,
+        "error": None,
+        "form_data": empty_form_data
     })
     set_cache_headers(response)
     return response
@@ -432,6 +447,11 @@ async def suggest_code(letter: str):
     
     next_code = get_next_available_code(letter[0])
     return {"next_code": next_code}
+
+@router.get("/check-code-availability")
+async def check_code(code: str):
+    exists = is_code_exists(code.strip().upper())
+    return {"available": not exists}
 
 # ====================== تعديل عضو ======================
 @router.get("/edit/{code}", response_class=HTMLResponse)
@@ -679,3 +699,50 @@ async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
     except Exception as e:
         # في حال فشل الحذف، لن يتم تسجيل أي نشاط في السجل الشامل
         raise HTTPException(status_code=500, detail=f"فشل الحذف للعضو {code}.")
+    
+
+
+# مسار تصدير إكسل (شامل / حسب الحرف)
+@router.get("/export/excel")
+async def export_excel(letter: Optional[str] = None):
+    data = get_family_data_for_export(letter)
+    if not data:
+        return {"error": "لا توجد بيانات لتصديرها"}
+
+    # تحويل البيانات إلى DataFrame
+    df = pd.DataFrame(data)
+    
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='FamilyData')
+        
+        # تحسين مظهر الملف (اختياري)
+        workbook = writer.book
+        worksheet = writer.sheets['FamilyData']
+        header_format = workbook.add_format({'bold': True, 'bg_color': '#D7E4BC', 'border': 1})
+        for col_num, value in enumerate(df.columns.values):
+            worksheet.write(0, col_num, value, header_format)
+            worksheet.set_column(col_num, col_num, 20)
+
+    output.seek(0)
+    filename = f"Family_Report_{letter if letter else 'Full'}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )  
+
+@router.get("/export/table-backup-txt")
+async def export_table_backup():
+    content = get_family_table_backup_text()
+    
+    if not content:
+        return Response(content="الجدول فارغ", media_type="text/plain")
+
+    return Response(
+        content=content,
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=family_name_backup.txt"
+        }
+    )  

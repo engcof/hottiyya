@@ -1268,6 +1268,21 @@ footer {
     border-radius: 16px;
     border: 3px solid #e2e8f0;
 }
+.input-with-status {
+    display: flex;
+    align-items: center;
+}
+.status-icon {
+    position: absolute;
+    left: 10px; /* لأن الاتجاه RTL */
+    font-size: 1.2rem;
+}
+.feedback-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
 /* ==========  نهايه صفحة شجرة العائلة  ========== */
 
 /* ========== ✅  تنسيق لوحة التحكم الإدارية (Admin Dashboard)  ✅ ========== */

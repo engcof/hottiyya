@@ -46,16 +46,11 @@ def get_db_context():
         if conn and not conn.closed:
             conn.close()
 
-
-
 def init_database():
     with get_db_context() as conn:
         conn.autocommit = True
         cur = conn.cursor()
         try:
-            print("🟢 جاري تهيئة مكونات قاعدة البيانات الأساسية...")
-
-            
             # 2. إنشاء جدول المعرض بالهيكلية الجديدة والمكتملة
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS gallery (
@@ -80,6 +75,7 @@ def init_database():
                     timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP -- توقيت العملية بدقة
                 );
             """)
+            
             cur.execute(""" 
                 CREATE TABLE IF NOT EXISTS videos (
                     id SERIAL PRIMARY KEY,
@@ -91,7 +87,7 @@ def init_database():
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 );
             """)           
-            #print("✅ تم إنشاء جدول معرض الصور وإنهاء التهيئة بنجاح!")
+           
 
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS library (
@@ -115,11 +111,92 @@ def init_database():
             cur.execute("ALTER TABLE library ADD COLUMN IF NOT EXISTS allow_download BOOLEAN DEFAULT TRUE;")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_library_category ON library(category);")
             
-            print("✅ تم تحديث هيكلية المكتبة وإضافة العدادات بنجاح!")
            
-           
+            # =======================================================
+            # 5. إنشاء جداول ودوال البحث (ضروري لعمل البحث التلقائي)
+            # =======================================================
             
-            print("✅ تم إنشاء جدول المكتبة وتحديث الهيكلية بنجاح!")
+            # 💡 5.1. دالة توحيد الألفات (Normalize)
+            cur.execute('''
+                CREATE OR REPLACE FUNCTION public.normalize_arabic(text)
+                RETURNS text AS $$
+                SELECT TRANSLATE($1, 'أإآ', 'ااا')
+                $$ LANGUAGE SQL IMMUTABLE RETURNS NULL ON NULL INPUT;
+            ''')
+
+            # 💡 5.2. إنشاء جدول البحث
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS family_search (
+                    code TEXT PRIMARY KEY,
+                    full_name TEXT NOT NULL,
+                    nick_name TEXT,
+                    level INT, 
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            ''')
+
+            # 💡 5.3. إضافة عمود البحث المحسوب (Generated Column)
+            cur.execute("""
+                DO $$
+                BEGIN
+                    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                                   WHERE table_name='family_search' AND column_name='search_text') THEN
+                        ALTER TABLE family_search 
+                        ADD COLUMN search_text TEXT 
+                        GENERATED ALWAYS AS (public.normalize_arabic(coalesce(full_name, '') || ' ' || coalesce(nick_name, ''))) STORED;
+                    END IF;
+                END $$;
+            """)
+
+            # 💡 5.4. إنشاء الفهارس لتسريع البحث
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_family_search_gin ON family_search USING GIN (to_tsvector('arabic', search_text));")
+            cur.execute("CREATE INDEX IF NOT EXISTS idx_family_search_name ON family_search(full_name);")
+
+            # 💡 5.5. دالة الـ Trigger لتحديث البحث تلقائياً
+            cur.execute('''
+                CREATE OR REPLACE FUNCTION refresh_family_search() RETURNS trigger AS $$
+                BEGIN
+                    INSERT INTO family_search (code, full_name, nick_name, level)
+                    VALUES (
+                        NEW.code,
+                        public.get_full_name(NEW.code, NULL, FALSE),
+                        NEW.nick_name,
+                        NEW.level
+                    )
+                    ON CONFLICT (code) DO UPDATE SET
+                        full_name = EXCLUDED.full_name,
+                        nick_name = EXCLUDED.nick_name,
+                        level = EXCLUDED.level,
+                        updated_at = NOW();
+                    RETURN NEW;
+                END;
+                $$ LANGUAGE plpgsql;
+            ''')
+
+            # 💡 5.6. ربط الـ Trigger بجدول الأسماء
+            cur.execute('''
+                DROP TRIGGER IF EXISTS trig_refresh_search ON family_name;
+                CREATE TRIGGER trig_refresh_search
+                    AFTER INSERT OR UPDATE OF name, f_code, m_code, h_code, w_code, nick_name, level
+                    ON family_name
+                    FOR EACH ROW
+                    EXECUTE FUNCTION refresh_family_search();
+            ''')
+            # ز. 💡 تحديث البيانات الموجودة حالياً لضمان ظهورها في البحث فوراً
+          
+            cur.execute('''
+                INSERT INTO family_search (code, full_name, nick_name, level)
+                SELECT code, public.get_full_name(code, NULL, FALSE), nick_name, level 
+                FROM family_name
+                ON CONFLICT (code) DO UPDATE SET
+                    full_name = EXCLUDED.full_name,
+                    nick_name = EXCLUDED.nick_name,
+                    level = EXCLUDED.level,
+                    updated_at = NOW();
+            ''')
+
+            print("✅ تم تحديث كافة المكونات ونظام البحث يعمل الآن تلقائياً!")
+           
           
         except Exception as e:
             print(f"❌ خطأ أثناء تهيئة قاعدة البيانات: {e}") 
