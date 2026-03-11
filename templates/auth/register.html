@@ -1,58 +1,55 @@
 {% extends "base.html" %}
 {% block title %}إنشاء حساب جديد{% endblock %}
-
 {% block content %}
 <section class="auth-section">
-    <div class="container">
-        <div class="auth-card glass-strong">
-            <div class="auth-header">
-                <h1 class="auth-title">عضوية جديدة</h1>
-                <p class="auth-subtitle">انضم الآن إلى منصة الحوطية الرقمية</p>
-            </div>
-
-            {% if error %}
-            <div class="alert alert-error" id="errorAlert">
-                <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
-                </svg>
-                <span>{{ error }}</span>
-                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
-            </div>
-            {% endif %}
-
-            <form method="post" action="/auth/register" class="auth-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-                <div class="form-group">
-                    <label for="username">اسم المستخدم</label>
-                    <input type="text" name="username" id="username" required 
-                           placeholder="مثال: ahmed_2024" autocomplete="username">
-                    <small style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">يجب أن يكون فريداً وباللغة الإنجليزية أو العربية (3-30 حرفاً)</small>
-                </div>
-
-                <div class="form-group">
-                    <label for="password">كلمة المرور</label>
-                    <input type="password" name="password" id="password" required 
-                           placeholder="أدخل كلمة مرور قوية" autocomplete="new-password">
-                </div>
-
-                <div class="form-group">
-                    <label for="confirm_password">تأكيد كلمة المرور</label>
-                    <input type="password" name="confirm_password" id="confirm_password" required 
-                           placeholder="أعد كتابة كلمة المرور" autocomplete="new-password">
-                </div>
-
-                <button type="submit" class="submit-btn full-width">
-                    إنشاء الحساب
-                </button>
-
-                <div class="auth-footer">
-                    <p>لديك حساب بالفعل؟ 
-                        <a href="/auth/login" class="link-accent">تسجيل الدخول</a>
-                    </p>
-                </div>
-            </form>
+    <div class="auth-card glass-strong">
+        <div class="auth-header">
+            <h1 class="auth-title">عضوية جديدة</h1>
+            <p class="auth-subtitle">انضم الآن إلى منصة الحوطية الرقمية</p>
         </div>
+
+        {% if error %}
+        <div class="alert alert-error" id="errorAlert">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <span>{{ error }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/auth/register" class="auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+            <div class="form-group">
+                <label for="username">اسم المستخدم</label>
+                <input type="text" name="username" id="username" required 
+                        placeholder="مثال: ahmed_2024" autocomplete="username">
+                <small style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">يجب أن يكون فريداً وباللغة الإنجليزية أو العربية (3-30 حرفاً)</small>
+            </div>
+
+            <div class="form-group">
+                <label for="password">كلمة المرور</label>
+                <input type="password" name="password" id="password" required 
+                        placeholder="أدخل كلمة مرور قوية" autocomplete="new-password">
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password">تأكيد كلمة المرور</label>
+                <input type="password" name="confirm_password" id="confirm_password" required 
+                        placeholder="أعد كتابة كلمة المرور" autocomplete="new-password">
+            </div>
+
+            <button type="submit" class="submit-btn full-width">
+                إنشاء الحساب
+            </button>
+
+            <div class="auth-footer">
+                <p>لديك حساب بالفعل؟ 
+                    <a href="/auth/login" class="link-accent">تسجيل الدخول</a>
+                </p>
+            </div>
+        </form>
     </div>
 </section>
 {% endblock %}

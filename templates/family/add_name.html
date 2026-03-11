@@ -1,159 +1,171 @@
 {% extends "base.html" %}
 {% block title %}إضافة عضو جديد{% endblock %}
 {% block content %}
+<div class="add-edit-page">
+    <div class="form-card glass-strong">
+        <div class="form-header">
+            <h2 class="form-title">إضافة اسم</h2>
+            <p class="form-subtitle">أدخل بيانات الاسم بدقة </p>
+        </div>
+        <!-- رسائل النجاح أو الخطأ -->
+        {% if success %}
+        <div class="alert success" id="success-alert">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span><strong>تم بنجاح!</strong> {{ success }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endif %}
 
-<section class="form-page-section">
-    <div class="container">
-        <div class="form-card glass-strong">
-            <div class="form-header">
-                <h1 class="form-title">إضافة عضو جديد</h1>
-                <p class="form-subtitle">أدخل بيانات العضو بدقة ليتم إضافته إلى شجرة العائلة</p>
-            </div>
-            <!-- رسائل النجاح أو الخطأ -->
-            {% if success %}
-            <div class="alert success" id="success-alert">
-                <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-                <span><strong>تم بنجاح!</strong> {{ success }}</span>
-                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
-            </div>
-
-            <script>
-                // إخفاء الرسالة تلقائيًا بعد 5 ثواني
-                setTimeout(() => {
-                    const alert = document.getElementById('success-alert');
-                    if (alert) {
-                        alert.style.transition = 'opacity 0.6s ease';
-                        alert.style.opacity = '0';
-                        setTimeout(() => alert.remove(), 600);
-                    }
-                }, 5000);
-            </script>
-            {% endif %}
-
-            {% if error %}
-            <div class="alert error">
-                <svg viewBox="0 0 24 24" width="20" height="20">
-                    <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                <span><strong>خطأ:</strong> {{ error }}</span>
-            </div>
-            {% endif %}
+        {% if error %}
+        <div class="alert error" id="success-alert">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
+            <span><strong>خطأ:</strong> {{ error }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endif %}
+        <script>
+            // إخفاء الرسالة تلقائيًا بعد 5 ثواني
+            setTimeout(() => {
+                const alert = document.getElementById('success-alert');
+                if (alert) {
+                    alert.style.transition = 'opacity 0.6s ease';
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 600);
+                }
+            }, 5000);
+        </script>
         <form action="/names/add" method="post" enctype="multipart/form-data" class="member-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>الكود <span class="required">*</span></label>
-                    <div class="input-with-status" style="position: relative;">
-                        <input type="text" name="code" id="memberCode" required placeholder="مثال: A0-000-123" value="{{ form_data.code or '' }}">
-                        <span id="codeStatusIcon" class="status-icon"></span>
-                    </div>
-                    <small id="codeFeedback" class="feedback-text"></small>
+            <div class="form-group">
+                <label>الكود <span class="required">*</span></label>
+                <div class="input-with-status" style="position: relative;">
+                    <input type="text" name="code" id="memberCode" required placeholder="مثال: A0-000-123" value="{{ form_data.code or '' }}">
+                    <span id="codeStatusIcon" class="status-icon"></span>
                 </div>
-                <div class="form-group">
-                    <label>الاسم <span class="required">*</span></label>
-                    <input type="text" name="name" required value="{{ form_data.name or '' }}" placeholder="مثال: الحوطي" class="form-control">
-                </div>
-                <div class="form-group">
-                    <label>العلاقة</label>
-                    <select name="relation" class="form-select">
-                        <option value="">-- اختر --</option>
-                        <option value="ابن">ابن</option>
-                        <option value="ابنة">ابنة</option>
-                        <option value="زوج">زوج</option>
-                        <option value="زوجة">زوجة</option>
-                        <option value="ابن زوج">ابن زوج</option>
-                        <option value="ابنة زوج">ابنة زوج</option>
-                        <option value="ابن زوجة">ابن زوجة</option>
-                        <option value="ابنة زوجة">ابنة زوجة</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>كود الأب</label>
-                    <input type="text" name="f_code" placeholder="مثال: A0-001-001" value="{{ form_data.f_code or '' }}">
-                </div>
-                <div class="form-group">
-                    <label>كود الأم</label>
-                    <input type="text" name="m_code" placeholder="مثال: A0-001-001"value="{{ form_data.m_code or '' }}">
-                </div>
-                <div class="form-group">
-                    <label>كود الزوج (للأنثى)</label>
-                    <input type="text" name="h_code" placeholder="مثال: A0-001-001">
-                </div>
-                <div class="form-group">
-                    <label>كود الزوجة (للذكر)</label>
-                    <input type="text" name="w_code" placeholder="مثال: A0-001-001">
-                </div>
-                <div class="form-group">
-                    <label>المستوى</label>
-                    <input type="number" name="level" min="1">
-                </div>
-                <div class="form-group">
-                    <label>اللقب (مثل: أبو أحمد، أم محمد)</label>
-                    <input type="text" name="nick_name" placeholder="اختياري" placeholder="مثال: A0-001-001">
-                </div>
-                <div class="form-group">
-                    <label>الجنس</label>
-                    <select name="gender" class="form-select">
-                        <option value="">-- اختر --</option>
-                        <option value="ذكر">ذكر</option>
-                        <option value="أنثى">أنثى</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>تاريخ الميلاد</label>
-                    <input type="date" name="d_o_b" >
-                </div>
-                <div class="form-group">
-                    <label>تاريخ الوفاة</label>
-                    <input type="date" name="d_o_d" >
-                </div>
-                <div class="form-group">
-                    <label>الحالة</label>
-                    <select name="status" class="form-select">
-                        <option value="">-- اختر --</option>
-                        <option value="حي">حي</option>
-                        <option value="حية">حية</option>
-                        <option value="متوفي">متوفي</option>
-                        <option value="متوفية">متوفية</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" name="email" >
-                </div>
-                <div class="form-group">
-                    <label>رقم الهاتف</label>
-                    <input type="text" name="phone" >
-                </div>
-                <div class="form-group">
-                    <label>العنوان</label>
-                    <input type="text" name="address" >
-                </div>
-                <div class="form-group">
-                    <label>مكان الميلاد</label>
-                    <input type="text" name="p_o_b" >
-                </div>
-                <div class="form-group full-width">
-                    <label>صورة العضو (اختياري)</label>
-                    <input type="file" name="picture" accept="image/*" >
-                </div>
+                <small id="codeFeedback" class="feedback-text"></small>
+            </div>
+            
+            <div class="form-group">
+                <label>الاسم <span class="required">*</span></label>
+                <input type="text" name="name" class="custom-input" required value="{{ form_data.name or '' }}" placeholder="مثال: الحوطي">
+            </div>
+            
+            <div class="form-group">
+                <label>العلاقة</label>
+                <select name="relation" class="custom-select" value="{{ form_data.relation or '' }}">
+                    <option value="">-- اختر --</option>
+                    <option value="ابن">ابن</option>
+                    <option value="ابنة">ابنة</option>
+                    <option value="زوج">زوج</option>
+                    <option value="زوجة">زوجة</option>
+                    <option value="ابن زوج">ابن زوج</option>
+                    <option value="ابنة زوج">ابنة زوج</option>
+                    <option value="ابن زوجة">ابن زوجة</option>
+                    <option value="ابنة زوجة">ابنة زوجة</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>كود الأب</label>
+                <input type="text" name="f_code" class="custom-input" placeholder="مثال: A0-001-001" value="{{ form_data.f_code or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>كود الأم</label>
+                <input type="text" name="m_code" class="custom-input" placeholder="مثال: A0-001-001" value="{{ form_data.m_code or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>كود الزوج (للأنثى)</label>
+                <input type="text" name="h_code" class="custom-input" placeholder="مثال: A0-001-001"value="{{ form_data.h_code or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>كود الزوجة (للذكر)</label>
+                <input type="text" name="w_code" class="custom-input" placeholder="مثال: A0-001-001"value="{{ form_data.w_code or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>المستوى</label>
+                <input type="number" name="level" min="1" class="custom-input"value="{{ form_data.level or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>اللقب (مثل: أبوأحمد، أم محمد)</label>
+                <input type="text" name="nick_name" class="custom-input" placeholder="اختياري"value="{{ form_data.nick_name or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>الجنس</label>
+                <select name="gender" class="custom-select"value="{{ form_data.gender or '' }}">
+                    <option value="">-- اختر --</option>
+                    <option value="ذكر">ذكر</option>
+                    <option value="أنثى">أنثى</option>
+                </select>
             </div>
 
-            <div class="form-actions">
-                    <button type="submit" class="submit-btn large">
+            <div class="form-group">
+                <label>تاريخ الميلاد</label>
+                <input type="date" name="d_o_b" class="custom-input"value="{{ form_data.d_o_b or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>تاريخ الوفاة</label>
+                <input type="date" name="d_o_d" class="custom-input"value="{{ form_data.d_o_d or '' }}">
+            </div>
+
+            <div class="form-group">
+                <label>الحالة</label>
+                <select name="status" class="custom-select"value="{{ form_data.status or '' }}">
+                    <option value="">-- اختر --</option>
+                    <option value="حي">حي</option>
+                    <option value="حية">حية</option>
+                    <option value="متوفي">متوفي</option>
+                    <option value="متوفية">متوفية</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>البريد الإلكتروني</label>
+                <input type="email" name="email" class="custom-input"value="{{ form_data.email or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>رقم الهاتف</label>
+                <input type="text" name="phone" class="custom-input"value="{{ form_data.phone or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>العنوان</label>
+                <input type="text" name="address" class="custom-input"value="{{ form_data.address or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>مكان الميلاد</label>
+                <input type="text" name="p_o_b" class="custom-input"value="{{ form_data.p_o_b or '' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>صورة العضو (اختياري)</label>
+                    <div class="file-input-wrapper">
+                <input type="file" name="picture" accept="image/*" style="width: 100%;">
+                </div>
+            </div>
+           
+            <button type="submit" class="submit-btn">
                         حفظ العضو الجديد
-                    </button>
-                    <a href="/names" class="btn-cancel">
+            </button>
+            <a href="/names" class="cancel-link">
                         رجوع إلى الشجرة
-                    </a>
-            </div>
+            </a>
+           
         </form>
-        </div>
     </div>
-</section>
+</div>
 <script>
 document.querySelector('input[name="code"]').addEventListener('input', async function(e) {
     let val = e.target.value.trim().toUpperCase(); // تحويل للحرف الكبير

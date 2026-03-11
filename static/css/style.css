@@ -37,6 +37,7 @@ body {
   --danger:#ef4444;
   --danger-hover:#dc2626;
   --shadow:0 8px 32px rgba(0,0,0,0.08);
+  --shadow1:0 10px 40px rgba(0,0,0,0.1);
   --radius: 16px;
   --radius-sm: 12px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -54,7 +55,7 @@ body {
     background:var(--glass-strong); 
     backdrop-filter:blur(25px); 
     border:1px solid var(--border); 
-    box-shadow:0 10px 40px rgba(0,0,0,0.1); 
+    box-shadow:var(--shadow1); 
     border-radius:20px; 
 }
 /* === Header === */
@@ -1191,98 +1192,7 @@ footer {
     justify-content: center;
     gap: 20px;
 }
-/* ===== صفحات إضافة وتعديل عضو ===== */
-.form-page-section {
-    padding: 60px 20px;
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-.form-card {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 48px 40px;
-    border-radius: 28px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
-}
-.form-header {
-    text-align: center;
-    margin-bottom: 40px;
-}
-.form-title {
-    font-size: 2.6rem;
-    font-weight: 900;
-    color: #0f172a;
-    margin-bottom: 12px;
-}
-.form-subtitle {
-    font-size: 1.1rem;
-    color: #64748b;
-}
-/* النموذج */
-.member-form {
-    direction: rtl;
-}
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-}
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-.form-group label {
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #0f172a;
-    font-size: 0.95rem;
-}
-.required { 
-    color: #ef4444; 
-}
-.form-group input,
-.form-group select {
-    padding: 14px 18px;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    background: white;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
-}
-.file-input {
-    padding: 10px 0;
-}
-.current-image {
-    margin-top: 12px;
-}
-.current-image img {
-    width: 120px;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 16px;
-    border: 3px solid #e2e8f0;
-}
-.input-with-status {
-    display: flex;
-    align-items: center;
-}
-.status-icon {
-    position: absolute;
-    left: 10px; /* لأن الاتجاه RTL */
-    font-size: 1.2rem;
-}
-.feedback-text {
-    display: block;
-    margin-top: 5px;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
+
 /* ==========  نهايه صفحة شجرة العائلة  ========== */
 
 /* ========== ✅  تنسيق لوحة التحكم الإدارية (Admin Dashboard)  ✅ ========== */
@@ -2036,73 +1946,7 @@ footer {
     color: var(--accent);
     text-decoration: underline;
 }
-/* === تنسيق صفحة إضافة/تعديل المقالات (Add/Edit Articles) === */
-.add-news-page { /* استخدام نفس الفئة للصفحة بشكل عام */
-    max-width: 900px;
-    margin: 40px auto 80px auto;
-    padding: 0 15px;
-}
 
-/* حاوية النموذج */
-.form-container {
-    background-color: var(--card-bg);
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-}
-/* تنسيق مجموعة الحقل */
-.form-group {
-    margin-bottom: 25px;
-}
-.form-group label {
-    display: block;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 8px;
-}
-.form-group .required {
-    color: #ef4444; /* أحمر للنجوم المطلوبة */
-    font-size: 1rem;
-}
-/* حقول الإدخال والنص (Input & Textarea) */
-.form-container input[type="text"],
-.form-container input[type="file"],
-.form-container textarea {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-    background-color: white;
-}
-.form-container input[type="text"]:focus,
-.form-container textarea:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
-}
-.form-container textarea {
-    resize: vertical;
-    min-height: 200px;
-}
-/* حقل القراءة فقط */
-.readonly-input {
-    background-color: #f3f4f6;
-    color: var(--text-medium);
-    border-style: dashed !important;
-    cursor: default;
-}
-.form-group small {
-    display: block;
-    margin-top: 5px;
-    font-size: 0.9rem;
-    color: var(--text-medium);
-}
-.form-group strong {
-    color: var(--text-darker);
-}
 /* أزرار الإجراءات */
 .form-actions {
     display: flex;
@@ -2189,6 +2033,7 @@ footer {
     font-weight: 600;
     color: #0f172a;
     font-size: 0.95rem;
+    margin-bottom: 5px;
 }
 .auth-form input {
     width: 100%;
@@ -2203,6 +2048,20 @@ footer {
     outline: none;
     border-color: var(--accent);
     box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
+}
+.send-message-card, .change-password-card {
+    border-radius: 12px;
+    border: 1px solid #dee2e6; /* حد خفيف للفصل */
+    margin-bottom: 32px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff; /* خلفية بيضاء للوضوح */
+}
+
+
+/* تنسيق حقول الإدخال */
+.auth-form .form-control {
+    border-radius: 8px;
+    padding: 10px 15px;
 }
 /* زر الإرسال */
 .submit-btn.full-width {
@@ -2566,25 +2425,7 @@ footer {
    3. تنسيق نماذج الإرسال وتغيير كلمة السر
    ======================================= */
 
-.send-message-card, .change-password-card {
-    border-radius: 12px;
-    border: 1px solid #dee2e6; /* حد خفيف للفصل */
-    margin-bottom: 32px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff; /* خلفية بيضاء للوضوح */
-}
-.auth-form .form-group {
-    margin-bottom: 15px;
-}
-.auth-form label {
-    font-weight: 600;
-    margin-bottom: 5px;
-}
-/* تنسيق حقول الإدخال */
-.auth-form .form-control {
-    border-radius: 8px;
-    padding: 10px 15px;
-}
+
 /* زر العودة للرئيسية المنفصل */
 .btn-lg {
     border-radius: 10px;

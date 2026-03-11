@@ -111,7 +111,6 @@ def init_database():
             cur.execute("ALTER TABLE library ADD COLUMN IF NOT EXISTS allow_download BOOLEAN DEFAULT TRUE;")
             cur.execute("CREATE INDEX IF NOT EXISTS idx_library_category ON library(category);")
             
-           
             # =======================================================
             # 5. إنشاء جداول ودوال البحث (ضروري لعمل البحث التلقائي)
             # =======================================================

@@ -1,0 +1,198 @@
+/* ===== صفحات إضافة وتعديل  ===== */
+.add-edit-page {
+    padding: 60px 20px;
+    display: flex;
+    justify-content: center;
+    background: #f8fafc;
+    min-height: 100vh;
+    align-items: center;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.form-card {
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 40px;
+    background: white;
+    border-radius: 20px;
+    border: 1px solid #edf2f7;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.form-header h2 {
+    color: #2d3748;
+    font-weight: 800;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+.form-title {
+    font-size: 2.6rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 12px;
+}
+.form-subtitle {
+    font-size: 1.1rem;
+    color: #64748b;
+}
+/* النموذج */
+.member-form {
+    direction: rtl;
+}
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 24px;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+    text-align: right;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+}
+.required { 
+    color: #ef4444; 
+}
+.form-group input,
+.form-group select {
+    padding: 14px 18px;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
+}
+.file-input {
+    padding: 10px 0;
+}
+.current-image {
+    margin-top: 12px;
+}
+.current-image img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 16px;
+    border: 3px solid #e2e8f0;
+}
+.input-with-status {
+    display: flex;
+    align-items: center;
+}
+.status-icon {
+    position: absolute;
+    left: 10px; /* لأن الاتجاه RTL */
+    font-size: 1.2rem;
+}
+.feedback-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* حاوية النموذج */
+.form-container {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* حقول الإدخال والنص (Input & Textarea) */
+.form-container input[type="text"],
+.form-container input[type="file"],
+.form-container textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+    background-color: white;
+}
+.form-container input[type="text"]:focus,
+.form-container textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
+}
+.form-container textarea {
+    resize: vertical;
+    min-height: 200px;
+}
+/* حقل القراءة فقط */
+.readonly-input {
+    background-color: #f3f4f6;
+    color: var(--text-medium);
+    border-style: dashed !important;
+    cursor: default;
+}
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.9rem;
+    color: var(--text-medium);
+}
+.form-group strong {
+    color: var(--text-darker);
+}
+
+
+ 
+   
+   
+    
+
+    /* تنسيق الحقول */
+    .custom-input, .custom-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        outline: none;
+    }
+
+    .custom-input:focus, .custom-select:focus {
+        border-color: #27ae60;
+        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
+    }
+
+    .file-input-wrapper {
+        position: relative;
+        background: #f8fafc;
+        border: 2px dashed #cbd5e0;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        transition: 0.3s;
+    }
+
+    .file-input-wrapper:hover {
+        border-color: #27ae60;
+        background: #f0fff4;
+    }
