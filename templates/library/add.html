@@ -34,7 +34,9 @@
                 <div class="form-group">
                     <label>تصنيف الكتاب <span class="required">*</span></label>
                     <select name="category" class="custom-select" required>
+                        <option value="">-- اختر التصنيف --</option>
                         {% for cat in categories %}
+                        
                         <option value="{{ cat }}">{{ cat }}</option>
                         {% endfor %}
                     </select>

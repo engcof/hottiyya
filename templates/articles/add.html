@@ -8,8 +8,7 @@
             <h2 class="form-title">كتابة مقال جديد</h1>
         </div>
             
-        <!-- النموذج الفاخر -->
-        <div class="form-container">
+    
             <form method="post" action="/articles/add" enctype="multipart/form-data" class="news-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
@@ -41,7 +40,7 @@
                     <a href="/articles" class="submit-btn">رجوع</a>
                 </div>
             </form>
-        </div>
+        
     </div>
 </section>
 {% endblock %}

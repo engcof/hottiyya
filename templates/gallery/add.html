@@ -1,15 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" style="margin-top: 120px; max-width: 700px; min-height: 80vh;">
-    <div class="glass-strong p-5" style="border-radius: 24px; border: 1px solid rgba(255,255,255,0.1);">
-        <div class="text-center mb-5">
-            <div class="icon-circle mb-3" style="font-size: 2rem; color: var(--accent);">
-                <i class="fas fa-camera-retro"></i>
-            </div>
-            <h2 class="hero-title" style="font-size: 2rem; margin-bottom: 10px;">إضافة مادة للمعرض</h2>
-            <p class="text-lighter">قم بملء البيانات التالية بدقة لنشر الصورة</p>
+<div class="add-edit-page">
+    <div class="form-card glass-strong">
+        <div class="form-header">
+            <h2 class="form-title">إضافة مادة للمعرض</h2>
+            <p class="form-subtitle">قم بملء البيانات التالية  </p>
         </div>
+            
         <form action="/gallery/add" method="POST" enctype="multipart/form-data" class="auth-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <div class="form-group">
