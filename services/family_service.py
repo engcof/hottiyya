@@ -53,15 +53,15 @@ def search_and_fetch_names(q: str, page: int) -> Tuple[List[Dict[str, Any]], int
             elif "-" in phrase and len(phrase.split()) == 1:
                 sql_condition = "code ILIKE %s AND level >= 0"
                 count_params = (f"%{phrase}%",)
-            # البحث باللقب (إذا كانت كلمة واحدة وليست كود)
-            elif len(phrase.split()) == 1 and not re.search(r"\d", phrase):
-                sql_condition = "nick_name ILIKE %s AND level >= 0"
-                count_params = (f"%{phrase}%",)
-            # البحث بجملة كاملة (Full Text Search) - الحالة الافتراضية
-            else:
-                sql_condition = "public.normalize_arabic(TRIM(full_name)) ILIKE %s AND level >= 0"
-                count_params = (search_term_like,)
+           
 
+            # الحالة 3: البحث النصي الشامل (الأسماء والألقاب)
+            else:
+                # هنا نقوم بالبحث في الاسم الكامل واللقب معاً باستخدام ILIKE
+                # سيشمل ذلك "ام احمد" سواء كانت في اللقب أو ضمن الاسم
+                sql_condition = "(public.normalize_arabic(full_name) ILIKE %s OR public.normalize_arabic(nick_name) ILIKE %s) AND level >= 0"
+                count_params = (search_term_like, search_term_like)
+            
             # 3. جلب العدد الكلي
             cur.execute(f"""
                 SELECT COUNT(*) FROM family_search WHERE {sql_condition}
