@@ -30,13 +30,12 @@ def cleanup_file(filepath: str):
 
 # ====================== تهيئة سلسلة اتصال قاعدة البيانات ======================
 def get_database_url():
-    """
-    يقوم ببناء سلسلة الاتصال بقاعدة البيانات (DATABASE_URL) 
-    إما من المتغير الكامل أو من المتغيرات المنفصلة (DB_HOST, DB_USER, إلخ).
-    """
     database_url = os.getenv("DATABASE_URL")
-    
     if database_url:
+        # Neon يفضل أحياناً حذف المعلمات الإضافية عند الاستخدام مع pg_dump/pg_restore
+        # أو التأكد من أنها postgresql:// وليس postgres://
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
         return database_url
     
     # إذا لم يتم تعريف DATABASE_URL، نقوم ببنائها من المتغيرات المنفصلة
@@ -167,9 +166,10 @@ async def export_data_post(request: Request, password: str = Form(...)):
             "--verbose",
             "--no-owner",
             "--no-acl",
+            "--no-privileges",  
             "--format=custom",          
             "--file", export_path,      
-            database_url
+            database_url       
         ]
 
         result = subprocess.run(
