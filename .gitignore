@@ -46,3 +46,5 @@ store
 *.sqlite3
 credentials.json
 token.json
+
+extract_excel.py

@@ -4,8 +4,6 @@ import os
 import re
 from typing import Optional
 from datetime import date 
-import pandas as pd
-from io import BytesIO
 from fastapi.responses import StreamingResponse
 
 # المكتبات الخارجية (Third-party)
@@ -30,7 +28,7 @@ from services.family_service import (
     get_member_for_edit,
     delete_member,
     get_next_available_code,
-    get_family_data_for_export,
+    
     get_family_table_backup_text
 )
 
@@ -702,35 +700,6 @@ async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
     
 
 
-# مسار تصدير إكسل (شامل / حسب الحرف)
-@router.get("/export/excel")
-async def export_excel(letter: Optional[str] = None):
-    data = get_family_data_for_export(letter)
-    if not data:
-        return {"error": "لا توجد بيانات لتصديرها"}
-
-    # تحويل البيانات إلى DataFrame
-    df = pd.DataFrame(data)
-    
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='FamilyData')
-        
-        # تحسين مظهر الملف (اختياري)
-        workbook = writer.book
-        worksheet = writer.sheets['FamilyData']
-        header_format = workbook.add_format({'bold': True, 'bg_color': '#D7E4BC', 'border': 1})
-        for col_num, value in enumerate(df.columns.values):
-            worksheet.write(0, col_num, value, header_format)
-            worksheet.set_column(col_num, col_num, 20)
-
-    output.seek(0)
-    filename = f"Family_Report_{letter if letter else 'Full'}.xlsx"
-    return StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename={filename}"}
-    )  
 
 @router.get("/export/table-backup-txt")
 async def export_table_backup():

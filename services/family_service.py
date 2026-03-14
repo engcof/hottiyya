@@ -506,34 +506,7 @@ def get_next_available_code(prefix: str) -> str:
             # تنسيق السلسلة لتصبح: A0-000-006
             return f"{prefix}{s[0]}-{s[1:4]}-{s[4:]}"
         
-def get_family_data_for_export(letter: Optional[str] = None) -> List[Dict[str, Any]]:
-    """جلب بيانات العائلة كاملة أو بحرف معين لغرض التصدير."""
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            query = """
-                SELECT 
-                    n.code AS "الكود",
-                    public.get_full_name(n.code, NULL, FALSE) AS "الاسم الكامل",
-                    n.nick_name AS "اللقب",
-                    n.relation AS "العلاقة",
-                    i.gender AS "الجنس",
-                    i.phone AS "الهاتف",
-                    i.address AS "العنوان",
-                    i.status AS "الحالة",
-                    a.d_o_b AS "تاريخ الميلاد",
-                    a.age_at_death AS "العمر"
-                FROM family_name n
-                LEFT JOIN family_info i ON n.code = i.code_info
-                LEFT JOIN family_age_search a ON n.code = a.code
-            """
-            params = []
-            if letter:
-                query += " WHERE n.code LIKE %s"
-                params.append(f"{letter.upper()}%")
-            
-            query += " ORDER BY n.code ASC"
-            cur.execute(query, params)
-            return cur.fetchall()
+
 
 def get_single_member_full_details(code: str) -> Optional[Dict[str, Any]]:
     """جلب تفاصيل شاملة لفرد واحد لغرض الطباعة الفردية."""
