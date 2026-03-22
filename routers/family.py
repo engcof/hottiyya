@@ -439,11 +439,12 @@ async def add_name(
     })
 
 @router.get("/get-next-code")
-async def suggest_code(letter: str):
-    if not letter or not letter.isalpha():
+async def suggest_code(prefix: str): # نستخدم prefix بدلاً من letter
+    if not prefix:
         return {"next_code": ""}
     
-    next_code = get_next_available_code(letter[0])
+    # نرسل البادئة كاملة للدالة
+    next_code = get_next_available_code(prefix)
     return {"next_code": next_code}
 
 @router.get("/check-code-availability")

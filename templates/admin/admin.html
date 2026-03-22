@@ -8,12 +8,14 @@
             <h1 class="page-title">الإدارية</h1>
             <div class="header-actions" style="display: flex; gap: 10px;">
                 <a href="/admin/logs" class="btn-add" style="background-color: #6c757d;">سجل العمليات</a>
+                <a href="/admin/login-logs" class="btn-add" style="background-color: #64748b;"> <i class="icon-log"></i> سجل الدخول </a>
+                <a href="/admin/add_user" class="btn-add" >اضافة مستخدم</a>
+                <a href="/admin/change_password" class="btn-add" style="background-color: #f59e0b;">تغيير كلمة مرور</a>
                 <a href="/permissions" class="btn-add">صلاحية جديدة</a>
                 <a href="/data/import-data" class="btn-add">قاعدة بيانات</a>
                 <a href="/names/export/table-backup-txt" class="btn-add"> تصدير بيانات (TXT) </a>
             </div>
         </div>
-
         {% if success_message %}
             <div class="alert success flash-message">✅ {{ success_message }}</div>
         {% endif %}
@@ -21,52 +23,6 @@
             <div class="alert error flash-message">❌ {{ error_message }}</div>
         {% endif %}
 
-        <div class="admin-grid">
-            <div class="admin-card">
-                <h2>إضافة مستخدم جديد</h2>
-                <form method="post" action="/admin/add_user" class="admin-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                    <div class="form-group">
-                        <label>اسم المستخدم</label>
-                        <input type="text" name="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label>كلمة المرور</label>
-                        <input type="password" name="password" required>
-                    </div>
-                    <div class="form-group">
-                        <label>الدور</label>
-                        <select name="role">
-                            <option value="manager">مدير</option>
-                            <option value="user" selected>مستخدم</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="submit-btn large">إضافة المستخدم</button>
-                </form>
-            </div>
-
-            <div class="admin-card">
-                <h2>تغيير كلمة المرور</h2>
-                <form method="POST" action="/admin/change_password" class="admin-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                    <div class="form-group">
-                        <label>اختر المستخدم</label>
-                        <select name="user_id" required>
-                            {% for u in users %}
-                            <option value="{{ u.id }}">{{ u.username }} ({{ u.role }})</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>كلمة المرور الجديدة</label>
-                        <input type="password" name="new_password" required>
-                    </div>
-                    <button type="submit" class="submit-btn large warning">تغيير كلمة المرور</button>
-                </form>
-            </div>
-        </div>
         <div class="admin-card full">
             <h2>قائمة المستخدمين والصلاحيات</h2>
             <div class="table-wrapper">
@@ -173,36 +129,8 @@
             </div>
         </div>
    
-        <div class="admin-card full">
-            <h2>سجل نشاط تسجيل الدخول (آخر 50)</h2>
-            <p class="page-subtitle">يتم تنظيف هذه السجلات تلقائيًا بعد 7 أيام.   </p>
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>اسم المستخدم</th>
-                            <th>آخر نشاط (التاريخ)</th>
-                            <th>آخر نشاط (الوقت)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in login_history %}
-                        <tr>
-                            <td>{{ loop.index }}</td>
-                            <td><span class="perm-tag">{{ log.username }}</span></td>
-                            <td>{{ log.timestamp.strftime('%Y-%m-%d') }}</td>
-                            <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="4" class="text-center">لا يوجد سجل نشاط للمستخدمين المسجلين حاليًا.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+     
+       
     </div>
 </section>
 <!-- جافاسكريبت للإخفاء التلقائي لرسائل الفلاش -->

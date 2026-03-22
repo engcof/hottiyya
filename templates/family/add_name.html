@@ -167,21 +167,23 @@
     </div>
 </div>
 <script>
-document.querySelector('input[name="code"]').addEventListener('input', async function(e) {
-    let val = e.target.value.trim().toUpperCase(); // تحويل للحرف الكبير
-    e.target.value = val; // تحديث الحقل بالحرف الكبير
-    
-    if (val.length === 1 && /^[A-Z]$/.test(val)) {
+document.getElementById('memberCode').addEventListener('input', async function(e) {
+    let val = e.target.value.trim().toUpperCase();
+    e.target.value = val;
+
+    // نقترح الكود الجديد عندما يكتب المستخدم البادئة كاملة (مثال: A0-005)
+    // طول البادئة عادة يكون 6 محارف
+    if (val.length === 6 && val.includes('-')) {
         try {
-            const response = await fetch(`/names/get-next-code?letter=${val}`);
+            const response = await fetch(`/names/get-next-code?prefix=${val}`);
             const data = await response.json();
             if (data.next_code) {
                 e.target.value = data.next_code;
-                // اختياري: تحديد النص المضاف ليسهل على المستخدم مسحه إذا أراد
-                e.target.setSelectionRange(1, data.next_code.length);
+                // إظهار رسالة نجاح بسيطة أو وميض للحقل
+                validateCode(data.next_code); 
             }
         } catch (error) {
-            console.error("خطأ في جلب الكود المقترح:", error);
+            console.error("خطأ في جلب الكود:", error);
         }
     }
 });

@@ -17,7 +17,6 @@
             <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
-
         <form method="post" action="/auth/register" class="auth-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 

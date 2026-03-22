@@ -27,80 +27,59 @@ def get_total_name_count() -> int:
             return cur.fetchone()[0]
 
 def search_and_fetch_names(q: str, page: int) -> Tuple[List[Dict[str, Any]], int, int, int]:
-    """
-    يقوم بالبحث في قاعدة البيانات وجلب الأسماء مع الترقيم.
-
-    النتائج: (members_list, current_page, totals_pages, total_count)
-    """
-    
     with get_db_context() as conn:
         with conn.cursor() as cur:
-            # 1. توحيد المدخلات
             phrase = q.strip()
-            clean_phrase = " ".join(phrase.split())
-            normalized_input = normalize_arabic(clean_phrase)
+            # توحيد النص للبحث
+            normalized_input = normalize_arabic(phrase)
             search_term_like = f"%{normalized_input}%"
             
-            # 2. تحديد شرط الاستعلام (SQL Condition)
-            sql_condition = ""
-            count_params = ()
-            
-            # البحث بالكود (الأولوية القصوى)
+            # تحديد الشرط
             if re.fullmatch(r"[A-Z]\d{0,3}-\d{3}-\d{3}", phrase.upper()):
-                sql_condition = "code = %s AND level >= 0"
+                sql_condition = "code = %s"
                 count_params = (phrase.upper(),)
-            # البحث بالكود الجزئي
             elif "-" in phrase and len(phrase.split()) == 1:
-                sql_condition = "code ILIKE %s AND level >= 0"
+                sql_condition = "code ILIKE %s"
                 count_params = (f"%{phrase}%",)
-           
-
-            # الحالة 3: البحث النصي الشامل (الأسماء والألقاب)
             else:
-                # هنا نقوم بالبحث في الاسم الكامل واللقب معاً باستخدام ILIKE
-                # سيشمل ذلك "ام احمد" سواء كانت في اللقب أو ضمن الاسم
-                sql_condition = "(public.normalize_arabic(full_name) ILIKE %s OR public.normalize_arabic(nick_name) ILIKE %s) AND level >= 0"
+                # تحسين: البحث في الاسم الموحد واللقب الموحد
+                sql_condition = "(public.normalize_arabic(full_name) ILIKE %s OR public.normalize_arabic(nick_name) ILIKE %s)"
                 count_params = (search_term_like, search_term_like)
-            
-            # 3. جلب العدد الكلي
-            cur.execute(f"""
-                SELECT COUNT(*) FROM family_search WHERE {sql_condition}
-            """, count_params)
+
+            # إضافة شرط المستوى دائماً
+            sql_condition += " AND level >= 0"
+
+            # 1. جلب العدد الكلي
+            cur.execute(f"SELECT COUNT(*) FROM family_search WHERE {sql_condition}", count_params)
             total_count = cur.fetchone()[0]
             
+            # حسابات الترقيم (Pagination)
             totals_pages = math.ceil(total_count / PAGE_SIZE) if total_count > 0 else 1
-            current_page = min(page, totals_pages)
-            if current_page < 1: current_page = 1
+            current_page = max(1, min(page, totals_pages))
             offset = (current_page - 1) * PAGE_SIZE
             
-            # 4. جلب البيانات
-            sql_params = count_params + (PAGE_SIZE, offset)
-            
-            # 💡 يتم استخدام نفس شروط البحث مع LIMIT/OFFSET
+            # 2. جلب البيانات مع الفرز داخل SQL لضمان صحة الترقيم
+            # لاحظ استخدام public.normalize_arabic في الـ ORDER BY
             cur.execute(f"""
-                SELECT code, public.get_full_name(code, 7, FALSE) AS full_name_display, nick_name, level
+                SELECT code, public.get_full_name(code, 7, FALSE) AS display_name, nick_name
                 FROM family_search
                 WHERE {sql_condition}
-                ORDER BY full_name
+                ORDER BY public.normalize_arabic(full_name) ASC
                 LIMIT %s OFFSET %s
-            """, sql_params)
+            """, count_params + (PAGE_SIZE, offset))
+            
             rows = cur.fetchall()
 
-    # 5. معالجة الصفوف (Normalization & Sorting)
-    members = []
-    for row in rows:
-        code, display_name, nick_name, level = row
-        clean_display_name = normalize_arabic(display_name)
-        clean_nick_name = normalize_arabic(nick_name.strip()) if nick_name else None
-        members.append({
-            "code": code,
-            "full_name": clean_display_name,
-            "nick_name": clean_nick_name
-        })
-    # 💡 يتم فرز النتائج محلياً بعد التوحيد لضمان ترتيب أبجدي دقيق
-    members.sort(key=lambda x: x["full_name"])
+    # معالجة النتائج (بدون الحاجة لعمل sort في بايثون)
+    members = [{
+        "code": r[0],
+        "full_name": r[1],
+        "nick_name": r[2].strip() if r[2] else None
+    } for r in rows]
     
     return members, current_page, totals_pages, total_count
+
+
 
 def fetch_names_no_search(page: int) -> Tuple[List[Dict[str, Any]], int, int, int]:
     """جلب الأسماء بدون بحث مع الترقيم."""
@@ -473,39 +452,33 @@ def delete_member(code: str) -> None:
             
             conn.commit()
 
-def get_next_available_code(prefix: str) -> str:
-    """جلب الكود التالي بناءً على الحرف الأول (مثلاً A أو B)."""
-    prefix = prefix.upper()
+def get_next_available_code(prefix_input: str) -> str:
+    """جلب الكود التالي بناءً على البادئة (مثلاً A0-005)."""
+    # تنظيف وتنسيق البادئة
+    prefix = prefix_input.upper().strip()
+    # نضمن أن البادئة تنتهي بشرطة للبحث الدقيق
+    search_prefix = prefix if prefix.endswith('-') else f"{prefix}-"
+
     with get_db_context() as conn:
         with conn.cursor() as cur:
-            # البحث عن أكبر كود يبدأ بهذا الحرف
-            # نستخدم regex للتأكد من جلب الأكواد التي تتبع نفس الصيغة فقط
-            query = "SELECT code FROM family_name WHERE code LIKE %s ORDER BY code DESC LIMIT 1"
-            cur.execute(query, (f"{prefix}%",))
-            row = cur.fetchone()
+            # جلب كل الأكواد التي تبدأ بهذه البادئة لفرزها عددياً
+            cur.execute("SELECT code FROM family_search WHERE code LIKE %s", (f"{search_prefix}%",))
+            rows = cur.fetchall()
 
-            if not row:
-                # إذا لم يوجد أي كود بهذا الحرف، نبدأ من أول رقم
-                return f"{prefix}0-000-001"
+            if not rows:
+                return f"{search_prefix}001"
 
-            last_code = row[0] # مثال: A0-000-005
-            
-            # استخراج الأرقام فقط من الكود (إزالة الحرف والشرطات)
-            import re
-            nums = re.findall(r'\d', last_code)
-            if not nums:
-                return f"{prefix}0-000-001"
-            
-            # تحويل قائمة الأرقام إلى رقم صحيح وزيادته
-            current_num = int("".join(nums))
-            next_num = current_num + 1
-            
-            # إعادة تشكيل الكود بالصيغة المطلوبة X0-000-000
-            # نستخدم zfill لضمان وجود الأصفار على اليسار (7 أرقام بعد الحرف الأول)
-            s = str(next_num).zfill(7)
-            # تنسيق السلسلة لتصبح: A0-000-006
-            return f"{prefix}{s[0]}-{s[1:4]}-{s[4:]}"
-        
+            # استخراج الأرقام الأخيرة وتحويلها لـ int لضمان الترتيب الصحيح
+            existing_numbers = []
+            for row in rows:
+                parts = row[0].split('-')
+                if parts:
+                    try:
+                        existing_numbers.append(int(parts[-1]))
+                    except (ValueError, IndexError): continue
+
+            next_num = max(existing_numbers) + 1 if existing_numbers else 1
+            return f"{search_prefix}{str(next_num).zfill(3)}"
 
 
 def get_single_member_full_details(code: str) -> Optional[Dict[str, Any]]:

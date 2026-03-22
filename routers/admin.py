@@ -65,34 +65,54 @@ async def permissions_page(request: Request):
         "perms": perms, 
         "assignments": assignments
     })
-
-
-# تم حذف دالة GET /admin/add_user لأن النموذج موجود ضمن admin.html
+# 1. عرض صفحة الإضافة (تأكد من وجود هذا المسار)
+@router.get("/add_user")
+async def show_add_user_page(request: Request, error: str = None, success: str = None):
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin":
+        return RedirectResponse(url="/403", status_code=303)
+    
+    csrf_token = generate_csrf_token()
+    request.session["csrf_token"] = csrf_token
+    
+    response = templates.TemplateResponse("admin/add_user.html", 
+        {
+            "request": request, 
+            "csrf_token": request.session["csrf_token"],
+            "error": error,
+            "success": success,
+            "user": user
+        }
+    )
+    set_cache_headers(response)
+    return response
+ 
+# 2. معالجة البيانات (POST)
 @router.post("/add_user")
-async def add_user(
+async def process_add_user(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
     role: str = Form(...),
-    current_page: int = Form(1),
     csrf_token: str = Form(...)
 ):
+    # التحقق من الـ CSRF
     verify_csrf_token(request, csrf_token)
-    
-    # منع إضافة إدمن من هذه الواجهة (حماية إضافية)
-    if role == "admin":
-         request.session["error_message"] = "غير مسموح بإضافة مستخدم بدور إدمن."
-         return RedirectResponse(f"/admin?page={current_page}", status_code=303)
 
-    # استدعاء السيرفس الموحد
+    # منع إضافة أدمن من الواجهة
+    if role == "admin":
+         return RedirectResponse("/admin/add_user?error=Forbidden+Role", status_code=303)
+
     success, message = AuthService.add_new_user(username, password, role)
     
     if success:
+        # التوجيه للوحة الإدارة مع رسالة نجاح
         request.session["success_message"] = message
+        return RedirectResponse("/admin", status_code=303)
     else:
-        request.session["error_message"] = message
-        
-    return RedirectResponse(f"/admin?page={current_page}", status_code=303)
+        # البقاء في نفس الصفحة لإظهار الخطأ
+        return RedirectResponse(f"/admin/add_user?error={message}", status_code=303)
+
 
 # --- تعديل مستخدم ---
 @router.post("/edit_user")
@@ -119,25 +139,50 @@ async def delete_user(request: Request, user_id: int = Form(...),
     return RedirectResponse(f"/admin?page={current_page}", status_code=303)
 
 # --- تغيير كلمة المرور ---
+# 1. عرض صفحة تغيير كلمة المرور
+@router.get("/change_password")
+async def show_change_password_page(request: Request):
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin":
+        return RedirectResponse(url="/403", status_code=303)
+    
+    # جلب البيانات عبر السيرفس
+    dashboard_data = AuthService.get_admin_dashboard_data(page=1, users_per_page=1000)
+    
+    # تصفية حساب الأدمن الرئيسي للحماية
+    users = dashboard_data['users']
+    if user["username"] != "admin":
+        users = [u for u in users if u['username'] != "admin"]
+    
+    return templates.TemplateResponse("admin/change_password.html", {
+        "request": request,
+        "users": users,
+        "csrf_token": request.session.get("csrf_token"),
+        "user": user
+    })
+
+# 2. معالجة التغيير
 @router.post("/change_password")
-async def change_password(request: Request, user_id: int = Form(...), new_password: str = Form(...), 
-                          current_page: int = Form(1), csrf_token: str = Form(...)):
+async def process_change_password(
+    request: Request, 
+    user_id: int = Form(...), 
+    new_password: str = Form(...),
+    csrf_token: str = Form(...)
+):
     verify_csrf_token(request, csrf_token)
     
-    # التحقق من صلاحيات الأدمن الحالي
-    current_admin = get_current_user(request)
-    if not current_admin or current_admin.get("role") != "admin":
-        request.session["error_message"] = "صلاحيات غير كافية"
-        return RedirectResponse(f"/admin?page={current_page}", status_code=303)
-    
+    # تنفيذ التغيير عبر السيرفس
     success, message = AuthService.change_password(user_id, new_password)
-    key = "success_message" if success else "error_message"
-    request.session[key] = message
     
-    return RedirectResponse(f"/admin?page={current_page}", status_code=303)    
+    if success:
+        request.session["success_message"] = f"تم تحديث كلمة المرور بنجاح للمستخدم."
+        return RedirectResponse("/admin", status_code=303)
+    else:
+        # في حال الفشل نعود لصفحة التغيير مع رسالة الخطأ
+        return RedirectResponse(f"/admin/change_password?error={message}", status_code=303)
 
 
-# منح صلاحية لمستخدم
+
 # منح صلاحية لمستخدم
 @router.post("/give_permission")
 async def give_permission(
@@ -191,3 +236,19 @@ async def view_all_activity_logs(request: Request, page: int = 1):
     })
     set_cache_headers(response)
     return response
+
+# 1. مسار سجلات الدخول
+@router.get("/login-logs")
+async def view_login_logs(request: Request):
+    user = request.session.get("user")
+    if not user or user.get("role") != "admin":
+        return RedirectResponse("/403")
+    
+    # جلب آخر 50 سجل من قاعدة البيانات
+    logss = get_logged_in_users_history(limit=50) 
+    
+    return templates.TemplateResponse("admin/login_logs.html", {
+        "request": request, 
+        "login_history": logss,  # تأكد أن الاسم هنا يطابق ما تستخدمه في HTML
+        "user": user
+    })

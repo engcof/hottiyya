@@ -6,12 +6,13 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* تطبيق الخط على كل العناصر لضمان التناسق */
+  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
 }
 html {
   scroll-behavior: smooth;
 }
 body {
-  font-family: 'Inter', 'Cairo', system-ui, -apple-system, sans-serif;
   background: #ffffff;
   color: #0f172a;
   line-height: 1.7;
@@ -20,6 +21,14 @@ body {
   direction: rtl;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* تعديل العناوين لتكون أكثر بروزاً وفخامة */
+h1, h2, h3, .logo, .page-title {
+  font-family: 'Cairo', sans-serif;
+  font-weight: 800; /* الوزن العريض يعطي هيبة للموقع */
+  letter-spacing: -0.5px;
 }
 /* === الألوان الرسمية  === */
 :root {

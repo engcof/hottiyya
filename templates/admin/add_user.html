@@ -2,9 +2,13 @@
 {% block title %}إضافة مستخدم{% endblock %}
 
 {% block content %}
-<section class="add-user">
-    <div class="container">
-        <h1>إضافة مستخدم جديد</h1>
+<section class="auth-section">
+    <div class="auth-card glass-strong">
+        <div class="auth-header">
+             <h1 class="auth-title">إضافة مستخدم جديد</h1>
+                <p class="auth-subtitle">قم بإنشاء حساب جديد للمستخدمين</p>
+        </div>
+
         {% if error %}
         <div class="error">{{ error }}</div>
         {% endif %}
@@ -18,14 +22,13 @@
                 <label>كلمة المرور</label>
                 <input type="password" name="password" required>
             </div>
-            <div class="form-group">
-                <label>الدور</label>
-                <select name="role">
-                    <option value="user">مستخدم</option>
-                    <option value="manager">مدير</option>
-                    <option value="admin">أدمن</option>
-                </select>
-            </div>
+             <div class="form-group">
+                        <label>الدور</label>
+                        <select name="role">
+                            <option value="manager">مدير</option>
+                            <option value="user" selected>مستخدم</option>
+                        </select>
+                    </div>
             <div class="form-actions">
                 <button type="submit" class="btn-success">إضافة</button>
                 <a href="/admin" class="btn-secondary">رجوع</a>
