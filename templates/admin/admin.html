@@ -1,158 +1,74 @@
   
 {% extends "base.html" %}
-{% block title %}لوحة الإدارة {% endblock %}
+{% block title %}لوحة الإدارة{% endblock %}
+
 {% block content %}
 <section class="all-page">
     <div class="container">
         <div class="page-header">
-            <h1 class="page-title">الإدارية</h1>
-            <div class="header-actions" style="display: flex; gap: 10px;">
-                <a href="/admin/logs" class="btn-add" style="background-color: #6c757d;">سجل العمليات</a>
-                <a href="/admin/login-logs" class="btn-add" style="background-color: #64748b;"> <i class="icon-log"></i> سجل الدخول </a>
-                <a href="/admin/add_user" class="btn-add" >اضافة مستخدم</a>
-                <a href="/admin/change_password" class="btn-add" style="background-color: #f59e0b;">تغيير كلمة مرور</a>
-                <a href="/permissions" class="btn-add">صلاحية جديدة</a>
-                <a href="/data/import-data" class="btn-add">قاعدة بيانات</a>
-                <a href="/names/export/table-backup-txt" class="btn-add"> تصدير بيانات (TXT) </a>
-            </div>
+            <h1 class="page-title">لوحة التحكم الإدارية</h1>
         </div>
+
         {% if success_message %}
             <div class="alert success flash-message">✅ {{ success_message }}</div>
         {% endif %}
-        {% if error_message %}
-            <div class="alert error flash-message">❌ {{ error_message }}</div>
-        {% endif %}
 
-        <div class="admin-card full">
-            <h2>قائمة المستخدمين والصلاحيات</h2>
-            <div class="table-wrapper">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>اسم المستخدم</th>
-                            <th>الدور</th>
-                            <th>الصلاحيات الحالية</th>
-                            <th>تعديل البيانات</th>
-                            <th>إضافة صلاحية</th>
-                            <th>إزالة صلاحية</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for u in users %}
-                        <tr>
-                            <td><strong>{{ u.username }}</strong></td>
-                            <td>
-                                <span class="role-badge {{ u.role }}">{{ u.role | title }}</span>
-                            </td>
-                            <td>
-                                {% if user_permissions[u.id] %}
-                                <details class="permissions-dropdown">
-                                    <summary class="permissions-summary">
-                                        {{ user_permissions[u.id]|length }} صلاحية
-                                    </summary>
-                                    <div class="permission-list-content">
-                                        {% for perm in user_permissions[u.id] %}
-                                        <span class="perm-tag">{{ perm }}</span>
-                                        {% endfor %}
-                                    </div>
-                                </details>
-                                {% else %}
-                                    <em>لا توجد صلاحيات</em>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <form method="post" action="/admin/edit_user" class="inline-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                                    <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <input type="text" name="username" value="{{ u.username }}" class="small-input">
-                                    <select name="role" class="small-select">
-                                        <option value="manager" {% if u.role == 'manager' %}selected{% endif %}>مدير</option>
-                                        <option value="user" {% if u.role == 'user' %}selected{% endif %}>مستخدم</option>
-                                    </select>
-                                    <button type="submit" class="btn-small edit">تعديل</button>
-                                </form>
-                            </td>
-                            <td>
-                                <form method="post" action="/admin/give_permission" class="inline-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                                    <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <select name="permission_id" class="small-select">
-                                        {% for perm in permissions %}
-                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn-small add">إضافة</button>
-                                </form>
-                            </td>
-                            <td>
-                                <form method="post" action="/admin/remove_permission" class="inline-form">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                                    <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <select name="permission_id" class="small-select">
-                                        {% for perm in permissions %}
-                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                    <button type="submit" class="btn-small remove">إزالة</button>
-                                </form>
-                            </td>
-                            <td>
-                                <form method="post" action="/admin/delete_user">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
-                                    <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <button type="submit" class="btn-small delete">حذف</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="7" class="text-center">لا توجد بيانات متاحة حالياً.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+        <div class="admin-grid">
+            <div class="admin-section-card">
+                <h3>👥 إدارة الحسابات</h3>
+                <div class="grid-buttons">
+                    <a href="/admin/add_user" class="card-btn blue">
+                        <i class="icon-user-plus"></i> إضافة مستخدم جديد
+                    </a>
+                    <a href="/admin/change_password" class="card-btn orange">
+                        <i class="icon-lock"></i> تغيير كلمة مرور
+                    </a>
+                    <a href="/admin/users" class="card-btn purple">
+                        <i class="icon-users"></i> عرض وتعديل المستخدمين
+                    </a>
+                </div>
             </div>
-            
-            <div class="pagination">
-                {% if current_page > 1 %}
-                <a href="/admin?page={{ current_page - 1 }}" class="page-btn">السابق</a>
-                {% endif %}
-                <span class="page-info">الصفحة {{ current_page }} من {{ total_pages }}</span>
-                {% if current_page < total_pages %}
-                <a href="/admin?page={{ current_page + 1 }}" class="page-btn">التالي</a>
-                {% endif %}
+
+            <div class="admin-section-card">
+                <h3>⚙️ الإعدادات والبيانات</h3>
+                <div class="grid-buttons">
+                    <a href="/permissions" class="card-btn indigo">
+                        <i class="icon-shield"></i> إنشاء صلاحية جديدة
+                    </a>
+                    <a href="/data/import-data" class="card-btn green">
+                        <i class="icon-database"></i> إدارة قاعدة البيانات
+                    </a>
+                    <a href="/names/export/table-backup-txt" class="card-btn pink">
+                        <i class="icon-export"></i> تصدير بيانات (TXT)
+                    </a>
+                </div>
+            </div>
+
+            <div class="admin-section-card">
+                <h3>📜 المراقبة والسجلات</h3>
+                <div class="grid-buttons">
+                    <a href="/admin/logs" class="card-btn gray">
+                        <i class="icon-list"></i> سجل العمليات العام
+                    </a>
+                    <a href="/admin/login-logs" class="card-btn slate">
+                        <i class="icon-log-in"></i> سجل محاولات الدخول
+                    </a>
+                </div>
             </div>
         </div>
-   
-     
-       
     </div>
 </section>
-<!-- جافاسكريبت للإخفاء التلقائي لرسائل الفلاش -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // تحديد جميع العناصر التي تحمل الفئة 'flash-message'
         const flashMessages = document.querySelectorAll('.flash-message');
-        const DURATION = 5000; // 5000 مللي ثانية = 5 ثوانٍ
-
         flashMessages.forEach(message => {
-            // إخفاء الرسالة بعد 5 ثوانٍ
             setTimeout(() => {
-                // استخدام opacity و transition لجعل الإخفاء سلساً
                 message.style.transition = 'opacity 0.5s ease-out';
                 message.style.opacity = '0';
-                
-                // إزالة الرسالة من DOM بعد انتهاء الحركة
-                setTimeout(() => {
-                    message.remove();
-                }, 500); 
-            }, DURATION);
+                setTimeout(() => { message.remove(); }, 500); 
+            }, 5000);
         });
     });
 </script>
 {% endblock %}
+

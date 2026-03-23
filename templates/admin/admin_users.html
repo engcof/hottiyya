@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}إدارة المستخدمين{% endblock %}
+
+{% block content %}
+<section class="all-page">
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">قائمة المستخدمين والصلاحيات</h1>
+            <div class="header-actions">
+                <a href="/admin" class="btn-add" style="background-color: #4b5563;">🏠 العودة للوحة الإدارة</a>
+            </div>
+        </div>
+
+        {% if success_message %}
+            <div class="alert success flash-message">✅ {{ success_message }}</div>
+        {% endif %}
+        {% if error_message %}
+            <div class="alert error flash-message">❌ {{ error_message }}</div>
+        {% endif %}
+
+        <div class="admin-card full">
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>اسم المستخدم</th>
+                            <th>الدور</th>
+                            <th>الصلاحيات الحالية</th>
+                            <th>تعديل البيانات</th>
+                            <th>إضافة صلاحية</th>
+                            <th>إزالة صلاحية</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td><strong>{{ u.username }}</strong></td>
+                            <td>
+                                <span class="role-badge {{ u.role }}">{{ u.role | title }}</span>
+                            </td>
+                            <td>
+                                {% if user_permissions[u.id] %}
+                                <details class="permissions-dropdown">
+                                    <summary class="permissions-summary">
+                                        {{ user_permissions[u.id]|length }} صلاحية
+                                    </summary>
+                                    <div class="permission-list-content">
+                                        {% for perm in user_permissions[u.id] %}
+                                        <span class="perm-tag">{{ perm }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </details>
+                                {% else %}
+                                    <em>لا توجد صلاحيات</em>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="post" action="/admin/edit_user" class="inline-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    <input type="text" name="username" value="{{ u.username }}" class="small-input">
+                                    <select name="role" class="small-select">
+                                        <option value="manager" {% if u.role == 'manager' %}selected{% endif %}>مدير</option>
+                                        <option value="user" {% if u.role == 'user' %}selected{% endif %}>مستخدم</option>
+                                    </select>
+                                    <button type="submit" class="btn-small edit">تعديل</button>
+                                </form>
+                            </td>
+                            <td>
+                                <form method="post" action="/admin/give_permission" class="inline-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    <select name="permission_id" class="small-select">
+                                        {% for perm in permissions %}
+                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn-small add">إضافة</button>
+                                </form>
+                            </td>
+                            <td>
+                                <form method="post" action="/admin/remove_permission" class="inline-form">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    <select name="permission_id" class="small-select">
+                                        {% for perm in permissions %}
+                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button type="submit" class="btn-small remove">إزالة</button>
+                                </form>
+                            </td>
+                            <td>
+                                <form method="post" action="/admin/delete_user">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <input type="hidden" name="current_page" value="{{ current_page }}"> 
+                                    <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    <button type="submit" class="btn-small delete">حذف</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center">لا توجد بيانات متاحة حالياً.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                {% if current_page > 1 %}
+                <a href="/admin/users?page={{ current_page - 1 }}" class="page-btn">السابق</a>
+                {% endif %}
+                <span class="page-info">الصفحة {{ current_page }} من {{ total_pages }}</span>
+                {% if current_page < total_pages %}
+                <a href="/admin/users?page={{ current_page + 1 }}" class="page-btn">التالي</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const flashMessages = document.querySelectorAll('.flash-message');
+        flashMessages.forEach(message => {
+            setTimeout(() => {
+                message.style.transition = 'opacity 0.5s ease-out';
+                message.style.opacity = '0';
+                setTimeout(() => { message.remove(); }, 500); 
+            }, 5000);
+        });
+    });
+</script>
+{% endblock %}
