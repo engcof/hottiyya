@@ -204,3 +204,38 @@ def get_activity_logs_paginated(page: int = 1, per_page: int = 30):
             ]
             
             return logs, total_pages        
+        
+def get_login_logs_paginated(page: int = 1, per_page: int = 20):
+    """جلب آخر سجل دخول لكل مستخدم مع نظام الترقيم (إزالة التكرار)."""
+    offset = (page - 1) * per_page
+    
+    with get_db_context() as conn:
+        with conn.cursor() as cur:
+            # 1. حساب عدد المستخدمين الفريدين الذين سجلوا دخولهم
+            cur.execute("SELECT COUNT(DISTINCT user_id) FROM visits WHERE user_id IS NOT NULL AND user_id > 0")
+            total_logs = cur.fetchone()[0]
+            total_pages = (total_logs + per_page - 1) // per_page
+
+            # 2. جلب آخر سجل دخول لكل مستخدم باستخدام DISTINCT ON
+            # نستخدم استعلام فرعي (Subquery) لضمان ترتيب النتائج النهائية حسب الوقت الأحدث
+            cur.execute("""
+                SELECT username, timestamp, user_id
+                FROM (
+                    SELECT DISTINCT ON (user_id) username, timestamp, user_id
+                    FROM visits
+                    WHERE user_id IS NOT NULL AND user_id > 0
+                    ORDER BY user_id, timestamp DESC
+                ) AS unique_logins
+                ORDER BY timestamp DESC
+                LIMIT %s OFFSET %s
+            """, (per_page, offset))
+            
+            logs = [
+                {
+                    "username": row[0],
+                    "timestamp": row[1],
+                    "user_id": row[2]
+                } for row in cur.fetchall()
+            ]
+            
+            return logs, total_pages

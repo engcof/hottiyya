@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers, get_current_user
-from services.analytics import get_logged_in_users_history, get_activity_logs_paginated
+from services.analytics import get_logged_in_users_history, get_activity_logs_paginated, get_login_logs_paginated
 from services.auth_service import AuthService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -136,10 +136,23 @@ async def view_logs(request: Request, page: int = 1):
     logs, total_pages = get_activity_logs_paginated(page=page, per_page=30)
     return templates.TemplateResponse("admin/logs.html", {"request": request, "logs": logs, "current_page": page, "total_pages": total_pages, "user": user})
 
+
+
+
 @router.get("/login-logs")
-async def view_login_logs(request: Request):
+async def view_login_logs(request: Request, page: int = 1):
     user = get_current_user(request)
-    if not user or user.get("role") != "admin": return RedirectResponse("/403")
-    return templates.TemplateResponse("admin/login_logs.html", {"request": request, "login_history": get_logged_in_users_history(limit=50), "user": user})
-
-
+    if not user or user.get("role") != "admin": 
+        return RedirectResponse("/403")
+    
+    # استدعاء الدالة الجديدة التي تدعم الترقيم (Paginated)
+    # نمرر رقم الصفحة (page) ونحدد العدد بـ 20 سجل
+    login_history, total_pages = get_login_logs_paginated(page=page, per_page=20) 
+    
+    return templates.TemplateResponse("admin/login_logs.html", {
+        "request": request, 
+        "login_history": login_history, # السجلات الخاصة بالصفحة الحالية فقط
+        "current_page": page,           # رقم الصفحة الحالية للتحكم في أزرار التنقل
+        "total_pages": total_pages,     # إجمالي الصفحات لإظهارها في الـ Pagination
+        "user": user
+    })

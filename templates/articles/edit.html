@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% block title %}تعديل: {{ article.title }}{% endblock %}
-
 {% block content %}
 <section class="add-edit-page">
     <div class="container">
@@ -8,6 +7,11 @@
         <div class="page-header">
             <h1 class="page-title">تعديل المقال</h1>
         </div>
+        {% if error %}
+        <div class="alert alert-danger" style="background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fca5a5;">
+            ⚠️ {{ error }}
+        </div>
+        {% endif %}
         <!-- النموذج الفاخر -->
         <div class="form-container">
             <form method="post" action="/articles/edit/{{ article.id }}" enctype="multipart/form-data" class="news-form">
@@ -17,12 +21,37 @@
                     <label>العنوان</label>
                     <input type="text" name="title" value="{{ article.title }}" required>
                 </div>
-                
                 <div class="form-group">
-                    <label>المحتوى</label>
-                    <textarea name="content" rows="15" required>{{ article.content }}</textarea>
-                </div>
+                    <label>محتوى المقال <span class="required">*</span></label>
+                    <div class="editor-toolbar">
+                        <button type="button" onclick="formatDoc('formatBlock', 'h2')">H1</button>
+                        <button type="button" onclick="formatDoc('formatBlock', 'h3')" title="عنوان فرعي">H2</button>
+                        <button type="button" onclick="formatDoc('bold')"><b>B</b></button>
+                        <button type="button" onclick="formatDoc('italic')" title="خط مائل"><i>I</i></button>
+                        <select onchange="formatDoc('fontSize', this.value)" title="حجم الخط" style="padding: 2px; border-radius: 4px; cursor: pointer;">
+                            <option value="1">صغير جداً</option>
+                            <option value="2">صغير</option>
+                            <option value="3" selected>عادي</option>
+                            <option value="4">متوسط</option>
+                            <option value="5">كبير</option>
+                            <option value="6">كبير جداً</option>
+                            <option value="7">أقصى حجم</option>
+                        </select>
+                        <input type="color" onchange="formatDoc('foreColor', this.value)" title="لون الخط">
+                        <button type="button" onclick="formatDoc('insertUnorderedList')" title="قائمة">تعداد</button>
+                        <button type="button" onclick="formatDoc('justifyRight')" title="يمين">➡</button>
+                        <button type="button" onclick="formatDoc('justifyCenter')" title="وسط">⬅➡</button>
+                        <button type="button" onclick="formatDoc('justifyLeft')" title="يسار">⬅</button>
+                    </div>
                 
+
+                <div id="editor" contenteditable="true" class="custom-editor">
+                    {{ article.content | safe }}
+                </div>
+
+                <input type="hidden" name="content" id="content_hidden">
+            </div>
+           
                 <div class="form-group">
                     <label>تغيير الصورة (اتركه فارغًا إذا لا تريد التغيير)</label>
                     {% if article.image_url %}
@@ -46,4 +75,24 @@
         </div>    
     </div>
 </section>
+<script>
+    // عند تحميل الصفحة، تأكد من ملء الحقل المخفي بالمحتوى الحالي للمحرر
+document.addEventListener('DOMContentLoaded', function() {
+    const editor = document.getElementById('editor');
+    const hiddenInput = document.getElementById('content_hidden');
+    hiddenInput.value = editor.innerHTML;
+});
+
+// دالة تنفيذ التنسيق (كما هي لديك)
+function formatDoc(cmd, value = null) {
+    document.execCommand(cmd, false, value);
+}
+
+// ربط المحتوى بالفورم قبل الإرسال (كما هي لديك)
+const form = document.querySelector('.news-form');
+form.addEventListener('submit', function() {
+    document.getElementById('content_hidden').value = document.getElementById('editor').innerHTML;
+});
+ 
+</script>
 {% endblock %}

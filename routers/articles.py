@@ -15,6 +15,18 @@ import re # تم إضافة استيراد المكتبة للتحقق من ال
 
 router = APIRouter(prefix="/articles", tags=["articles"])
 
+# التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
+VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+    
+# Regex شامل يسمح بجميع رموز HTML وعلامات الترقيم والتشكيل العربي
+VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r<>\/=\"\'\:\;\#\%\&\+\?\@\_\*\[\]\“\”\«\»\–\—]+"
+
+# الحل الأفضل هو التأكد فقط من وجود محتوى وعدم وجود وسوم خبيثة (مثل <script>)
+def is_safe_html(content):
+    forbidden_tags = ["<script", "javascript:", "onclick", "<iframe", "<object"]
+    return not any(tag in content.lower() for tag in forbidden_tags)
+
+
 # === عرض قائمة المقالات (باستخدام الخدمة) ===
 @router.get("/", response_class=HTMLResponse)
 async def list_articles(request: Request, page: int = 1):
@@ -100,12 +112,7 @@ async def add_article_form(request: Request):
     })
 
 @router.post("/add")
-async def add_article(
-    request: Request,
-    title: str = Form(...),
-    content: str = Form(...),
-    image: UploadFile = File(None)
-):
+async def add_article(request: Request, title: str = Form(...),content: str = Form(...), image: UploadFile = File(None)):
     user = request.session.get("user")
     if not can(user, "add_article"):
         return RedirectResponse("/articles")
@@ -114,31 +121,25 @@ async def add_article(
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
     
-    # تطبيق html.escape لمنع XSS قبل الحفظ
-    title_stripped = title.strip()
-    content_stripped = content.strip()
-    title_safe = html.escape(title_stripped)
-    content_safe = html.escape(content_stripped)
-    
     error = None
 
-    # التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
-    VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
-    VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r]+"
-
     # 1. التحقق من عدم فراغ العنوان والمحتوى
+    title_stripped = title.strip()
+    content_stripped = content.strip() # لا تستخدم html.escape هنا للمحتوى!
+   
+    # 1. التحقق من الأخطاء (التصحيح)
     if not title_stripped:
         error = "عنوان المقال مطلوب."
-    elif not content_stripped:
-        error = "محتوى المقال مطلوب."
-    
-    # 2. التحقق من نظافة العنوان 
     elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
-        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
-        
-    # 3. التحقق من نظافة المحتوى
+        error = "العنوان يحتوي على رموز غير مسموح بها."
+    elif not content_stripped or len(content_stripped) < 10:
+        error = "محتوى المقال قصير جداً أو فارغ."
+    # التحقق من الأمان عبر الدالة التي كتبناها
+    elif not is_safe_html(content_stripped):
+        error = "المحتوى يحتوي على وسوم غير مسموح بها (مثل script أو iframe)."
+    # فحص الـ Regex للمحتوى (تأكد أنه يشمل رموز HTML كما في ردنا السابق)
     elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
-        error = "المقال يحتوي على رموز غير مسموح بها في المحتوى. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+        error = "المحتوى يحتوي على رموز غير مسموح بها."
 
     image_url = None
     if image and image.filename:
@@ -156,26 +157,23 @@ async def add_article(
         })
     try:
         # في حالة أردت التأكد من إغلاق الملف يدوياً (اختياري لأن FastAPI يقوم بذلك أحياناً)
-        image_data = image.file if image and image.filename else None
-
+     
         article_id = ArticleService.create_article(
-            title=title_safe,
-            content=content_safe,
+            title=html.escape(title_stripped), # العنوان فقط نقوم بعمل escape له لأنه نص عادي
+            content=content_stripped,          # المحتوى يبقى HTML ليظهر التنسيق
             author_id=user["id"],
-            image_file=image_data
+            image_file=image.file if image and image.filename else None
         )
-
+      
         if image:
             await image.close() # إغلاق الملف بعد الانتهاء
 
         # 2. ✅ إضافة العملية لسجل النشاطات
-        
         log_action(
             user_id=user["id"], 
             action="إضافة مقال", 
-            details=f"تم نشر مقال جديد بعنوان: {title_safe}"
+            details=f"تم نشر مقال جديد بعنوان: {title}"
         )    
-        
         return RedirectResponse(f"/articles/{article_id}", status_code=303)
         
     except Exception as e:
@@ -221,32 +219,25 @@ async def update_article(
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
-    # تطبيق html.escape لمنع XSS قبل الحفظ
-    title_stripped = title.strip()
-    content_stripped = content.strip()
-    title_safe = html.escape(title_stripped)
-    content_safe = html.escape(content_stripped)
-    
     error = None
 
-    # 1. تحديث الرموز المسموحة لتشمل علامات الترقيم الإضافية (مثل : ; " ' / + = _)
-    VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\[\]\{\}\:\/\'\"]+"
-    VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\[\]\{\}\:\/\'\"\+\=\_\%\&\@\*\n\r]+"
-
-
     # 1. التحقق من عدم فراغ العنوان والمحتوى
+    title_stripped = title.strip()
+    content_stripped = content.strip() # لا تستخدم html.escape هنا للمحتوى!
+
+    # 1. التحقق من الأخطاء (التصحيح)
     if not title_stripped:
         error = "عنوان المقال مطلوب."
-    elif not content_stripped:
-        error = "محتوى المقال مطلوب."
-    
-    # 2. التحقق من نظافة العنوان
     elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
-        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
-        
-    # 3. التحقق من نظافة المحتوى
+        error = "العنوان يحتوي على رموز غير مسموح بها."
+    elif not content_stripped or len(content_stripped) < 10:
+        error = "محتوى المقال قصير جداً أو فارغ."
+    # التحقق من الأمان عبر الدالة التي كتبناها
+    elif not is_safe_html(content_stripped):
+        error = "المحتوى يحتوي على وسوم غير مسموح بها (مثل script أو iframe)."
+    # فحص الـ Regex للمحتوى (تأكد أنه يشمل رموز HTML كما في ردنا السابق)
     elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
-        error = "المقال يحتوي على رموز غير مسموح بها في المحتوى. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
+        error = "المحتوى يحتوي على رموز غير مسموح بها."
 
 
     # في حالة وجود خطأ، يجب إعادة تحميل النموذج مع البيانات المدخلة
@@ -274,8 +265,8 @@ async def update_article(
     # استكمال عملية حفظ التعديلات
     await ArticleService.update_article(
         article_id=id, 
-        title=title_safe, 
-        content=content_safe, 
+        title=html.escape(title_stripped),
+        content=content_stripped , 
         image_file=image if image and image.filename else None
     )
     # 🌟 إضافة سجل النشاطات (Analytics) 

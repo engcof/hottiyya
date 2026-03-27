@@ -640,7 +640,7 @@ footer {
     text-align: center;
     margin-bottom: 35px;
 }
-.articles-grid {
+.home_articles-grid {
     display: grid;
     /* شبكة من 3 أعمدة (أو عمودين على الشاشات الصغيرة) */
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
@@ -1602,134 +1602,7 @@ footer {
 .btn-primary.large:hover {
     background-color: #059669;
 }
-/* 2. شبكة المقالات */
-.articles-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-    gap: 30px;
-}
-/* 3. بطاقة المقال (Article Card) */
-.article-card {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
-    min-height: 280px; 
-    transition: all 0.2s, border 0.2s;
-    border: 1px solid transparent;
-    overflow: hidden; /* لمنع الصورة من الخروج عن الزوايا المنحنية */
-}
-.article-card:hover {
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--primary-color-light);
-}
-.article-header {
-    text-align: center;
-    padding-bottom: 25px;
-    border-bottom: 2px solid var(--border);
-    margin-bottom: 30px;
-}
-.article-title a {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-darker);
-    line-height: 1.0;
-    margin-bottom: 20px;
-    transition: color 0.2s;
-}
-.article-title a:hover {
-    color: var(--primary-color-light);
-}
-/* بيانات الوصف (Meta) */
-.article-meta {
-    display: flex;
-    gap: 20px;
-    font-size: 0.85rem;
-    color: var(--text-medium);
-    margin-top: 10px;
-    margin-bottom: 15px;
-    justify-content: center;
-}
-.article-meta span {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-.article-meta svg {
-    color: var(--primary-color);
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-}
-.article-meta strong {
-    font-weight: 700;
-    color: var(--text-dark);
-}
-.author, .date {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-}
-/* المقتطف */
-.article-excerpt {
-    font-size: 0.95rem;
-    color: var(--text-medium);
-    margin-bottom: 20px;
-    flex-grow: 1; 
-}
-/* الفوتر (زر القراءة وعدد التعليقات) */
-.article-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 15px;
-    border-top: 1px dashed var(--border-light);
-    margin-top: auto; /* يضمن بقاءه في الأسفل */
-}
-.comments-count {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.9rem;
-    color: var(--text-medium);
-}
-.comments-count svg {
-    color: var(--text-medium);
-}
 
-/* تنسيق حاوية الصورة في بطاقة المقال */
-.article-image {
-    width: calc(100% + 50px); /* للتمدد بكامل عرض البطاقة (بسبب الـ padding) */
-    margin: -25px -25px 20px -25px; 
-    height: 200px;
-    overflow: hidden;
-    border-radius: 12px 12px 0 0;
-}
-.article-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* لضمان عدم تشوه الصورة مهما كانت أبعادها */
-    transition: transform 0.3s ease;
-}
-.article-card:hover .article-image img {
-    transform: scale(1.05); /* تأثير تكبير بسيط عند التمرير */
-}
-
-/* تحسينات للجوال: جعل الصورة فوق النص إذا كانت الشاشة صغيرة */
-@media (max-width: 480px) {
-    .article-content-wrapper {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    .article-thumbnail-box {
-        width: 100%;
-        height: 150px;
-    }
-}
 /* === تنسيق صفحة عرض المقال الفردي (Article Single) === */
 .article-single-section {
     max-width: 900px; /* لتضييق نطاق القراءة */
