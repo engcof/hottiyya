@@ -3,7 +3,7 @@ import os
 import uuid
 from urllib.parse import urlparse
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +22,7 @@ from utils.permission import can
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 from services.notification import get_unread_notification_count
+from services.google_service import GoogleService
 from services.home_service import HomeService
 from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library
 from dotenv import load_dotenv
@@ -79,6 +80,7 @@ async def lifespan(app: FastAPI):
         print(f"⚠️ تحذير: فشل تنفيذ التنظيف التلقائي: {e}")
 
     print("🏁 تم الإقلاع بنجاح!")
+
     yield
 # =========================================
 # إعداد التطبيق
@@ -136,7 +138,7 @@ app.add_middleware(
 # 3. CORS (الطبقة الخارجية)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if not IS_PROD else ["https://yourdomain.com", "https://hottiyya.onrender.com"], 
+    allow_origins=["*"] if not IS_PROD else ["https://hottiyya.onrender.com"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -233,6 +235,41 @@ async def debug_db_count():
 async def not_found(request: Request, exc):
     return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
 
+@app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)
+async def google_verification():
+    return "google-site-verification: googlea84e43178e487f63.html"
+
+@app.get("/sitemap.xml")
+async def sitemap():
+    base_url = "https://hottiyya.onrender.com"
+    
+    # الروابط الثابتة
+    static_pages = [
+        {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
+        {"loc": f"{base_url}/articles", "changefreq": "daily", "priority": "0.8"},
+        {"loc": f"{base_url}/news", "changefreq": "daily", "priority": "0.8"},
+    ]
+    
+    # جلب الروابط الديناميكية من السيرفس
+    dynamic_pages = GoogleService.get_all_sitemap_urls(base_url)
+    all_pages = static_pages + dynamic_pages
+
+    # بناء الـ XML
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    for page in all_pages:
+        xml += f'  <url>\n    <loc>{page["loc"]}</loc>\n    <changefreq>{page["changefreq"]}</changefreq>\n    <priority>{page["priority"]}</priority>\n  </url>\n'
+    xml += '</urlset>'
+    
+    return Response(content=xml, media_type="application/xml")
+
+@app.get("/robots.txt")
+async def robots():
+    content = """User-agent: *
+Allow: /
+Sitemap: https://hottiyya.onrender.com/sitemap.xml
+"""
+    return Response(content=content, media_type="text/plain")
 # =========================================
 # تشغيل التطبيق
 # =========================================
