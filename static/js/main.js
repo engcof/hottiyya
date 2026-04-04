@@ -216,3 +216,14 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
+ 
+// إخفاء الرسالة تلقائيًا بعد 5 ثواني
+setTimeout(() => {
+    const alert = document.getElementById('success-alert');
+    if (alert) {
+        alert.style.transition = 'opacity 0.6s ease';
+        alert.style.opacity = '0';
+        setTimeout(() => alert.remove(), 600);
+    }
+}, 5000);
+

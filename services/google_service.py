@@ -25,6 +25,14 @@ class GoogleService:
                             "changefreq": "weekly",
                             "priority": "0.6"
                         })
+                        # 3. روابط الكتب في المكتبة (الإضافة الجديدة)
+                        cur.execute("SELECT id FROM library WHERE status = 'approved' ORDER BY created_at DESC")
+                        for row in cur.fetchall():
+                            pages.append({
+                                "loc": f"{base_url}/library/book/{row['id']}", 
+                                "changefreq": "monthly", 
+                                "priority": "0.5"
+                            })
             return pages
         except Exception as e:
             print(f"❌ خطأ في جلب روابط Sitemap: {e}")

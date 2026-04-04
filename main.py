@@ -16,7 +16,6 @@ from postgresql import init_database, get_db_context
 # استيراد الدوال الأمنية والمساعدة
 from security.session import set_cache_headers
 from security.rate_limit import initialize_rate_limiter
-
 from utils.permission import can
 
 # استيراد الخدمات والراوترات

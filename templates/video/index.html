@@ -12,9 +12,13 @@
             {% endif %}
         </div>
 
-        {% if success %}
-        <div class="glass-strong p-3 mb-4 text-accent text-center fw-bold" style="border-right: 5px solid var(--accent);">
-            {{ success }}
+         {% if success %}
+        <div class="alert success" id="success-alert">
+            <svg viewBox="0 0 24 24" width="20" height="20">
+                <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <span><strong>تم بنجاح!</strong> {{ success }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
 
@@ -80,41 +84,6 @@
 </section>
 
 <style>
-    .video-grid-container {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
-        gap: 25px !important;
-        direction: rtl;
-    }
-
-    .video-card-item {
-        background: #fff;
-        border-radius: 15px;
-        overflow: hidden;
-        border: 1px solid #eee;
-        transition: 0.3s;
-    }
-
-    .video-frame {
-        position: relative;
-        width: 100%;
-        padding-top: 56.25%; /* Ratio 16:9 */
-        background: #000;
-    }
-
-    .video-frame video {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
-    .video-item-title {
-        font-size: 1.1rem;
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
-    }
+  
 </style>
 {% endblock %}

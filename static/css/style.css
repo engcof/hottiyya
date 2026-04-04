@@ -469,7 +469,7 @@ footer {
     text-align: center;
     padding: 15px 15px; /* تم تعديل الـ padding الأفقي ليتناسب مع العرض الجديد */
     
-    /* === الحل النهائي لتثبيت الارتفاع والعرض === */
+    /* === التثبيت الارتفاع والعرض === */
     width: 120px; 
     height: 95px;
     
@@ -1625,13 +1625,15 @@ footer {
 /* 2. بطاقة المقال الأساسية */
 .article-card.single {
     background-color: var(--card-bg);
-    padding: 40px;
+    padding: 0;
     border-radius: 12px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
     overflow: hidden; /* لضمان عدم خروج الصورة عن زوايا البطاقة المنحنية */
 }
 /* صورة الغلاف */
 .article-cover {
+    width: 100%;
+    height: 400px; /* طول ثابت للغلاف يعطي فخامة للمقال */
     margin-bottom: 30px;
     border-radius: 8px;
     overflow: hidden;
@@ -1642,29 +1644,12 @@ footer {
     width: 100%;
     height: auto;
     display: block;
+    object-fit: cover; /* يمنع تمطط الصورة ويجعلها تملأ المساحة */
 }
 .author-info, .date-info {
     display: flex;
     align-items: center;
     gap: 8px;
-}
-/* تنسيق غلاف المقال في صفحة التفاصيل */
-.article-card.single {
-  
-    padding: 0; /* سنلغي الحشو الداخلي للبطاقة ونوزعه بالداخل */
-}
-
-.article-cover {
-    width: 100%;
-    height: 400px; /* طول ثابت للغلاف يعطي فخامة للمقال */
-    
-}
-
-.article-cover img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* يمنع تمطط الصورة ويجعلها تملأ المساحة */
-    display: block;
 }
 
 /* إعادة توزيع الحشو الداخلي للنص بعد إلغاء padding البطاقة */
@@ -2207,112 +2192,7 @@ footer {
 }
 
 
-/* =======================================
-   1. التنسيقات الأساسية للبطاقات والأقسام
-   ======================================= */
-.profile-section {
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 40px 20px;
-    text-align: center;
-    background-color: #f4f7f6; /* خلفية خفيفة جداً للصفحة */
-    
-}
-/* تنسيق العناوين داخل البطاقات */
-.card-title {
-    font-size: 1.3rem;
-    font-weight: 600;
-    margin-bottom: 0; /* لإزالة التباعد السفلي إذا كان هناك border-bottom */
-}
-/* التنسيق الافتراضي للـ card-body إذا لم يكن به list-group */
-.card-body {
-    padding: 20px;
-}
-/* =======================================
-   2. تنسيق صندوق الوارد (Inbox Card)
-   ======================================= */
-/* البطاقة الرئيسية لصندوق الوارد */
-.inbox-card {
-    border: none;
-    border-radius: 12px; /* حواف مستديرة */
-    overflow: hidden; /* لضمان أن الحدود المستديرة تطبق على القائمة الداخلية */
-    margin-bottom: 32px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff; /* خلفية بيضاء للوضوح */
-    
-}
-/* حاوية الرسائل */
-.notifications-list {
-    margin-top: 20px;
-    padding: 0;
-    list-style: none; /* إزالة التنقيط الافتراضي */
-}
-/* تنسيق عنصر الرسالة الواحد */
-.notification-item {
-    /* تنسيق كل رسالة على حدة */
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    margin-bottom: 12px; /* تباعد بين الرسائل */
-    border-radius: 8px;
-    border-left: 5px solid; /* شريط جانبي لتحديد الحالة */
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05); /* ظل خفيف */
-}
-.notification-item:hover {
-    background-color: #f0f4f7; /* خلفية خفيفة عند المرور بالفأرة */
-}
-/* الرسائل غير المقروءة */
-.unread-item {
-    background-color: #e6f7ff; /* خلفية مميزة جداً */
-    border-left-color: #007bff; /* شريط أزرق */
-    font-weight: 500; /* لتمييز النص قليلاً */
-}
-/* تنسيق زر القراءة */
-.notification-item form button {
-    font-size: 0.9rem;
-    padding: 5px 10px;
-    border-radius: 5px;
-    border: 1px solid #28a745;
-    color: #28a745;
-    background-color: transparent;
-    cursor: pointer;
-}
-.notification-item form button:hover {
-    background-color: #28a745;
-    color: white;
-}
-.notification-item p {
-    margin: 5px 0 0;
-    font-size: 1rem;
-    line-height: 1.4;
-}
 
-/* الرسائل المقروءة */
-.list-group-item:not(.unread-item) {
-    border-left-color: #cccccc; /* شريط رمادي فاتح */
-    opacity: 0.9;
-}
-.message-content {
-    line-height: 1.4;
-}
-.message-text {
-    color: #495057; /* لون غامق قليلاً لنص الرسالة */
-    white-space: pre-wrap; /* للحفاظ على تنسيق الرسالة إن وجد */
-    word-break: break-word;
-}
-
-/* =======================================
-   3. تنسيق نماذج الإرسال وتغيير كلمة السر
-   ======================================= */
-
-
-/* زر العودة للرئيسية المنفصل */
-.btn-lg {
-    border-radius: 10px;
-    font-size: 1.1rem;
-}
 
 /* =======================================
    Media Queries for Responsiveness
@@ -2571,192 +2451,3 @@ footer {
         padding: 0.40rem 0.65rem;
     }
  }
-/* ========== ✅ تنسيقات معرض الفيديوهات الموحدة ✅ ========== */
-
-/* 1. حاوية المعرض (الشبكة) */
-.video-gallery-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
-    gap: 25px !important;
-    margin-top: 30px;
-    direction: rtl;
-}
-
-/* 2. بطاقة الفيديو (Video Card) */
-.video-card {
-    background: var(--glass-strong);
-    border: 1px solid var(--border);
-    border-radius: var(--radius); /* أو 15px حسب رغبتك */
-    overflow: hidden;
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow);
-}
-
-.video-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 45px rgba(0,0,0,0.12);
-}
-
-/* 3. حاوية مشغل الفيديو (Ratio 16:9) */
-.video-player-container {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%; /* نسبة الارتفاع للعرض */
-    background: #000;
-    overflow: hidden;
-}
-
-.video-player-container video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-}
-
-/* 4. تفاصيل الفيديو والعنوان */
-.video-info {
-    padding: 20px;
-    flex-grow: 1;
-}
-
-.video-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 12px;
-    line-clamp: 2; 
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.video-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.video-category {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--accent);
-    padding: 4px 12px;
-    border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.video-date {
-    font-size: 0.85rem;
-    color: var(--text-light);
-}
-
-/* 5. أزرار الإدارة (حذف) */
-.video-actions {
-    padding: 15px 20px;
-    border-top: 1px solid var(--border);
-    background: rgba(248, 250, 252, 0.5);
-    display: flex;
-    justify-content: flex-end;
-}
-
-.btn-delete-video {
-    background: transparent;
-    color: var(--danger);
-    border: 1px solid var(--danger);
-    padding: 6px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.btn-delete-video:hover {
-    background: var(--danger);
-    color: white;
-}
-
-
-
-.empty-video-state {
-    text-align: center;
-    padding: 80px 20px;
-    background: var(--glass);
-    border-radius: var(--radius);
-    border: 2px dashed var(--border);
-    color: var(--text-light);
-}
-
-/* 1. حاوية المعرض (الشبكة) */
-.video-grid-container {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
-    gap: 25px !important;
-    direction: rtl;
-    padding: 20px 0;
-}
-
-/* 2. بطاقة الفيديو (Video Card) */
-.video-card-item {
-    background: var(--bg); /* استخدام المتغيرات من ملفك الأصلي */
-    border-radius: var(--radius);
-    overflow: hidden;
-    border: 1px solid var(--border);
-    transition: var(--transition);
-    box-shadow: var(--shadow);
-    display: flex;
-    flex-direction: column;
-}
-
-.video-card-item:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 45px rgba(0,0,0,0.12);
-}
-
-/* 3. حاوية مشغل الفيديو (Ratio 16:9) */
-.video-frame {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%; /* يحافظ على أبعاد الفيديو 16:9 */
-    background: #000;
-}
-
-.video-frame video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-}
-
-/* 4. عنوان الفيديو مع حل مشكلة line-clamp */
-.video-item-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin: 15px 15px 10px;
-    color: var(--text);
-    
-    /* الخاصية القياسية الحديثة لحل الخطأ */
-    line-clamp: 2; 
-    
-    /* دعم المتصفحات القديمة (Chrome, Safari, Edge) */
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* 5. البيانات التعريفية أسفل الفيديو */
-.video-item-meta {
-    padding: 0 15px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
