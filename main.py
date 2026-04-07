@@ -98,8 +98,9 @@ templates.env.globals.update(can=can)
 # =========================================
 async def analytics_middleware(request: Request, call_next):
     # تجاهل الملفات الثابتة
-    if request.url.path.startswith("/static") or request.url.path in ("/favicon.ico", "/robots.txt"):
+    if request.url.path.startswith("/static") or request.url.path in ("/favicon.ico", "/robots.txt", "/sitemap-v2.xml"):
         return await call_next(request)
+    
 
     # الوصول إلى الجلسة آمن هنا بسبب ترتيب الإضافة
     user = request.session.get("user")
