@@ -216,7 +216,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
 });
- 
+document.addEventListener('DOMContentLoaded', () => {
+        const flashMessages = document.querySelectorAll('.flash-message');
+        flashMessages.forEach(message => {
+            setTimeout(() => {
+                message.style.transition = 'opacity 0.5s ease-out';
+                message.style.opacity = '0';
+                setTimeout(() => { message.remove(); }, 500); 
+            }, 5000);
+        });
+}); 
 // إخفاء الرسالة تلقائيًا بعد 5 ثواني
 setTimeout(() => {
     const alert = document.getElementById('success-alert');

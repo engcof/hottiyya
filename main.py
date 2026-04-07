@@ -236,6 +236,7 @@ async def not_found(request: Request, exc):
 
 @app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)
 async def google_verification():
+    # المحتوى يجب أن يكون بالضبط ما بداخل ملف جوجل
     return "google-site-verification: googlea84e43178e487f63.html"
 
 @app.get("/sitemap.xml")
@@ -253,14 +254,24 @@ async def sitemap():
     dynamic_pages = GoogleService.get_all_sitemap_urls(base_url)
     all_pages = static_pages + dynamic_pages
 
-    # بناء الـ XML
-    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
-    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    # بناء الـ XML بدون مسافات بادئة (Stripped)
+    xml_content = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    )
     for page in all_pages:
-        xml += f'  <url>\n    <loc>{page["loc"]}</loc>\n    <changefreq>{page["changefreq"]}</changefreq>\n    <priority>{page["priority"]}</priority>\n  </url>\n'
-    xml += '</urlset>'
+        xml_content += (
+            f'  <url>\n'
+            f'    <loc>{page["loc"]}</loc>\n'
+            f'    <changefreq>{page["changefreq"]}</changefreq>\n'
+            f'    <priority>{page["priority"]}</priority>\n'
+            f'  </url>\n'
+        )
+    xml_content += '</urlset>'
     
-    return Response(content=xml, media_type="application/xml")
+    # استخدام Response مع تحديد الـ charset
+    return Response(content=xml_content, media_type="application/xml; charset=utf-8")
+
 
 @app.get("/robots.txt")
 async def robots():

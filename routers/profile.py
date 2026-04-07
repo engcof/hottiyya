@@ -1,5 +1,5 @@
 # routers/profile.py
-from fastapi import APIRouter, Request, HTTPException, status, Form, Query # 💡 يجب إضافة Query
+from fastapi import APIRouter, Request, HTTPException, status, Form, Query 
 from fastapi.responses import HTMLResponse, RedirectResponse
 from core.templates import templates
 # ... (بقية الإستيرادات) ...

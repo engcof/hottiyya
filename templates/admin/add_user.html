@@ -9,8 +9,12 @@
                 <p class="auth-subtitle">قم بإنشاء حساب جديد للمستخدمين</p>
         </div>
 
-        {% if error %}
-        <div class="error">{{ error }}</div>
+   
+           {% if error %}
+        <div class="alert error flash-message">❌
+            <span>{{ error }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
         {% endif %}
         <form method="post" action="/admin/add_user" class="form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

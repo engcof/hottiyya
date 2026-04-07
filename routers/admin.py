@@ -94,10 +94,17 @@ async def remove_permission(request: Request, user_id: int = Form(...), permissi
 # --- صفحات الإضافة والتغيير (توجيه لـ /admin عند النجاح) ---
 
 @router.get("/add_user")
-async def show_add_user_page(request: Request):
+async def show_add_user_page(request: Request ):
     user, csrf_token = get_admin_context(request)
     if not user: return RedirectResponse("/403")
-    return templates.TemplateResponse("admin/add_user.html", {"request": request, "csrf_token": csrf_token, "user": user})
+    return templates.TemplateResponse(
+        "admin/add_user.html", 
+                                      {
+                                          "request": request, 
+                                          "csrf_token": csrf_token, 
+                                          "user": user, 
+                                          "error": request.session.pop("error", None)
+                                          })
 
 @router.post("/add_user")
 async def process_add_user(request: Request, username: str = Form(...), password: str = Form(...), 
@@ -108,7 +115,8 @@ async def process_add_user(request: Request, username: str = Form(...), password
     if success:
         request.session["success_message"] = message
         return RedirectResponse("/admin", status_code=303)
-    return RedirectResponse(f"/admin/add_user?error={message}", status_code=303)
+    request.session["error"] = message
+    return RedirectResponse(f"/admin/add_user", status_code=303)
 
 @router.get("/change_password")
 async def show_change_password_page(request: Request):
@@ -116,7 +124,15 @@ async def show_change_password_page(request: Request):
     if not user: return RedirectResponse("/403")
     data = AuthService.get_admin_dashboard_data(page=1, users_per_page=1000)
     users = [u for u in data['users'] if u['username'] != "admin"] if user["username"] != "admin" else data['users']
-    return templates.TemplateResponse("admin/change_password.html", {"request": request, "users": users, "csrf_token": csrf_token, "user": user})
+    return templates.TemplateResponse(
+        "admin/change_password.html", 
+        {
+            "request": request, 
+            "users": users, 
+            "csrf_token": csrf_token, 
+            "user": user,
+            "error": request.session.pop("error", None)
+            })
 
 @router.post("/change_password")
 async def process_change_password(request: Request, user_id: int = Form(...), new_password: str = Form(...), csrf_token: str = Form(...)):
@@ -125,7 +141,8 @@ async def process_change_password(request: Request, user_id: int = Form(...), ne
     if success:
         request.session["success_message"] = "تم تحديث كلمة المرور بنجاح."
         return RedirectResponse("/admin", status_code=303)
-    return RedirectResponse(f"/admin/change_password?error={message}", status_code=303)
+    request.session["error"] = message
+    return RedirectResponse(f"/admin/change_password?", status_code=303)
 
 # --- السجلات ---
 

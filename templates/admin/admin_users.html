@@ -13,10 +13,14 @@
         </div>
 
         {% if success_message %}
-            <div class="alert success flash-message">✅ {{ success_message }}</div>
+            <div class="alert success flash-message">✅  <span>{{ success_message }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
         {% endif %}
         {% if error_message %}
-            <div class="alert error flash-message">❌ {{ error_message }}</div>
+            <div class="alert error flash-message">❌<span>{{ error_message }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
         {% endif %}
 
         <div class="admin-card full">
@@ -127,15 +131,6 @@
 </section>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const flashMessages = document.querySelectorAll('.flash-message');
-        flashMessages.forEach(message => {
-            setTimeout(() => {
-                message.style.transition = 'opacity 0.5s ease-out';
-                message.style.opacity = '0';
-                setTimeout(() => { message.remove(); }, 500); 
-            }, 5000);
-        });
-    });
+   
 </script>
 {% endblock %}
