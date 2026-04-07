@@ -239,7 +239,7 @@ async def google_verification():
     # المحتوى يجب أن يكون بالضبط ما بداخل ملف جوجل
     return "google-site-verification: googlea84e43178e487f63.html"
 
-@app.get("/sitemap.xml")
+@app.get("/sitemap-v2.xml")
 async def sitemap():
     base_url = "https://hottiyya.onrender.com"
     
@@ -277,7 +277,7 @@ async def sitemap():
 async def robots():
     content = """User-agent: *
 Allow: /
-Sitemap: https://hottiyya.onrender.com/sitemap.xml
+Sitemap: https://hottiyya.onrender.com/sitemap-v2.xml
 """
     return Response(content=content, media_type="text/plain")
 # =========================================
