@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}المقالات{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/articles.css') }}">
+{% endblock %}
 {% block content %}
 <section class="all-page">
     <div class="container">
@@ -103,7 +105,5 @@
         {% endif %}
     </div>
 </section>
-<style>
 
-</style>
 {% endblock %}

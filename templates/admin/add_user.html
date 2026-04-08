@@ -1,41 +1,64 @@
 {% extends "base.html" %}
-{% block title %}إضافة مستخدم{% endblock %}
+
+{% block title %}إضافة مستخدم جديد - الإدارة{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
 
 {% block content %}
-<section class="auth-section">
-    <div class="auth-card glass-strong">
-        <div class="auth-header">
-             <h1 class="auth-title">إضافة مستخدم جديد</h1>
-                <p class="auth-subtitle">قم بإنشاء حساب جديد للمستخدمين</p>
+<section class="add-edit-page">
+    <div class="form-card"> <div class="form-header">
+            <h1 class="form-title">إضافة مستخدم جديد</h1>
+            <p class="form-subtitle">إنشاء حسابات جديدة ومنح الصلاحيات اللازمة</p>
         </div>
 
-   
-           {% if error %}
-        <div class="alert error flash-message">❌
+        {% if error %}
+        <div class="alert error">
+            <i class="fas fa-exclamation-circle"></i>
             <span>{{ error }}</span>
             <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
-        <form method="post" action="/admin/add_user" class="form">
+
+        <form method="post" action="/admin/add_user" class="news-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div class="form-group">
-                <label>اسم المستخدم</label>
-                <input type="text" name="username" required>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>اسم المستخدم <span class="required">*</span></label>
+                    <input type="text" name="username" class="input-field" 
+                           placeholder="أدخل اسم المستخدم..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>دور المستخدم (الصلاحية) <span class="required">*</span></label>
+                    <select name="role" class="input-field">
+                        <option value="user" selected>مستخدم عادي</option>
+                        <option value="manager">مدير نظام</option>
+                    </select>
+                </div>
             </div>
+
             <div class="form-group">
-                <label>كلمة المرور</label>
-                <input type="password" name="password" required>
+                <label>كلمة المرور المؤقتة <span class="required">*</span></label>
+                <input type="password" name="password" class="input-field" 
+                       placeholder="••••••••" required>
+                <p class="feedback-text" style="color: #64748b; font-size: 0.8rem;">
+                    يفضل تزويد المستخدم بكلمة مرور قوية ليقوم بتغييرها لاحقاً.
+                </p>
             </div>
-             <div class="form-group">
-                        <label>الدور</label>
-                        <select name="role">
-                            <option value="manager">مدير</option>
-                            <option value="user" selected>مستخدم</option>
-                        </select>
-                    </div>
-            <div class="form-actions">
-                <button type="submit" class="btn-success">إضافة</button>
-                <a href="/admin" class="btn-secondary">رجوع</a>
+
+            <div style="margin-top: 35px;">
+                <button type="submit" class="btn-submit-main">
+                    <i class="fas fa-user-plus"></i> إضافة المستخدم الآن
+                </button>
+            </div>
+
+            <div class="form-footer">
+                <a href="/admin" class="cancel-text-link">
+                    <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i> الرجوع للوحة التحكم
+                </a>
             </div>
         </form>
     </div>

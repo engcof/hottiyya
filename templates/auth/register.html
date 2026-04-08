@@ -1,47 +1,62 @@
 {% extends "base.html" %}
-{% block title %}إنشاء حساب جديد{% endblock %}
+
+{% block title %}إنشاء حساب جديد - عائلة الحوطية{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
+
 {% block content %}
-<section class="auth-section">
-    <div class="auth-card glass-strong">
-        <div class="auth-header">
-            <h1 class="auth-title">عضوية جديدة</h1>
-            <p class="auth-subtitle">انضم الآن إلى منصة الحوطية الرقمية</p>
+<section class="add-edit-page">
+    <div class="form-card" style="max-width: 500px;">
+        
+        <div class="form-header">
+            <h1 class="form-title">عضوية جديدة</h1>
+            <p class="form-subtitle">انضم الآن إلى منصة الحوطية الرقمية وساهم في إثراء المحتوى</p>
         </div>
 
         {% if error %}
-        <div class="alert error flash-message">❌<span>{{ error }}</span>
+        <div class="alert error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
             <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
-        <form method="post" action="/auth/register" class="auth-form">
+
+        <form method="post" action="/auth/register" class="news-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
             <div class="form-group">
-                <label for="username">اسم المستخدم</label>
-                <input type="text" name="username" id="username" required 
-                        placeholder="مثال: ahmed_2024" autocomplete="username">
-                <small style="color: rgba(255,255,255,0.6); font-size: 0.8rem;">يجب أن يكون فريداً وباللغة الإنجليزية أو العربية (3-30 حرفاً)</small>
+                <label for="username">اسم المستخدم <span class="required">*</span></label>
+                <input type="text" name="username" id="username" class="input-field" 
+                       placeholder="مثال: ahmed_hottiyya" required autocomplete="username">
+                <p class="feedback-text" style="color: #64748b; font-size: 0.8rem;">
+                    يُفضل استخدامه باللغة الإنجليزية (3-30 حرفاً).
+                </p>
             </div>
 
             <div class="form-group">
-                <label for="password">كلمة المرور</label>
-                <input type="password" name="password" id="password" required 
-                        placeholder="أدخل كلمة مرور قوية" autocomplete="new-password">
+                <label for="password">كلمة المرور <span class="required">*</span></label>
+                <input type="password" name="password" id="password" class="input-field" 
+                       placeholder="أدخل كلمة مرور قوية" required autocomplete="new-password">
             </div>
 
             <div class="form-group">
-                <label for="confirm_password">تأكيد كلمة المرور</label>
-                <input type="password" name="confirm_password" id="confirm_password" required 
-                        placeholder="أعد كتابة كلمة المرور" autocomplete="new-password">
+                <label for="confirm_password">تأكيد كلمة المرور <span class="required">*</span></label>
+                <input type="password" name="confirm_password" id="confirm_password" class="input-field" 
+                       placeholder="أعد كتابة كلمة المرور" required autocomplete="new-password">
             </div>
 
-            <button type="submit" class="submit-btn full-width">
-                إنشاء الحساب
-            </button>
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn-submit-main">
+                    <i class="fas fa-user-plus"></i> إنشاء الحساب
+                </button>
+            </div>
 
-            <div class="auth-footer">
-                <p>لديك حساب بالفعل؟ 
-                    <a href="/auth/login" class="link-accent">تسجيل الدخول</a>
+            <div class="form-footer" >
+                <p >
+                    لديك حساب بالفعل؟ 
+                    <a href="/auth/login" class="cancel-text-link" >تسجيل الدخول</a>
                 </p>
             </div>
         </form>

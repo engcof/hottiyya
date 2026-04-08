@@ -1,149 +1,87 @@
 {% extends "base.html" %}
+
 {% block title %}تعديل الخبر: {{ item.title }}{% endblock %}
 
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
+
 {% block content %}
-<style>
-    .edit-news-section { padding: 50px 0; background-color: #f8f9fa; min-height: 90vh; }
-    .form-card {
-        background: #fff;
-        padding: 40px;
-        border-radius: 25px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.05);
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    .form-group { margin-bottom: 25px; }
-    .form-group label {
-        display: block;
-        font-weight: 700;
-        margin-bottom: 10px;
-        color: #2c3e50;
-        font-size: 0.95rem;
-    }
-    .form-group input[type="text"], .form-group textarea {
-        width: 100%;
-        padding: 12px 15px;
-        border: 2px solid #edf2f7;
-        border-radius: 12px;
-        font-family: inherit;
-        transition: border-color 0.3s;
-    }
-    .form-group input:focus, .form-group textarea:focus {
-        border-color: #007bff;
-        outline: none;
-    }
-
-    /* حاوية معاينة الوسائط الحالية */
-    .current-media-box {
-        background: #fdfdfd;
-        border: 2px dashed #cbd5e0;
-        padding: 15px;
-        border-radius: 15px;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-    .media-preview {
-        max-height: 250px;
-        max-width: 100%;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-
-    .form-actions {
-        display: flex;
-        gap: 15px;
-        margin-top: 35px;
-    }
-    .btn-save, .btn-cancel {
-        padding: 12px 30px;
-        border-radius: 12px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        cursor: pointer;
-        transition: all 0.3s;
-        text-decoration: none;
-    }
-    .btn-save { background: #007bff; color: #fff; border: none; flex: 2; justify-content: center; }
-    .btn-save:hover { background: #0056b3; transform: translateY(-2px); }
-    .btn-cancel { background: #edf2f7; color: #4a5568; flex: 1; justify-content: center; }
-    .btn-cancel:hover { background: #e2e8f0; }
-
-    .error-msg {
-        background: #fff5f5;
-        color: #c53030;
-        padding: 15px;
-        border-radius: 12px;
-        margin-bottom: 25px;
-        border-right: 5px solid #c53030;
-    }
-</style>
-
-<section class="edit-news-section">
-    <div class="container">
-        <div class="page-header" style="text-align: center; margin-bottom: 40px;">
-            <h1 style="font-weight: 800; color: #1a202c;">تعديل الخبر</h1>
-            <p style="color: #718096;">تحديث بيانات الخبر والوسائط المرفقة</p>
+<section class="add-edit-page">
+    <div class="form-card">
+        <div class="form-header"> 
+            <h2 class="form-title">تعديل الخبر</h2>
+            <p class="form-subtitle">تحديث بيانات الخبر والوسائط المرفقة </p>
         </div>
 
-        <div class="form-card">
-            {% if error %}
-            <div class="error-msg">
-                <strong>عذراً:</strong> {{ error }}
+        {% if error %}
+        <div class="alert error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endif %}
+
+        <form method="post" action="/news/edit/{{ item.id }}" enctype="multipart/form-data" id="newsForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
+            <div class="form-group">
+                <label>عنوان الخبر <span class="required">*</span></label>
+                <input type="text" name="title" class="input-field" value="{{ item.title }}" required>
             </div>
-            {% endif %}
 
-            <form method="post" action="/news/edit/{{ item.id }}" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="form-group">
+                <label>اسم الكاتب</label>
+                <input type="text" name="author" class="input-field" value="{{ item.author }}" required>
+            </div>
 
-                <div class="form-group">
-                    <label>عنوان الخبر</label>
-                    <input type="text" name="title" value="{{ item.title }}" placeholder="أدخل عنواناً جذاباً..." required>
-                </div>
+            <div class="form-group">
+                <label>تفاصيل الخبر <span class="required">*</span></label>
+                <textarea name="content" class="input-field" rows="10" required>{{ item.content }}</textarea>
+            </div>
 
-                <div class="form-group">
-                    <label>اسم الكاتب</label>
-                    <input type="text" name="author" value="{{ item.author }}" required>
-                </div>
-
-                <div class="form-group">
-                    <label>تفاصيل الخبر</label>
-                    <textarea name="content" rows="10" placeholder="اكتب تفاصيل الخبر هنا..." required>{{ item.content }}</textarea>
-                </div>
-
-                <div class="form-group">
-                    <label>وسائط الخبر (صورة أو فيديو)</label>
-                    
-                    {% if item.image_url %}
-                    <div class="current-media-box">
-                        <p style="font-size: 0.8rem; color: #a0aec0; margin-bottom: 10px;">المعاينة الحالية:</p>
-                        {% if item.image_url.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) %}
-                            <video src="{{ item.image_url }}" class="media-preview" controls></video>
-                        {% else %}
-                            <img src="{{ item.image_url }}" class="media-preview" alt="Preview">
-                        {% endif %}
-                    </div>
+            <div class="form-group">
+                <label>الوسائط (صورة أو فيديو)</label>
+                
+                {% if item.image_url %}
+                <div class="current-image" style="margin-bottom: 15px; text-align: center; background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 10px;">المعاينة الحالية:</p>
+                    {% if item.image_url.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) %}
+                        <video src="{{ item.image_url }}" style="max-height: 200px; border-radius: 8px;" controls></video>
+                    {% else %}
+                        <img src="{{ item.image_url }}" alt="Preview" style="max-height: 200px; border-radius: 8px;">
                     {% endif %}
-
-                    <label style="font-size: 0.85rem; color: #4a5568;">تغيير الوسائط (اختياري):</label>
-                    <input type="file" name="image" accept="image/*,video/*" style="padding: 10px 0;">
-                    <small style="color: #a0aec0; display: block;">اتركه فارغاً للاحتفاظ بالملف الحالي.</small>
                 </div>
+                {% endif %}
 
-                <div class="form-actions">
-                    <button type="submit" class="btn-save">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
-                            <polyline points="7 3 7 8 15 8"></polyline>
-                        </svg>
-                        تحديث الخبر
-                    </button>
-                    <a href="/news/{{ item.id }}" class="btn-cancel">إلغاء</a>
+                <div class="file-input-wrapper" id="dropZone">
+                    <input type="file" id="newsImage" name="image" accept="image/*,video/*" style="opacity: 0; position: absolute; inset: 0; cursor: pointer;">
+                    
+                    <div id="uploadContent">
+                        <i class="fas fa-file-upload" style="font-size: 1.8rem; color: var(--accent); margin-bottom: 8px;"></i>
+                        <p id="fileStatusText">اضغط لتغيير الوسائط (اختياري)</p>
+                    </div>
+
+                    <div id="imagePreview" style="display: none; margin-top: 10px;">
+                        <img id="previewImg" src="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--accent);">
+                        <p id="removePreview" style="color: #ef4444; font-size: 0.8rem; margin-top: 5px; cursor: pointer;">
+                            <i class="fas fa-trash-alt"></i> إلغاء التغيير
+                        </p>
+                    </div>
                 </div>
-            </form>
-        </div>
+                <small style="color: #94a3b8; display: block; margin-top: 5px;">اتركه فارغاً للاحتفاظ بالملف الحالي.</small>
+            </div>
+
+            <div class="form-actions" style="margin-top: 30px;">
+                <button type="submit" class="btn-submit-main">
+                    <i class="fas fa-save"></i> حفظ التحديثات
+                </button>
+            </div>
+            
+            <a href="/news/{{ item.id }}" class="cancel-text-link">إلغاء والرجوع للخبر</a>
+        </form>
     </div>
 </section>
+
+<script src="{{ url_for('static', path='js/news-actions.js') }}"></script>
 {% endblock %}

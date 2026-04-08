@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}المكتبة الرقمية{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/library.css') }}">
+{% endblock %}
 {% block content %}
 <section class="all-page">
     <div class="container">
@@ -168,81 +171,7 @@
 </a>
 {% endif %}
 
-<script>
-    // مراقبة الرفع بشكل ذكي وموفر للموارد
-    async function monitorUploads() {
-        const pendingBooks = document.querySelectorAll('.btn-pending');
-        if (pendingBooks.length === 0) return; // لا يوجد رفع، لا داعي لإزعاج السيرفر
-
-        console.log("🔍 مراقبة عمليات الرفع الجارية...");
-        
-        const interval = setInterval(async () => {
-            try {
-                // نقوم بجلب الصفحة ولكن نفحص فقط العناصر المطلوبة
-                const response = await fetch(window.location.href, { cache: "no-store" });
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                
-                const stillPending = doc.querySelectorAll('.btn-pending').length;
-                
-                // إذا تغير عدد الكتب التي تحت الرفع، نقوم بتحديث الصفحة
-                if (stillPending < pendingBooks.length) {
-                    console.log("✅ اكتمل رفع أحد الكتب، جاري تحديث المكتبة...");
-                    clearInterval(interval);
-                    window.location.reload(); 
-                }
-            } catch (error) { 
-                console.error("خطأ في مراقبة الرفع:", error);
-                clearInterval(interval); // التوقف عند حدوث خطأ متكرر
-            }
-        }, 10000); // زيادة المدة لـ 10 ثوانٍ لتقليل الضغط على السيرفر
-    }
-
-    // 2. التحميل الذكي: محاولة إجبار المتصفح على الاسم العربي
-    async function downloadWithFriendlyName(event, url, title) {
-        // نترك الرابط الافتراضي يعمل لزيادة العداد في السيرفر
-        // خاصية download في HTML ستقوم بالباقي في أغلب المتصفحات
-        console.log("جاري التحميل باسم:", title);
-    }
-
-    // 3. تحديث العدادات: تغيير الأرقام فوراً عند الضغط (بدون Refresh)
-    function setupCounterUpdates() {
-    document.querySelectorAll('.btn-download-new, .btn-read').forEach(button => {
-        button.addEventListener('click', function(e) {
-            // 1. تحديد الـ span الصحيح بناءً على نوع الزر
-            const isDownload = this.classList.contains('btn-download-new');
-            const counterSpan = isDownload ? this.querySelector('.download-count') : this.querySelector('.read-count');
-            
-            if (counterSpan) {
-                // 2. تحديث بصري سريع
-                let currentCount = parseInt(counterSpan.innerText) || 0;
-                counterSpan.innerText = currentCount + 1;
-
-                // 3. جلب الرقم الدقيق من السيرفر بعد ثانية
-                setTimeout(async () => {
-                    try {
-                        const response = await fetch(window.location.href);
-                        const html = await response.text();
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        
-                        // نبحث عن نفس الزر في الصفحة الجديدة وناخذ منه الرقم فقط
-                        const newBtn = doc.querySelector(`[href="${this.getAttribute('href')}"]`);
-                        const newNum = isDownload ? newBtn.querySelector('.download-count') : newBtn.querySelector('.read-count');
-                        
-                        if (newNum) counterSpan.innerText = newNum.innerText;
-                    } catch (error) { console.error("Error updating counter:", error); }
-                }, 1500);
-            }
-        });
-    });
-}
-
-    // تشغيل كل الوظائف عند تحميل الصفحة
-    document.addEventListener('DOMContentLoaded', () => {
-        monitorUploads();
-        setupCounterUpdates();
-    });
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/library.js') }}"></script>
+{% endblock %}
 {% endblock %}

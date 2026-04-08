@@ -1,71 +1,85 @@
 {% extends "base.html" %}
+
 {% block title %}تعديل: {{ book.title }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="add-book-container">
+<section class="add-edit-page">
     <div class="form-card">
         <div class="form-header">
-            <h2> تعديل بيانات الكتاب</h2>
-        </div>  
+            <h2 class="form-title">تعديل بيانات الكتاب</h2>
+            <p class="form-subtitle">تحديث المعلومات الأساسية وصلاحيات التحميل</p>
+        </div>
+
         {% if error %}
-        <div class="error-msg">
+        <div class="alert-error-box">
             <i class="fas fa-exclamation-triangle"></i> {{ error }}
         </div>
-        {% endif %} 
+        {% endif %}
 
         <form action="/library/edit/{{ book.id }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div class="form-group">
-                <label> عنوان الكتاب</label>
-                <input type="text" name="title" class="custom-input" value="{{ book.title }}" required>
+            
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>عنوان الكتاب <span class="required">*</span></label>
+                    <input type="text" name="title" class="input-field" value="{{ book.title }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label>اسم الكاتب</label>
+                    <input type="text" name="author" class="input-field" value="{{ book.author }}">
+                </div>
+
+                <div class="form-group">
+                    <label>التصنيف <span class="required">*</span></label>
+                    <select name="category" class="input-field" required>
+                        {% for cat in categories %}
+                        <option value="{{ cat }}" {% if cat == book.category %}selected{% endif %}>{{ cat }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label> اسم الكاتب</label>
-                <input type="text" name="author" class="custom-input" value="{{ book.author }}">
-            </div>
-
-            <div class="form-group">
-                <label> التصنيف</label>
-                <select name="category" class="custom-select" required>
-                    {% for cat in categories %}
-                    <option value="{{ cat }}" {% if cat == book.category %}selected{% endif %}>{{ cat }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group" style="background: #f0fff4; padding: 15px; border-radius: 12px; border: 1px solid #c6f6d5; margin-bottom: 25px;">
+            <div class="success-container">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div>
-                        <label style="margin-bottom: 0; color: #27ae60;">
+                        <label style="margin-bottom: 0; color: #166534; font-weight: bold;">
                             <i class="fas fa-check-circle"></i> إتاحة الكتاب للتحميل المباشر
                         </label>
-                        <small style="color: #52735e; display: block;">في حال إلغاء التفعيل، سيتم إخفاء زر التحميل</small>
+                        <small style="color: #4b6354; display: block; margin-top: 4px;">في حال إلغاء التفعيل، سيتم إخفاء زر التحميل للعامة</small>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" name="allow_download" id="allow_download"
-                         {% if book.allow_download %}checked{% endif %}>
-                        <span class="slider round"></span>
+                        <input type="checkbox" name="allow_download" id="allow_download" {% if book.allow_download %}checked{% endif %}>
+                        <span class="slider"></span>
                     </label>
                 </div>
             </div>
 
-            <div class="alert alert-info small border-0 shadow-sm" style="background-color: #e3f2fd;">
-                <i class="fas fa-lightbulb"></i> ملاحظة: التعديل يشمل النصوص والصلاحيات فقط. لتغيير ملف الـ PDF، يرجى إعادة رفع الكتاب.
+            <div class="alert-info-box">
+                <i class="fas fa-lightbulb"></i> ملاحظة: التعديل يشمل النصوص فقط. لتغيير ملف الـ PDF، يرجى حذف السجل وإعادة رفع الملف.
             </div>
             
-            <button type="submit" class="submit-labrary-btn">
-                <i class="fas fa-cloud-upload-alt"></i> حفظ التعديلات
+            <button type="submit" class="btn-submit-main">
+                <i class="fas fa-save"></i> حفظ التعديلات
             </button>
-            
+        </form>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e2e8f0;">
+
+        <div class="admin-danger-zone">
             <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" class="delete-labrary-btn">
-                    <i class="fas fa-trash-alt"></i> حذف السجل نهائياً
+                <button type="submit" class="btn-delete-form">
+                    <i class="fas fa-trash-alt"></i> حذف الكتاب نهائياً
                 </button>
             </form>
+        </div>
              
-            <a href="/library" class="cancel-link">إلغاء والعودة للمكتبة</a>
-        </form>
+        <a href="/library" class="cancel-text-link">إلغاء والعودة للمكتبة</a>
     </div>
-</div>
-
+</section>
 {% endblock %}

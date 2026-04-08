@@ -1,90 +1,68 @@
 {% extends "base.html" %}
-{% block title %}إضافة خبر جديد - الأخبار الحوطية{% endblock %}
+
+{% block title %}إضافة خبر جديد -  الحوطية{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
 
 {% block content %}
 <section class="add-edit-page">
-    <div class="form-card glass-strong">
+    <div class="form-card">
         <div class="form-header"> 
-            <h2 class="page-title">إضافة خبر جديد</h2>
+            <h2 class="form-title">نشر خبر جديد</h2>
+            <p class="form-subtitle">أطلع  على آخر المستجدات والفعاليات</p>
         </div>
+
         <form method="post" action="/news/add" enctype="multipart/form-data" class="news-form" id="newsForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <!-- العنوان -->
+            
             <div class="form-group">
-                <label for="title">عنوان الخبر <span class="required">*</span></label>
-                <input 
-                    type="text" 
-                    id="title" 
-                    name="title" 
-                    placeholder="اكتب عنوانًا جذابًا وواضحًا..." 
-                    required 
-                    autocomplete="off"
-                >
+                <label>عنوان الخبر <span class="required">*</span></label>
+                <input type="text" name="title" class="input-field" placeholder="اكتب عنواناً واضحاً..." required>
             </div>
 
-            <!-- المحتوى -->
             <div class="form-group">
-                <label for="content">نص الخبر <span class="required">*</span></label>
-                <textarea 
-                    id="content" 
-                    name="content" 
-                    rows="10" 
-                    placeholder="اكتب تفاصيل الخبر هنا..." 
-                    required
-                ></textarea>
+                <label>تفاصيل الخبر <span class="required">*</span></label>
+                <textarea name="content" class="input-field" rows="8" placeholder="اكتب تفاصيل الخبر هنا..." required></textarea>
             </div>
 
-            <!-- الكاتب (تلقائي من الجلسة) -->
-            <div class="form-group">
-                <label for="author">الكاتب</label>
-                <input 
-                    type="text" 
-                    id="author" 
-                    name="author" 
-                    value="{{ user.username or 'غير معروف' }}" 
-                    readonly 
-                    class="readonly-input"
-                >
-                <small>سيتم تسجيل الخبر باسم: <strong>{{ user.username }}</strong></small>
-            </div>
-
-            <!-- رفع الصورة -->
-            <div class="form-group">
-                <label for="image">صورة الخبر (اختياري)</label>
-                <div class="file-upload-wrapper">
-                    <input type="file" id="image" name="image" style="width: 100%;">
-                    <label for="image" class="file-label">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <span class="file-text">اختر صورة...</span>
-                        <span class="file-name">لم يتم اختيار ملف</span>
-                    </label>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>الناشر</label>
+                    <input type="text" value="{{ user.username or 'غير معروف' }}" readonly class="input-field readonly-input">
                 </div>
-                <small>الصيغ المسموحة: JPG, PNG, GIF • الحجم الأقصى: 5MB</small>
+
+                <div class="form-group">
+                    <label>صورة الخبر</label>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="newsImage" name="image" accept="image/*" style="opacity: 0; position: absolute; inset: 0; cursor: pointer;">
+                        
+                        <div id="uploadContent">
+                            <i class="fas fa-image" style="font-size: 1.8rem; color: var(--accent); margin-bottom: 8px;"></i>
+                            <p id="fileStatusText">اضغط لرفع صورة الخبر</p>
+                        </div>
+
+                        <div id="imagePreview" style="display: none; margin-top: 10px;">
+                            <img id="previewImg" src="" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 2px solid var(--accent);">
+                            <p id="removePreview" style="color: #ef4444; font-size: 0.8rem; margin-top: 5px; cursor: pointer; font-weight: bold;">
+                                <i class="fas fa-trash-alt"></i> إزالة
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- معاينة الصورة -->
-            <div class="image-preview" id="previewContainer" style="display:none;">
-                <p>الصورة المختارة:</p>
-                <img id="previewImg" src="" alt="معاينة الصورة">
-                <button type="button" class="remove-img" id="removeImg">إزالة</button>
-            </div>
-
-            <!-- الأزرار -->
-            <div class="form-actions">
-                <button type="submit" class="btn-submit">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                    </svg>
-                    نشر الخبر الآن
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn-submit-main">
+                    <i class="fas fa-paper-plane"></i> نشر الخبر
                 </button>
-                <a href="/news" class="btn-cancel">إلغاء</a>
             </div>
+            
+            <a href="/news" class="cancel-text-link">رجوع للأخبار</a>
         </form>
     </div>
 </section>
+
+<script src="{{ url_for('static', path='js/news-actions.js') }}"></script>
 {% endblock %}

@@ -13,18 +13,10 @@
     <meta property="og:title" content="موقع الحوطية">
     <meta property="og:description" content="بوابتكم الرقمية للتاريخ .">
     <meta property="og:image" content="/static/icon/og-image.jpg"> <meta property="og:url" content="https://hottiyya.onrender.com">
-
     <link rel="icon" href="/static/icon/favicon.ico">
-    
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/home.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/profile.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/library.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/articles.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/video.css') }}">
-    
+   {% block extra_css %}{% endblock %}
     <title>{% block title %}الحوطية{% endblock %} | موقع الحوطية</title>
 </head>
 <body>
@@ -47,15 +39,19 @@
             </ul>
             <div class="user-area">
                 {% if user %}
-                    <button class="user-btn" id="userBtn">
+                    <button class="user-btn" id="userBtn" aria-haspopup="true" aria-expanded="false">
                         <span class="avatar">{{ user.username[0] | upper }}</span>
                         
+                        {# استخدام unread_count الممرر من الروتر #}
                         {% if unread_count and unread_count > 0 %}
                         <span class="notification-badge">{{ unread_count }}</span>
                         {% endif %}
+                        
                         <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
-                            <path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+                            <path fill="currentColor" d="M7 10l5 5 5-5z"/>
+                        </svg>
                     </button>
+                    
                     <div class="dropdown" id="userDropdown">
                         <div class="dropdown-header">
                             <span class="avatar big">{{ user.username[0] | upper }}</span>
@@ -70,7 +66,7 @@
                         </div>
                         
                         <a href="/profile" class="dropdown-link">
-                            صفحتي الشخصية
+                            <span>صفحتي الشخصية</span>
                             {% if unread_count and unread_count > 0 %}
                             <span class="notification-badge-inline">{{ unread_count }}</span>
                             {% endif %}
@@ -79,10 +75,10 @@
                         <a href="/auth/logout" class="dropdown-link logout">تسجيل الخروج</a>
                     </div>
                 {% else %}
-                    <a href="/auth/login" class="desktop-only-login" style="padding:12px 28px;background:var(--accent);color:white;border-radius:50px;font-weight:600;">تسجيل الدخول</a>
+                    <a href="/auth/login" class="desktop-only-login">تسجيل الدخول</a>
                 {% endif %}
             </div>
-
+           
             <button class="mobile-menu-toggle" id="mobileToggle">
                 <span></span><span></span><span></span>
             </button>
@@ -128,6 +124,7 @@
     </footer>
     <!-- إضافة ملفات JavaScript مشتركة هنا -->
     <script src="{{ url_for('static', path='js/main.js') }}"></script>
+   {% block extra_js %}{% endblock %}
     <script>
 document.getElementById('onlineToggle')?.addEventListener('click', function(e) {
     e.stopPropagation();

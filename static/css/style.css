@@ -2033,27 +2033,68 @@ footer {
     transform: rotate(180deg); /* تدوير السهم ليشير لليمين */
 }
 
-/* 2. تنسيق رسائل التنبيهات (Flash Messages) */
+/* --- نظام التنبيهات الموحد (Global Alerts) --- */
 .alert {
-    padding: 15px 20px;
-    margin-bottom: 25px;
-    border-radius: 8px;
-    font-size: 1rem;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: 12px; /* حواف أنعم */
+    font-size: 0.95rem;
     font-weight: 600;
-    border-right: 5px solid;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-right: 5px solid; /* الاحتفاظ بميزة الحافة الجانبية */
+    animation: slideIn 0.3s ease-out;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* ظل خفيف جداً للعمق */
 }
-.alert.success {
-    background-color: #d1fae5; /* أخضر فاتح */
-    color: #059669;
-    border-color: #059669;
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-.alert.error {
-    background-color: #fee2e2; /* أحمر فاتح */
-    color: #ef4444;
-    border-color: #ef4444;
+
+/* حالة النجاح - أخضر */
+.alert.success, .alert-success {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border-color: #10b981; /* لون الحافة اليمنى */
 }
-.alert p {
+
+/* حالة الخطأ - أحمر */
+.alert.error, .alert.danger, .alert-error, .alert-danger {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #ef4444; /* لون الحافة اليمنى */
+}
+
+/* حالة التنبيه/المعلومات - أزرق */
+.alert.info, .alert-info {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border-color: #3b82f6;
+}
+
+/* ضبط المسافات داخل التنبيه */
+.alert p, .alert span {
     margin: 0;
+    line-height: 1.5;
+}
+
+/* زر الإغلاق (X) */
+.alert-close {
+    margin-right: auto; /* يدفع الزر لليسار في الواجهة العربية */
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.5;
+    transition: 0.2s;
+}
+
+.alert-close:hover {
+    opacity: 1;
 }
 
 /* ==================== استجابة التصميم (Responsive Design) ==================== */

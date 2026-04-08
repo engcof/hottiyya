@@ -1,112 +1,105 @@
 {% extends "base.html" %}
+
 {% block title %}تعديل: {{ article.title }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
+
 {% block content %}
 <section class="add-edit-page">
-    <div class="container">
-        <!-- العنوان الملكي -->
-        <div class="page-header">
-            <h1 class="page-title">تعديل المقال</h1>
+    <div class="form-card">
+        <div class="form-header">
+            <h1 class="form-title">تعديل المقال</h1>
+            <p class="form-subtitle">تحديث محتوى المقال المنشور</p>
         </div>
+
         {% if error %}
-        <div class="alert alert-danger" style="background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fca5a5;">
-            ⚠️ {{ error }}
+        <div class="alert error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
-        <!-- النموذج الفاخر -->
-        <div class="form-container">
-            <form method="post" action="/articles/edit/{{ article.id }}" enctype="multipart/form-data" class="news-form">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <form method="post" action="/articles/edit/{{ article.id }}" enctype="multipart/form-data" id="articleForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
+            <div class="form-group">
+                <label>عنوان المقال <span class="required">*</span></label>
+                <input type="text" name="title" class="input-field" value="{{ article.title }}" required>
+            </div>
+
+            <div class="form-group">
+                <label>محتوى المقال <span class="required">*</span></label>
                 
-                <div class="form-group">
-                    <label>العنوان</label>
-                    <input type="text" name="title" value="{{ article.title }}" required>
-                </div>
-                <div class="form-group">
-                    <label>محتوى المقال <span class="required">*</span></label>
+                <div class="editor-container">
                     <div class="editor-toolbar">
-                        <button type="button" onclick="formatDoc('formatBlock', 'h2')">H1</button>
-                    <button type="button" onclick="formatDoc('formatBlock', 'h3')" title="عنوان فرعي">H2</button>
-                    <button type="button" onclick="formatDoc('bold')"><b>B</b></button>
-                    <button type="button" onclick="formatDoc('italic')" title="خط مائل"><i>I</i></button>
-                    <select onchange="formatDoc('fontSize', this.value)" title="حجم الخط" style="padding: 2px; border-radius: 4px; cursor: pointer;">
-                        <option value="1">صغير جداً</option>
-                        <option value="2">صغير</option>
-                        <option value="3" selected>عادي</option>
-                        <option value="4">متوسط</option>
-                        <option value="5">كبير</option>
-                        <option value="6">كبير جداً</option>
-                        <option value="7">أقصى حجم</option>
-                    </select>
-                    <div class="color-tool">
-                        <label>A</label>
-                        <input type="color" onchange="formatDoc('foreColor', this.value)" title="لون الخط">
+                        <button type="button" onclick="formatDoc('formatBlock', 'h2')">عنوان رئيسي</button>
+                        <button type="button" onclick="formatDoc('formatBlock', 'h3')">فرعي</button>
+                        <button type="button" onclick="formatDoc('bold')" title="خط عريض"><b>B</b></button>
+                        <button type="button" onclick="formatDoc('italic')" title="خط مائل"><i>I</i></button>
+                        
+                        <select onchange="formatDoc('fontSize', this.value)" class="editor-select">
+                            <option value="3" selected>حجم الخط</option>
+                            <option value="4">متوسط</option>
+                            <option value="5">كبير</option>
+                            <option value="6">ضخم</option>
+                        </select>
+
+                        <div class="color-tool" title="لون الخط">
+                            <label><i class="fas fa-font"></i></label>
+                            <input type="color" onchange="formatDoc('foreColor', this.value)">
+                        </div>
+
+                        <div class="color-tool" title="تمييز النص (خلفية)">
+                            <label style="background: #ffff00; color: #000; padding: 0 4px; border-radius: 2px;">ab</label>
+                            <input type="color" onchange="formatDoc('backColor', this.value)" value="#ffff00">
+                        </div>
+
+                        <button type="button" onclick="formatDoc('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                        <button type="button" onclick="formatDoc('justifyRight')"><i class="fas fa-align-right"></i></button>
+                        <button type="button" onclick="formatDoc('justifyCenter')"><i class="fas fa-align-center"></i></button>
+                        
+                        <button type="button" onclick="formatDoc('removeFormat')" class="btn-clear-format" title="مسح التنسيق">
+                            <i class="fas fa-eraser"></i>
+                        </button>
                     </div>
 
-                    <div class="color-tool">
-                        <label style="background: #ffff00; color: #000;">ab</label>
-                        <input type="color" onchange="formatDoc('backColor', this.value)" title="تمييز النص (خلفية)">
+                    <div id="editor" contenteditable="true" class="custom-editor">
+                        {{ article.content | safe }}
                     </div>
-                   
-                    <button type="button" onclick="formatDoc('insertUnorderedList')" title="قائمة">تعداد</button>
-                    <button type="button" onclick="formatDoc('justifyRight')" title="يمين">➡</button>
-                    <button type="button" onclick="formatDoc('justifyCenter')" title="وسط">⬅➡</button>
-                    <button type="button" onclick="formatDoc('justifyLeft')" title="يسار">⬅</button>
-
-                    <button type="button" onclick="formatDoc('removeFormat')" title="مسح كافة التنسيقات" class="btn-clear-format">
-                        <svg viewBox="0 0 24 24" width="18" height="18">
-                            <path fill="currentColor" d="M12.65 10C11.83 7.67 9.61 6 7 6a6 6 0 0 0 0 12c1.78 0 3.37-.78 4.47-2H13v3h-2.12a7.99 7.99 0 0 1-7.88-8 8.01 8.01 0 0 1 8.65-8.65L12 2.35l.65.65m4.35 1l4.65 4.65-1.41 1.41-1.65-1.65V18a2 2 0 0 1-2 2h-4v-2h4V8.41L14.65 10.3l-1.41-1.41 4.65-4.65l1.12-1.12.12.12m0 0l-1 1l-1 1l-1 1l-1 1l-1.12 1.12"></path>
-                        </svg>
-                    </button>
-                </div>
-
-                <div id="editor" contenteditable="true" class="custom-editor">
-                    {{ article.content | safe }}
                 </div>
 
                 <input type="hidden" name="content" id="content_hidden">
             </div>
-           
-                <div class="form-group">
-                    <label>تغيير الصورة (اتركه فارغًا إذا لا تريد التغيير)</label>
-                    {% if article.image_url %}
-                    <p>الصورة الحالية:</p>
-                    <img src="{{ article.image_url }}" style="max-height:200px; border-radius:12px; margin:10px 0;">
-                    {% endif %}
-                    <input type="file" name="image" accept="image/*">
-                </div>
+
+            <div class="form-group">
+                <label>صورة غلاف المقال</label>
                 
-                <div class="form-actions">
-                    <button type="submit" class="btn-submit">
-                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                        </svg> 
-                        حفظ التعديلات
-                    </button>
-                    <a href="/articles/{{ article.id }}" class="btn-cancel">إلغاء</a>
+                {% if article.image_url %}
+                <div class="current-image">
+                    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">الصورة الحالية:</p>
+                    <img src="{{ article.image_url }}" alt="غلاف المقال">
                 </div>
-            </form>
-        </div>    
+                {% endif %}
+
+                <div class="file-input-wrapper" style="margin-top: 15px;">
+                    <input type="file" name="image" accept="image/*" style="width: 100%;">
+                    <p class="feedback-text" style="color: #94a3b8;">اتركه فارغاً للاحتفاظ بالصورة الحالية</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn-submit-main">
+                    <i class="fas fa-save"></i> حفظ التعديلات
+                </button>
+            </div>
+            
+            <a href="/articles/{{ article.id }}" class="cancel-text-link">إلغاء والرجوع للمقال</a>
+        </form>
     </div>
 </section>
-<script>
-    // عند تحميل الصفحة، تأكد من ملء الحقل المخفي بالمحتوى الحالي للمحرر
-document.addEventListener('DOMContentLoaded', function() {
-    const editor = document.getElementById('editor');
-    const hiddenInput = document.getElementById('content_hidden');
-    hiddenInput.value = editor.innerHTML;
-});
 
-// دالة تنفيذ التنسيق (كما هي لديك)
-function formatDoc(cmd, value = null) {
-    document.execCommand(cmd, false, value);
-}
-
-// ربط المحتوى بالفورم قبل الإرسال (كما هي لديك)
-const form = document.querySelector('.news-form');
-form.addEventListener('submit', function() {
-    document.getElementById('content_hidden').value = document.getElementById('editor').innerHTML;
-});
- 
-</script>
+<script src="{{ url_for('static', path='js/article-editor.js') }}"></script>
 {% endblock %}

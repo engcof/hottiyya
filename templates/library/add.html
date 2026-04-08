@@ -1,19 +1,26 @@
 {% extends "base.html" %}
+
 {% block title %}إضافة كتاب جديد{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
+
 {% block content %}
-<div class="add-edit-page">
-    <div class="form-card glass-strong">
-        <div id="overlay">
-            <div class="spinner"></div>
-            <p style="margin-top: 20px; color: #2d3748; font-weight: bold;">جاري معالجة الكتاب ورفعه... يرجى الانتظار</p>
-        </div>
+<div id="overlay">
+    <div class="spinner"></div>
+    <p class="upload-status-text">جاري معالجة الكتاب ورفعه... يرجى الانتظار</p>
+</div>
+
+<section class="add-edit-page">
+    <div class="form-card">
         <div class="form-header">
-            <h2>إضافة كتاب</h2>
-            <p style="color: #718096;">شارك المعرفة مع العالم</p>
+            <h2 class="form-title">إضافة كتاب جديد</h2>
+            <p class="form-subtitle">شارك المعرفة والمراجع</p>
         </div>
 
         {% if error %}
-        <div class="error-msg">
+        <div class="alert-error-box">
             <i class="fas fa-exclamation-triangle"></i> {{ error }}
         </div>
         {% endif %}
@@ -21,72 +28,71 @@
         <form action="/library/add" method="POST" enctype="multipart/form-data" id="uploadForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
-            <div class="form-group">
-                <label>اسم الكتاب <span class="required">*</span></label>
-                <input type="text" name="title" class="custom-input" placeholder="مثال: مقدمة ابن خلدون" required value="{{ title if title else '' }}">
-            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>اسم الكتاب <span class="required">*</span></label>
+                    <input type="text" name="title" class="input-field" placeholder="مثال: مقدمة ابن خلدون" required value="{{ title if title else '' }}">
+                </div>
 
-           
                 <div class="form-group">
                     <label>اسم المؤلف</label>
-                    <input type="text" name="author" class="custom-input" placeholder="اسم الكاتب" value="{{ author if author else '' }}">
+                    <input type="text" name="author" class="input-field" placeholder="اسم الكاتب" value="{{ author if author else '' }}">
                 </div>
+
                 <div class="form-group">
                     <label>تصنيف الكتاب <span class="required">*</span></label>
-                    <select name="category" class="custom-select" required>
+                    <select name="category" class="input-field" required>
                         <option value="">-- اختر التصنيف --</option>
                         {% for cat in categories %}
-                        
                         <option value="{{ cat }}">{{ cat }}</option>
                         {% endfor %}
                     </select>
                 </div>
-           
+            </div>
 
-            <div class="form-group" style="background: #f0fff4; padding: 15px; border-radius: 12px; border: 1px solid #c6f6d5; margin-bottom: 25px;">
+            <div class="success-container">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div>
-                        <label style="margin-bottom: 0; color: #27ae60;">
+                        <label style="margin-bottom: 0; color: #166534; font-weight: bold;">
                             <i class="fas fa-check-circle"></i> إتاحة الكتاب للتحميل المباشر
                         </label>
-                        <small style="color: #52735e; display: block;">يمكنك دائماً تغيير هذا الخيار لاحقاً من صفحة التعديل.</small>
+                        <small style="color: #4b6354; display: block; margin-top: 4px;">يمكنك تغيير هذا الخيار لاحقاً من صفحة التعديل.</small>
                     </div>
                     <label class="switch">
                         <input type="checkbox" name="allow_download" checked>
-                        <span class="slider round"></span>
+                        <span class="slider"></span>
                     </label>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>ملف الكتاب (PDF / Word) *</label>
+                <label>ملف الكتاب (PDF / Word) <span class="required">*</span></label>
                 <div class="file-input-wrapper">
                     <input type="file" name="book_file" accept=".pdf,.doc,.docx" required style="width: 100%;">
-                    <p style="font-size: 0.8rem; color: #a0aec0; margin-top: 8px;">الحد الأقصى للملف 40 ميجابايت</p>
+                    <p class="file-hint">الحد الأقصى للملف 40 ميجابايت</p>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>صورة الغلاف (اختياري)</label>
-                <input type="file" name="cover_image" class="custom-input" accept="image/*">
+                <input type="file" name="cover_image" class="input-field" accept="image/*">
             </div>
 
-            <button type="submit" class="submit-btn">
+            <button type="submit" class="btn-submit-main">
                 <i class="fas fa-cloud-upload-alt"></i> رفع الكتاب الآن
             </button>
             
-            <a href="/library" class="cancel-link">إلغاء والعودة للمكتبة</a>
+            <a href="/library" class="cancel-text-link">إلغاء والعودة للمكتبة</a>
         </form>
     </div>
-</div>
+</section>
+
 <script>
+    // تفعيل شاشة التحميل عند الضغط على زر الرفع
     document.getElementById('uploadForm').onsubmit = function() {
-        // إظهار الشاشة
         document.getElementById('overlay').style.display = 'flex';
-        // تغيير النص ليكون متوافقاً مع الرفع السريع
-        const statusText = document.querySelector('#overlay p');
+        const statusText = document.querySelector('.upload-status-text');
         statusText.innerHTML = "جاري تحضير الكتاب... سيتم تحويلك للمكتبة خلال لحظات";
     };
 </script>
-
 {% endblock %}

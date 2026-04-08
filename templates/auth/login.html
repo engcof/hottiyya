@@ -1,43 +1,50 @@
 {% extends "base.html" %}
-{% block title %}تسجيل الدخول - عائلة الحوطية{% endblock %}
+
+{% block title %}تسجيل الدخول -  الحوطية{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
 
 {% block content %}
-<section class="auth-section">
-    <div class="auth-card glass-strong">
-        <!-- العنوان -->
-        <div class="auth-header">
-            <h2 class="auth-title">مرحباً بعودتك</h2>
-            <p class="auth-subtitle">سجّل دخولك </p>
+<section class="add-edit-page"> <div class="form-card" style="max-width: 450px;"> <div class="form-header">
+            <h2 class="form-title">مرحباً بعودتك</h2>
+            <p class="form-subtitle">سجّل دخولك للوصول إلى موقع الحوطية</p>
         </div>
 
-        <!-- رسالة الخطأ إذا وُجدت -->
         {% if error %}
-        <div class="alert error flash-message">❌<span>{{ error }}</span>
+        <div class="alert error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ error }}</span>
             <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
 
-        <!-- نموذج تسجيل الدخول -->
-        <form method="post" action="/auth/login" class="auth-form">
+        <form method="post" action="/auth/login" class="news-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
             <div class="form-group">
                 <label for="username">اسم المستخدم</label>
-                <input type="text" name="username" id="username" required autocomplete="username">
+                <input type="text" name="username" id="username" class="input-field" 
+                       placeholder="أدخل اسم المستخدم..." required autocomplete="username">
             </div>
 
             <div class="form-group">
                 <label for="password">كلمة المرور</label>
-                <input type="password" name="password" id="password" required autocomplete="current-password">
+                <input type="password" name="password" id="password" class="input-field" 
+                       placeholder="••••••••" required autocomplete="current-password">
             </div>
 
-            <button type="submit" class="submit-btn full-width">
-                تسجيل الدخول
-            </button>
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn-submit-main">
+                    <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+                </button>
+            </div>
 
-            <div class="auth-footer">
-                <p>ليس لديك حساب؟ 
-                    <a href="/auth/register" class="link-accent">إنشاء حساب جديد</a>
+            <div class="form-footer" style="text-align: center; margin-top: 20px;">
+                <p style="color: #64748b; font-size: 0.9rem;">
+                    ليس لديك حساب؟ 
+                    <a href="/auth/register" class="cancel-text-link" style="margin: 0; padding: 0;">إنشاء حساب جديد</a>
                 </p>
             </div>
         </form>

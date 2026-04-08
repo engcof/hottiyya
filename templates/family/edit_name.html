@@ -1,142 +1,143 @@
 {% extends "base.html" %}
+
 {% block title %}تعديل: {{ full_name }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
+
 {% block content %}
 <section class="add-edit-page">
-    <div class="form-card glass-strong">
+    <div class="form-card">
         <div class="form-header">
             <h1 class="form-title">تعديل بيانات العضو</h1>
-            <p class="form-subtitle">{{ full_name }}</p>
-            <p class="form-subtitle">الكود: <code>{{ code }}</code></p>
+            <p class="form-subtitle">الإسم الحالي: <strong>{{ full_name }}</strong></p>
+            <p class="form-subtitle" style="font-family: monospace;">الكود الشخصي: {{ code }}</p>
         </div>
-        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data" class="member-form">
-            <!-- CSRF Token (ضروري) -->
+
+        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
             <div class="form-grid">
-                <!-- الاسم -->
                 <div class="form-group">
-                    <label>الاسم <span class="required">*</span></label>
-                    <input type="text" name="name" value="{{ member.name }}" required >
+                    <label>الاسم الكامل <span class="required">*</span></label>
+                    <input type="text" name="name" class="input-field" value="{{ member.name }}" required>
                 </div>
-                <!-- اللقب (أبو أحمد، أم فلان، الغالي، إلخ) -->
+
                 <div class="form-group">
                     <label>اللقب (اختياري)</label>
-                    <input type="text" name="nick_name" value="{{ member.nick_name or '' }}" 
-                        placeholder="مثل: أبو أحمد، أم محمد" class="form-control">
+                    <input type="text" name="nick_name" class="input-field" value="{{ member.nick_name or '' }}" placeholder="مثل: أبو أحمد، الغالي">
                 </div>
-                <!-- العلاقة -->
-                <div class="form-group">
-                    <label>العلاقة</label>
-                    <select name="relation" class="form-select">
-                        <option value="">-- اختر العلاقة --</option>
-                        <option value="ابن" {% if member.relation == "ابن" %}selected{% endif %}>ابن</option>
-                        <option value="ابنة" {% if member.relation == "ابنة" %}selected{% endif %}>ابنة</option>
-                        <option value="زوج" {% if member.relation == "زوج" %}selected{% endif %}>زوج</option>
-                        <option value="زوجة" {% if member.relation == "زوجة" %}selected{% endif %}>زوجة</option>
-                        <option value="ابن زوج" {% if member.relation == "ابن زوج" %}selected{% endif %}>ابن زوج</option>
-                        <option value="ابنة زوج" {% if member.relation == "ابنة زوج" %}selected{% endif %}>ابنة زوج</option>
-                        <option value="ابن زوجة" {% if member.relation == "ابن زوجة" %}selected{% endif %}>ابن زوجة</option>
-                        <option value="ابنة زوجة" {% if member.relation == "ابنة زوجة" %}selected{% endif %}>ابنة زوجة</option>
-                    </select>
-                </div>
-                <!-- كود الأب -->
-                <div class="form-group">
-                    <label>كود الأب</label>
-                    <input type="text" name="f_code" value="{{ member.f_code or '' }}" placeholder="مثال: A0-000-001" >
-                </div>
-                <!-- كود الأم -->
-                <div class="form-group">
-                    <label>كود الأم</label>
-                    <input type="text" name="m_code" value="{{ member.m_code or '' }}" placeholder="مثال: M0-000-001" >
-                </div>
-                <!-- كود الزوج (للأنثى) -->
-                <div class="form-group">
-                    <label>كود الزوج (إذا كانت أنثى)</label>
-                    <input type="text" name="h_code" value="{{ member.h_code or '' }}" >
-                </div>
-                <!-- كود الزوجة (للذكر) -->
-                <div class="form-group">
-                    <label>كود الزوجة (إذا كان ذكر)</label>
-                    <input type="text" name="w_code" value="{{ member.w_code or '' }}">
-                </div>
-                <!-- المستوى -->
-                <div class="form-group">
-                    <label>المستوى (الجيل)</label>
-                    <input type="number" name="level" value="{{ member.level }}" min="1" >
-                </div>
-                <!-- الجنس -->
+
                 <div class="form-group">
                     <label>الجنس</label>
-                    <select name="gender" class="form-select">
+                    <select name="gender" class="input-field">
                         <option value="">-- اختر الجنس --</option>
                         <option value="ذكر" {% if info.gender == "ذكر" %}selected{% endif %}>ذكر</option>
                         <option value="أنثى" {% if info.gender == "أنثى" %}selected{% endif %}>أنثى</option>
                     </select>
                 </div>
-                <!-- تاريخ الميلاد -->
+
                 <div class="form-group">
-                    <label>تاريخ الميلاد</label>
-                    <input type="date" name="d_o_b" value="{{ info.d_o_b or '' }}" >
+                    <label>المستوى (الجيل)</label>
+                    <input type="number" name="level" class="input-field" value="{{ member.level }}" min="1">
                 </div>
-                <!-- تاريخ الوفاة -->
+
                 <div class="form-group">
-                    <label>تاريخ الوفاة</label>
-                    <input type="date" name="d_o_d" value="{{ info.d_o_d or '' }}" >
+                    <label>العلاقة</label>
+                    <select name="relation" class="input-field">
+                        <option value="">-- اختر العلاقة --</option>
+                        <option value="ابن" {% if member.relation == "ابن" %}selected{% endif %}>ابن</option>
+                        <option value="ابنة" {% if member.relation == "ابنة" %}selected{% endif %}>ابنة</option>
+                        <option value="زوج" {% if member.relation == "زوج" %}selected{% endif %}>زوج</option>
+                        <option value="زوجة" {% if member.relation == "زوجة" %}selected{% endif %}>زوجة</option>
+                         <option value="ابن زوج" {% if member.relation == "ابن زوج" %}selected{% endif %}>ابن زوج</option>
+                        <option value="ابنة زوج" {% if member.relation == "ابنة زوج" %}selected{% endif %}>ابنة زوج</option>
+                        <option value="ابن زوجة" {% if member.relation == "ابن زوجة" %}selected{% endif %}>ابن زوجة</option>
+                        <option value="ابنة زوجة" {% if member.relation == "ابنة زوجة" %}selected{% endif %}>ابنة زوجة</option>
+                    </select>
                 </div>
-                <!-- الحالة (حي / متوفي) - قائمة منسدلة لضمان الصحة -->
+
+                <div class="form-group">
+                    <label>كود الأب</label>
+                    <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" placeholder="A0-000-000">
+                </div>
+
+                <div class="form-group">
+                    <label>كود الأم</label>
+                    <input type="text" name="m_code" class="input-field" value="{{ member.m_code or '' }}" placeholder="M0-000-000">
+                </div>
+
+                <div class="form-group">
+                    <label>كود الزوج/الزوجة</label>
+                    <input type="text" name="h_code" class="input-field" value="{{ member.h_code or member.w_code or '' }}" placeholder="كود الشريك">
+                </div>
+
                 <div class="form-group">
                     <label>الحالة</label>
-                    <select name="status" class="form-select">
-                        <option value="">-- اختر الحالة --</option>
+                    <select name="status" class="input-field">
                         <option value="حي" {% if info.status == "حي" %}selected{% endif %}>حي</option>
                         <option value="حية" {% if info.status == "حية" %}selected{% endif %}>حية</option>
                         <option value="متوفي" {% if info.status == "متوفي" %}selected{% endif %}>متوفي</option>
                         <option value="متوفية" {% if info.status == "متوفية" %}selected{% endif %}>متوفية</option>
                     </select>
                 </div>
-                <!-- البريد الإلكتروني -->
+
                 <div class="form-group">
-                    <label>البريد الإلكتروني</label>
-                    <input type="email" name="email" value="{{ info.email or '' }}" >
+                    <label>تاريخ الميلاد</label>
+                    <input type="date" name="d_o_b" class="input-field" value="{{ info.d_o_b or '' }}">
                 </div>
-                <!-- رقم الهاتف -->
+
                 <div class="form-group">
-                    <label>رقم الهاتف</label>
-                    <input type="text" name="phone" value="{{ info.phone or '' }}" >
+                    <label>تاريخ الوفاة (إن وجد)</label>
+                    <input type="date" name="d_o_d" class="input-field" value="{{ info.d_o_d or '' }}">
                 </div>
-                <!-- العنوان -->
-                <div class="form-group">
-                    <label>العنوان</label>
-                    <input type="text" name="address" value="{{ info.address or '' }}" >
-                </div>
-                <!-- مكان الميلاد -->
+
                 <div class="form-group">
                     <label>مكان الميلاد</label>
-                    <input type="text" name="p_o_b" value="{{ info.p_o_b or '' }}" >
+                    <input type="text" name="p_o_b" class="input-field" value="{{ info.p_o_b or '' }}">
                 </div>
-                <!-- الصورة -->
-                <div class="form-group full-width">
-                    <label>صورة العضو</label>
+
+                <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="text" name="phone" class="input-field" value="{{ info.phone or '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" name="email" class="input-field" value="{{ info.email or '' }}">
+                </div>
+
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>العنوان الحالي</label>
+                    <input type="text" name="address" class="input-field" value="{{ info.address or '' }}">
+                </div>
+
+                <div class="form-group" style="grid-column: span 2; background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; border: 1px dashed #cbd5e1;">
+                    <label style="display: block; margin-bottom: 15px;">صورة العضو الشخصية</label>
+                    
                     {% if picture_url %}
-                    <div class="current-pic">
-                        <img src="{{ picture_url }}" alt="الصورة الحالية" style="max-width: 180px; border-radius: 12px; border: 3px solid #8a2be2;">
-                        <p><small>الصورة الحالية</small></p>
+                    <div style="margin-bottom: 15px;">
+                        <img src="{{ picture_url }}" alt="الصورة الحالية" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid var(--accent, #10b981); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <p style="font-size: 0.8rem; color: #64748b; margin-top: 5px;">الصورة الحالية</p>
                     </div>
                     {% endif %}
-                    <input type="file" name="picture" accept="image/*" >
-                    <small>اتركه فارغًا إذا لا تريد تغيير الصورة</small>
+                    
+                    <input type="file" name="picture" accept="image/*" class="input-field" style="max-width: 300px; margin: 0 auto;">
+                    <small style="display: block; margin-top: 10px; color: #94a3b8;">اتركه فارغاً للاحتفاظ بالصورة القديمة</small>
                 </div>
             </div>
-            <div class="form-actions">
-                <button type="submit" class="submit-btn">حفظ التعديلات</button>
-                <a href="/names/details/{{ code }}" class="submit-btn secondary">رجوع للتفاصيل</a>
-                <a href="/names" class="submit-btn secondary">رجوع للقائمة</a>
+
+            <div style="margin-top: 30px;">
+                <button type="submit" class="btn-submit-main">حفظ التغييرات</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
+                <a href="/names/details/{{ code }}" class="btn-delete-form" style="color: #64748b; border-color: #e2e8f0; text-decoration: none; text-align: center;">رجوع للتفاصيل</a>
+                <a href="/names" class="btn-delete-form" style="color: #64748b; border-color: #e2e8f0; text-decoration: none; text-align: center;">القائمة الرئيسية</a>
             </div>
         </form>
     </div>
 </section>
 {% endblock %}
-
-
-            
-
 

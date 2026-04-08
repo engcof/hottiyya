@@ -1,164 +1,128 @@
 {% extends "base.html" %}
-{% block title %}لوحة الصلاحيات {% endblock %}
+
+{% block title %}لوحة الصلاحيات - الإدارة{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+{% endblock %}
 
 {% block content %}
-<!-- CSS لضمان تطبيق انتقال سلس وموثوق لرسائل الفلاش -->
-<style>
-    /* تعريف خصائص الانتقال (Transition) لكل الرسائل */
-    .flash-message {
-        opacity: 1;
-        /* نضمن أن يتأثر الارتفاع والشفافية لإزالة المساحة بالكامل */
-        transition: opacity 0.5s ease-in-out, height 0.5s ease-in-out, padding 0.5s ease-in-out, margin 0.5s ease-in-out;
-    }
-    
-    /* الفئة التي تطبق عند بدء الاختفاء */
-    .flash-message.hidden {
-        opacity: 0;
-        /* إزالة المساحة لضمان صعود العناصر الأخرى بسلاسة ومنع التشتت البصري */
-        height: 0; 
-        padding-top: 0;
-        padding-bottom: 0;
-        margin-top: 0;
-        margin-bottom: 0;
-    }
-</style>
-
-<section class="all-page">
-    <div class="container">
-        <div class="page-header">
-            <h1 class="page-title">لوحة الصلاحيات</h1>
-            <p class="page-subtitle">إدارة الصلاحيات بكل سهولة وأمان</p>
+<section class="add-edit-page" style="display: block;"> <div class="container" style="max-width: 1100px; margin: 0 auto;">
+        
+        <div class="form-header">
+            <h1 class="form-title">لوحة الصلاحيات</h1>
+            <p class="form-subtitle">إدارة وتصنيف صلاحيات الوصول للنظام بكل دقة</p>
         </div>
 
-        <!-- رسائل النجاح أو الخطأ - تم تعديلها لتتوافق مع الموجهات وتدعم الاختفاء التلقائي -->
         {% if success_message %}
             <div class="alert success flash-message">
-                <p>✅ **تم بنجاح:** {{ success_message | safe }}</p>
+                <i class="fas fa-check-circle"></i>
+                <span>{{ success_message | safe }}</span>
             </div>
         {% endif %}
         {% if error_message %}
             <div class="alert error flash-message">
-                <p>❌ **خطأ في الإجراء:** {{ error_message | safe }}</p>
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ error_message | safe }}</span>
             </div>
         {% endif %}
 
-        <div class="admin-grid">
-            <!-- بطاقة إضافة صلاحية جديدة -->
-            <div class="admin-card">
-                <h2>إضافة صلاحية جديدة</h2>
-                <form method="post" action="/permissions/add_permission" class="admin-form">
+        <div class="form-grid">
+            <div class="form-card" style="padding: 25px;">
+                <h3 style="margin-bottom: 20px;"><i class="fas fa-plus-circle"></i> إضافة صلاحية</h3>
+                <form method="post" action="/permissions/add_permission" class="news-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <!-- حقل رقم الصفحة لضمان العودة للموقع الصحيح -->
                     <input type="hidden" name="current_page" value="{{ current_page }}">
+                    
                     <div class="form-group">
                         <label>اسم الصلاحية</label>
-                        <input type="text" name="name" required placeholder="أدخل اسم الصلاحية">
+                        <input type="text" name="name" class="input-field" required placeholder="مثال: تعديل_المقالات">
                     </div>
                     <div class="form-group">
                         <label>التصنيف</label>
-                        <input type="text" name="category" required placeholder="مثال : عام">
+                        <input type="text" name="category" class="input-field" required placeholder="مثال: الإدارة">
                     </div>
                     
-                    <button type="submit" class="submit-btn large">إضافة الصلاحية</button>
+                    <button type="submit" class="btn-submit-main">حفظ الصلاحية</button>
                 </form>
-               
-            </div>  
-             <!-- بطاقة التعديل المجمَّع (تم تبسيطها) -->
-             <div class="admin-card">
-                <h2>تعديل الصلاحيات</h2>
-                <p class="subtitle">استخدم هذا القسم لتعديل صلاحية موجودة أو استخدم التعديل المباشر في الجدول.</p>
+            </div>
 
-                <!-- نموذج تعديل صلاحية موجودة -->
-                <form method="post" action="/permissions/edit_permission" class="admin-form">
+            <div class="form-card" style="padding: 25px;">
+                <h3 style="margin-bottom: 20px;"><i class="fas fa-edit"></i> تعديل سريع</h3>
+                <form method="post" action="/permissions/edit_permission" class="news-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <!-- حقل رقم الصفحة لضمان العودة للموقع الصحيح -->
                     <input type="hidden" name="current_page" value="{{ current_page }}">
 
                     <div class="form-group">
-                        <label>اختر الصلاحية لتعديلها</label>
-                        <select name="perm_id" class="small-select" required>
-                            <option value="">-- اختر صلاحية --</option>
-                            <!-- نستخدم all_permissions لأن perms هي فقط لصفحة الترقيم الحالية -->
+                        <label>اختر الصلاحية</label>
+                        <select name="perm_id" class="input-field" required>
+                            <option value="">-- اختر من القائمة --</option>
                             {% for p in all_permissions %}
-                            <option value="{{ p.id }}">
-                                {{ p.name }} ({{ p.category }})
-                            </option>
+                            <option value="{{ p.id }}">{{ p.name }} ({{ p.category }})</option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label>اسم الصلاحية الجديد</label>
-                        <input type="text" name="name" required placeholder="اسم الصلاحية">
-                    </div>
-
-                    <div class="form-group">
-                        <label>التصنيف الجديد</label>
-                        <input type="text" name="category" required placeholder="مثال: عام، مقالات، تعليقات">
+                    <div class="form-grid" style="gap: 10px;">
+                        <div class="form-group">
+                            <input type="text" name="name" class="input-field" required placeholder="الاسم الجديد">
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="category" class="input-field" required placeholder="الصنف الجديد">
+                        </div>
                     </div>
                     
-                    <button type="submit" class="submit-btn large"> تعديل الصلاحية</button>
+                    <button type="submit" class="btn-submit-main" style="background: var(--edit);">تحديث البيانات</button>
                 </form>
-            </div>   
+            </div>
         </div>
 
-        <!-- جدول المستخدمين الكامل -->
-        <div class="admin-card full">
-            <h2>قائمة الصلاحيات</h2>
-            <div class="table-wrapper">
-                <table class="admin-table">
+        <div class="form-card" style="margin-top: 30px; padding: 20px;">
+            <h3 style="margin-bottom: 20px;"><i class="fas fa-list"></i> قائمة الصلاحيات الحالية</h3>
+            <div class="table-wrapper" style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: right;">
                     <thead>
-                        <tr>
-                            <th>اسم الصلاحية</th>
-                            <th>التصنيف</th>
-                            <th>تعديل اسم</th>
-                            <th>تعديل صنف</th>
-                            <th>الاجراء</th>
+                        <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                            <th style="padding: 15px;">الصلاحية الحالي</th>
+                            <th style="padding: 15px;">تعديل الاسم</th>
+                            <th style="padding: 15px;">تعديل الصنف</th>
+                            <th style="padding: 15px;">الإجراء</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for perm in perms %}
-                        <tr>
-                            <td>
-                                <strong>{{ perm[1] }}</strong>
+                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                            <td style="padding: 15px;">
+                                <span style="font-weight: bold; color: var(--text);">{{ perm[1] }}</span><br>
+                                <small style="color: var(--text-light);">{{ perm[2] }}</small>
                             </td>
-                            <td>
-                               <strong>{{ perm[2] }}</strong>
-                            </td>
-                            <!-- عمود اسم الصلاحية (قابل للتعديل) -->
-                            <!-- تم إضافة حقل مخفي للتصنيف لضمان تمريره مع الاسم -->
-                            <td>
-                                <form method="post" action="/permissions/edit_permission" id="edit-name-form-{{ perm[0] }}">
+                            
+                            <td style="padding: 15px;">
+                                <form method="post" action="/permissions/edit_permission" style="display: flex; gap: 5px;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="perm_id" value="{{ perm[0] }}">
                                     <input type="hidden" name="category" value="{{ perm[2] }}">
-                                    <input type="hidden" name="current_page" value="{{ current_page }}">
-                                    <input type="text" name="name" value="{{ perm[1] }}" class="inline-input" required>
-                                    <button type="submit" class="btn-small edit inline-save-btn">حفظ</button>
+                                    <input type="text" name="name" value="{{ perm[1] }}" class="input-field inline-input-edit" required>
+                                    <button type="submit" class="btn-table-save">حفظ</button>
                                 </form>
                             </td>
 
-                            <!-- عمود التصنيف (قابل للتعديل) -->
-                            <!-- تم إضافة حقل مخفي للاسم لضمان تمريره مع التصنيف -->
-                            <td>
-                                <form method="post" action="/permissions/edit_permission" id="edit-category-form-{{ perm[0] }}">
+                            <td style="padding: 15px;">
+                                <form method="post" action="/permissions/edit_permission" style="display: flex; gap: 5px;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="perm_id" value="{{ perm[0] }}">
                                     <input type="hidden" name="name" value="{{ perm[1] }}">
-                                    <input type="hidden" name="current_page" value="{{ current_page }}">
-                                    <input type="text" name="category" value="{{ perm[2] }}" class="inline-input" required>
-                                    <button type="submit" class="btn-small edit inline-save-btn">حفظ</button>
+                                    <input type="text" name="category" value="{{ perm[2] }}" class="input-field inline-input-edit" required>
+                                    <button type="submit" class="btn-table-save">حفظ</button>
                                 </form>
                             </td>
                             
-                            <!-- عمود الأزرار: حذف -->
-                            <td class="actions-cell">
-                                <!-- زر الحذف - تم إزالة onsubmit="return confirm(...)" واستبدالها بإرسال Form مباشر -->
-                                <form method="post" action="/permissions/delete_permission" style="display:inline;">
+                            <td style="padding: 15px;">
+                                <form method="post" action="/permissions/delete_permission">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="perm_id" value="{{ perm[0] }}">
-                                    <input type="hidden" name="current_page" value="{{ current_page }}">
-                                    <button type="submit" class="btn-small delete">حذف</button>
+                                    <button type="submit" class="btn-table-delete"><i class="fas fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>
@@ -166,45 +130,36 @@
                     </tbody>
                 </table>
             </div>
-             <!-- ترقيم الصفحات -->
-            <div class="pagination">
+
+            <div class="form-footer" style="display: flex; justify-content: space-between; align-items: center;">
                 {% if current_page > 1 %}
-                <a href="/permissions?page={{ current_page - 1 }}" class="page-btn">السابق</a>
+                <a href="/permissions?page={{ current_page - 1 }}" class="cancel-text-link" style="margin:0;"><i class="fas fa-chevron-right"></i> السابق</a>
+                {% else %}
+                <span></span>
                 {% endif %}
-                <span class="page-info">الصفحة {{ current_page }} من {{ total_pages }}</span>
+                
+                <span style="font-size: 0.9rem; color: var(--text-light);">صفحة {{ current_page }} من {{ total_pages }}</span>
+                
                 {% if current_page < total_pages %}
-                <a href="/permissions?page={{ current_page + 1 }}" class="page-btn">التالي</a>
+                <a href="/permissions?page={{ current_page + 1 }}" class="cancel-text-link" style="margin:0;">التالي <i class="fas fa-chevron-left"></i></a>
+                {% else %}
+                <span></span>
                 {% endif %}
             </div>
         </div>
     </div>
 </section>
 
-<!-- جافاسكريبت للإخفاء التلقائي لرسائل الفلاش - لضمان عملها بعد 5 ثواني -->
 <script>
+    // سكربت إخفاء التنبيهات الموحد
     document.addEventListener('DOMContentLoaded', () => {
-        // تحديد جميع العناصر التي تحمل الفئة 'flash-message'
         const flashMessages = document.querySelectorAll('.flash-message');
-        const DURATION = 5000; // 5000 مللي ثانية = 5 ثوانٍ
-
         flashMessages.forEach(message => {
-            // إخفاء الرسالة بعد 5 ثوانٍ
             setTimeout(() => {
-                // خطوة 1: تطبيق فئة CSS "hidden" لجعلها تختفي بسلاسة
-                message.classList.add('hidden');
-                
-                // خطوة 2: إزالة الرسالة بالكامل من DOM بعد انتهاء الحركة (0.5 ثانية)
-                setTimeout(() => {
-                    message.remove();
-                }, 500); 
-            }, DURATION);
-        });
-        
-        // منع استخدام confirm() المحظورة واستبدالها بحذف مباشر
-        document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form => {
-            // إزالة onsubmit لتفادي رسالة التحذير المحظورة
-            form.removeAttribute('onsubmit'); 
-            // يمكن إضافة modal مخصص هنا إذا لزم الأمر
+                message.style.opacity = '0';
+                message.style.transition = '0.5s';
+                setTimeout(() => message.remove(), 500);
+            }, 4000);
         });
     });
 </script>

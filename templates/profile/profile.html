@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}صفحتي الشخصية - {{ user.username }}{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/profile.css') }}">
+{% endblock %}
 {% block content %}
 <section class="profile-page-wrapper">
     <div class="custom-container">
@@ -25,30 +27,35 @@
             <div class="section-header">
                 <h4>📥 صندوق الوارد</h4>
             </div>
-            <div class="inbox-messages-list">
+           <div class="inbox-messages-list">
                 {% if inbox_messages %}
                     {% for message in inbox_messages %}
-                    <div class="message-item {% if not message.is_read %}unread-msg{% endif %}">
+                    <div class="message-item {% if not message.is_read %}unread-msg{% endif %}" id="msg-card-{{ message.id }}">
                         <div class="msg-meta">
                             <span class="sender-name">👤 {{ message.sender_username }}</span>
                             <span class="msg-date">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
                         </div>
+                        
                         <div class="msg-body">
-                            <p>{{ message.message }}</p>
+                            <p class="msg-preview">
+                                {{ message.message[:80] }}{% if message.message|length > 80 %}...{% endif %}
+                            </p>
                         </div>
+
                         <div class="msg-controls">
-                            {% if not message.is_read %}
-                            <form method="post" action="/profile/mark-read/{{ message.id }}">
-                                <button type="submit" class="action-btn btn-read">تمت القراءة</button>
-                            </form>
-                            {% else %}
-                                <span class="status-badge">مقروءة</span>
-                            {% endif %}
+                            <button type="button" 
+                                    class="action-btn-msg btn-read-msg" 
+                                    data-id="{{ message.id }}"
+                                    data-sender="{{ message.sender_username }}"
+                                    data-message="{{ message.message }}"
+                                    data-is-read="{{ 'true' if message.is_read else 'false' }}"
+                                    onclick="handleOpenMessage(this)">
+                                اقرأ الرسالة
+                            </button>
                             
-                            <form method="post" action="/profile/delete-message/{{ message.id }}" 
-                                  onsubmit="return confirm('حذف هذه الرسالة؟')">
+                            <form method="post" action="/profile/delete-message/{{ message.id }}" onsubmit="return confirm('حذف هذه الرسالة؟')">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}"> 
-                                <button type="submit" class="action-btn btn-delete">حذف</button>
+                                <button type="submit" class="action-btn-msg btn-delete-msg">حذف</button>
                             </form>
                         </div>
                     </div>
@@ -57,6 +64,22 @@
                     <div class="empty-state">صندوق الوارد فارغ حالياً.</div>
                 {% endif %}
             </div>
+        </div>
+            <div id="messageModal" class="custom-modal">
+                <div class="modal-content shadow-soft">
+                    <div class="modal-header">
+                        <h5 id="modalSender"></h5>
+                        <span class="close-modal" onclick="closeModal()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <p id="fullMessageText"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button onclick="closeModal()" class="submit-btn-msg primary-bg-msg">إغلاق</button>
+                    </div>
+                </div>
+           
+                    
 
             {% if total_pages > 1 %}
             <div class="pagination-container">
@@ -107,7 +130,7 @@
                 </div>
                 
                 {% if user.role == 'admin' or admin_id %}
-                    <button type="submit" class="submit-btn primary-bg">إرسال الرسالة</button>
+                    <button type="submit" class="submit-btn-msg primary-bg-msg">إرسال الرسالة</button>
                 {% endif %}
             </form>
         </div>
@@ -127,7 +150,7 @@
                 <div class="form-group-custom">
                     <input type="password" name="confirm_password" class="input-field" placeholder="تأكيد كلمة السر الجديدة" required>
                 </div>
-                <button type="submit" class="submit-btn secondary-bg">تحديث كلمة المرور</button>
+                <button type="submit" class="submit-btn-msg secondary-bg-msg">تحديث كلمة المرور</button>
             </form>
         </div>
 
@@ -136,24 +159,7 @@
         </div>
     </div>
 </section>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const successMessage = document.querySelector('.flash-success-message');
-
-    if (successMessage) {
-        // تعيين مؤقت (Timer) لمدة 5000 ميلي ثانية (5 ثوانٍ)
-        setTimeout(() => {
-            // تشغيل تأثير التلاشي (Fade-out)
-            successMessage.style.opacity = '0';
-            successMessage.style.transition = 'opacity 0.5s ease-out';
-            
-            // إزالة العنصر من الـ DOM بعد انتهاء التلاشي (0.5 ثانية)
-            setTimeout(() => {
-                successMessage.remove();
-            }, 500); 
-
-        }, 5000); // 5 ثواني
-    }
-});
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/profile.js') }}"></script>
+{% endblock %}
 {% endblock %}

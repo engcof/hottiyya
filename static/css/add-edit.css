@@ -1,53 +1,52 @@
-/* ===== صفحات إضافة وتعديل  ===== */
+/* =========================================
+   صفحات إضافة وتعديل المحتوى - موقع الحوطية
+   ========================================= */
+
 .add-edit-page {
     padding: 60px 20px;
     display: flex;
     justify-content: center;
-    background: #f8fafc;
+    align-items: flex-start; /* أفضل من center للصفحات الطويلة */
     min-height: 100vh;
-    align-items: center;
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
+
 .form-card {
     max-width: 900px;
     width: 100%;
     margin: 0 auto;
-    padding: 48px 40px;
-    background: white;
-    border-radius: 20px;
-    border: 1px solid #edf2f7;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+    padding: 40px;
+    background: var(--white, #ffffff);
+    border-radius: var(--radius, 20px);
+    border: 1px solid var(--border, #e2e8f0);
+    box-shadow: var(--shadow1, 0 20px 50px rgba(0,0,0,0.1));
 }
+
 .form-header {
     text-align: center;
     margin-bottom: 40px;
 }
 
-.form-header h2 {
-    color: #2d3748;
-    font-weight: 800;
-    font-size: 1.8rem;
-    margin-bottom: 10px;
-}
 .form-title {
-    font-size: 2.6rem;
+    font-size: 2.2rem;
     font-weight: 900;
-    color: #0f172a;
+    color: var(--text, #0f172a);
     margin-bottom: 12px;
 }
+
 .form-subtitle {
     font-size: 1.1rem;
-    color: #64748b;
+    color: var(--text-light, #64748b);
 }
-/* النموذج */
-.member-form {
-    direction: rtl;
-}
+
+/* --- نظام الشبكة (Grid) --- */
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 25px;
+    margin-bottom: 25px;
 }
+
 .form-group {
     display: flex;
     flex-direction: column;
@@ -58,239 +57,330 @@
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    font-weight: 600;
-    color: #0f172a;
+    font-weight: 700;
+    color: var(--text, #0f172a);
     font-size: 0.95rem;
-    margin-bottom: 5px;
 }
-.required { 
-    color: #ef4444; 
-}
-.form-group input,
-.form-group select,
-.form-group textarea{
+
+.required { color: var(--danger, #ef4444); margin-right: 4px; }
+
+/* --- الحقول والإدخال --- */
+.input-field, 
+.form-group input, 
+.form-group select, 
+.form-group textarea {
+    width: 100%;
     padding: 14px 18px;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    background: white;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fff;
     font-size: 1rem;
-    transition: all 0.3s ease;
+    transition: var(--transition, all 0.3s);
 }
-.form-group input:focus,
-.form-group select:focus,
+
+.input-field:focus, 
+.form-group input:focus, 
 .form-group textarea:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
+    border-color: var(--accent, #10b981);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
-.form-group textarea {
-    resize: vertical;
-    min-height: 200px;
+
+/* --- تذييل النموذج الموحد --- */
+.form-footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center; /* لضمان توسيط الروابط والنصوص */
 }
-.file-input {
-    padding: 10px 0;
+
+.form-footer p {
+    color: #64748b;
+    font-size: 0.9rem; /* الحجم الذي اقترحته للنمط الجديد */
+    margin: 0;
 }
-.current-image {
-    margin-top: 12px;
+
+/* تحسين شكل الروابط داخل الفوتر لتتناسق مع cancel-text-link */
+.form-footer .cancel-text-link {
+    display: inline-block;
+    margin-top: 5px;
+    font-weight: 600;
 }
+/* --- رفع الملفات المطور --- */
+.file-input-wrapper {
+    position: relative;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.file-input-wrapper:hover {
+    border-color: var(--accent, #10b981);
+    background: #f0fdf4;
+}
+
+/* لتنسيق الصورة الحالية عند التعديل */
 .current-image img {
     width: 120px;
     height: 120px;
     object-fit: cover;
-    border-radius: 16px;
-    border: 3px solid #e2e8f0;
-}
-.input-with-status {
-    display: flex;
-    align-items: center;
-}
-.status-icon {
-    position: absolute;
-    left: 10px; /* لأن الاتجاه RTL */
-    font-size: 1.2rem;
-}
-.feedback-text {
-    display: block;
-    margin-top: 5px;
-    font-size: 0.8rem;
-    font-weight: bold;
-}
-
-/* حاوية النموذج */
-.form-container {
-    background-color: var(--card-bg);
-    padding: 40px;
     border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    border: 3px solid #e2e8f0;
+    margin-top: 10px;
+    transition: transform 0.3s ease;
 }
 
-/* حقول الإدخال والنص (Input & Textarea) */
-.form-container input[type="text"],
-.form-container input[type="file"],
-.form-container textarea {
-    width: 100%;
-    padding: 12px 15px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-    background-color: white;
+.current-image img:hover {
+    transform: scale(1.05);
 }
-.form-container input[type="text"]:focus,
-.form-container textarea:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 150, 136, 0.1);
-}
-.form-container textarea {
-    resize: vertical;
-    min-height: 200px;
-}
-/* حقل القراءة فقط */
-.readonly-input {
-    background-color: #f3f4f6;
-    color: var(--text-medium);
-    border-style: dashed !important;
-    cursor: default;
-}
-.form-group small {
-    display: block;
-    margin-top: 5px;
-    font-size: 0.9rem;
-    color: var(--text-medium);
-}
-.form-group strong {
-    color: var(--text-darker);
-}
-/* تنسيق الحقول */
- .custom-input, .custom-select {
-        width: 100%;
-        padding: 12px 15px;
-        border: 2px solid #e2e8f0;
-        border-radius: 10px;
-        font-family: inherit;
-        font-size: 1rem;
-        transition: all 0.3s ease;
-        outline: none;
-    }
 
-    .custom-input:focus, .custom-select:focus {
-        border-color: #27ae60;
-        box-shadow: 0 0 0 3px rgba(39, 174, 96, 0.1);
-    }
+/* --- المحرر الاحترافي (Rich Text Editor) الموحد --- */
+.editor-container {
+    border-radius: 12px;
+    overflow: hidden;
+    border: 2px solid #e2e8f0;
+    background: white;
+    margin-bottom: 20px;
+}
 
-    .file-input-wrapper {
-        position: relative;
-        background: #f8fafc;
-        border: 2px dashed #cbd5e0;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        transition: 0.3s;
-    }
-
-    .file-input-wrapper:hover {
-        border-color: #27ae60;
-        background: #f0fff4;
-    }
-
-/* شريط الأدوات */
 .editor-toolbar {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+    padding: 12px;
+    background: #f8fafc;
+    border-bottom: 2px solid #e2e8f0;
     align-items: center;
-    background: #f1f5f9;
-    padding: 10px;
+}
+
+.editor-toolbar button, .editor-select {
+    padding: 6px 12px;
     border: 1px solid #cbd5e1;
-    border-radius: 8px 8px 0 0;
-}
-
-/* لون الخلفية (ab) */
-.color-tool {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 2px 5px;
     background: white;
-}
-
-.color-tool label {
-    font-size: 12px;
-    font-weight: bold;
-    line-height: 1;
-}
-
-.color-tool input[type="color"] {
-    border: none;
-    width: 20px;
-    height: 15px;
+    border-radius: 6px;
     cursor: pointer;
-    background: none;
-}
-
-.editor-select {
-    padding: 4px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    font-family: inherit;
-}
-
-/* 🌟 زر مسح كافة التنسيقات (Remove Formatting) */
-.btn-clear-format {
-    padding: 4px 8px;
-    border: 1px solid #e2e8f0;
-    border-radius: 4px;
-    background: #fff;
-    color: #64748b;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.btn-clear-format:hover {
-    background: #fee2e2;
-    color: #991b1b;
-}
-
-.custom-editor img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 1rem 0;
-}
-
-
-.editor-toolbar button {
-    padding: 5px 12px;
-    border: 1px solid #ccc;
-    background: white;
-    cursor: pointer;
-    border-radius: 4px;
-    font-weight: bold;
-    color: #333;
+    font-size: 0.9rem;
+    transition: 0.2s;
+    color: #475569;
 }
 
 .editor-toolbar button:hover {
-    background: #e9ecef;
+    background: var(--accent, #10b981);
+    color: white;
+    border-color: var(--accent, #10b981);
 }
 
 .custom-editor {
-    min-height: 300px;
-    border: 1px solid #ddd;
-    padding: 15px;
-    border-radius: 0 0 8px 8px;
+    min-height: 350px;
+    padding: 20px;
     background: white;
-    color: #333;
-    overflow-y: auto;
-    direction: rtl; /* للتأكد من الكتابة بالعربي */
+    color: #1e293b;
+    line-height: 1.8;
+    direction: rtl; /* ضمان الكتابة العربية من اليمين */
 }
 
-.custom-editor:focus {
+.custom-editor:focus { 
     outline: none;
-    border-color: #2563eb;
-}   
+    background: #fff;
+}
+
+/* --- تنبيهات وردود الفعل الصغيرة --- */
+.feedback-text {
+    font-size: 0.85rem;
+    margin-top: 6px;
+    font-weight: 600;
+}
+
+/* تحسين شكل المدخلات المكتوبة فقط (Readonly) */
+.readonly-input {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #64748b;
+    cursor: not-allowed;
+}
+/* --- إضافات خاصة بصفحات المكتبة والتعديل --- */
+
+/* زر التبديل (Switch) */
+.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--accent, #10b981); }
+input:checked + .slider:before { transform: translateX(24px); }
+
+/* صناديق التنبيه والمعلومات */
+.alert-info-box {
+    background-color: #eff6ff;
+    color: #1e40af;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+    border: 1px solid #dbeafe;
+}
+
+.alert-error-box {
+    color: #ef4444;
+    background: #fee2e2;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #fecaca;
+}
+
+.success-container {
+    background: #f0fdf4;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #dcfce7;
+    margin-bottom: 25px;
+}
+
+/* زر الحفظ الأساسي */
+.btn-submit-main {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent, #10b981);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-submit-main:hover {
+    filter: brightness(0.9);
+    transform: translateY(-2px);
+}
+
+/* زر الحذف */
+.btn-delete-form {
+    background: #fff;
+    color: #ef4444;
+    border: 2px solid #ef4444;
+    padding: 12px;
+    border-radius: 12px;
+    width: 100%;
+    margin-top: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-delete-form:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+.cancel-text-link {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+.cancel-text-link:hover {
+    color: #0f172a;
+    text-decoration: underline;
+}
+/* شاشة الانتظار (Overlay) */
+#overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255, 255, 255, 0.95);
+    display: none; /* مخفي افتراضياً */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid var(--accent, #10b981);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.upload-status-text {
+    margin-top: 20px;
+    color: #2d3748;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.file-hint {
+    font-size: 0.8rem; 
+    color: #a0aec0; 
+    margin-top: 8px;
+}
+
+/* --- الجوال (تحسينات شاملة) --- */
+@media (max-width: 768px) {
+    /* 1. ضبط مسافات الحاوية الرئيسية */
+    .add-edit-page {
+        padding: 15px 10px;
+    }
+
+    /* 2. تصغير حجم البطاقة والخطوط لتناسب الشاشة */
+    .form-card { 
+        padding: 25px 18px; 
+        border-radius: 20px;
+    }
+    
+    .form-title { 
+        font-size: 1.6rem; 
+        letter-spacing: -0.5px;
+    }
+
+    .form-subtitle {
+        font-size: 0.9rem;
+    }
+
+    /* 3. تحويل الشبكة لعمود واحد (كما فعلت أنت) */
+    .form-grid { 
+        grid-template-columns: 1fr; 
+        gap: 15px;
+    }
+
+    /* 4. تحسين شكل حاوية الـ Switch (صلاحية التحميل) */
+    .success-container {
+        padding: 15px;
+    }
+    
+    .success-container div label {
+        font-size: 0.95rem;
+    }
+
+    /* 5. ضبط الأزرار لتكون أسهل في اللمس (Touch-friendly) */
+    .btn-submit-main, .btn-delete-form {
+        padding: 16px; /* زيادة مساحة الضغط */
+        font-size: 1rem;
+    }
+
+    /* 6. منع تمدد حقول الرفع */
+    .input-field, .custom-select {
+        font-size: 16px; /* يمنع الـ Zoom التلقائي في أجهزة iPhone */
+    }
+
+    /* 7. تحسين شاشة الانتظار (Overlay) */
+    .upload-status-text {
+        font-size: 1rem;
+        padding: 0 20px;
+        text-align: center;
+    }
+}
