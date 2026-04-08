@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}تعديل: {{ full_name }}{% endblock %}
+{% block title %}تعديل: {{ member.name }}{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
@@ -8,14 +8,13 @@
 
 {% block content %}
 <section class="add-edit-page">
-    <div class="form-card">
+    <div class="form-card" style="max-width: 1000px;">
         <div class="form-header">
             <h1 class="form-title">تعديل بيانات العضو</h1>
-            <p class="form-subtitle">الإسم الحالي: <strong>{{ full_name }}</strong></p>
-            <p class="form-subtitle" style="font-family: monospace;">الكود الشخصي: {{ code }}</p>
+            <p class="form-subtitle">تحديث سجل: <strong>{{ member.name }}</strong> ({{ code }})</p>
         </div>
 
-        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data">
+        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data" class="news-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             
             <div class="form-grid">
@@ -26,13 +25,12 @@
 
                 <div class="form-group">
                     <label>اللقب (اختياري)</label>
-                    <input type="text" name="nick_name" class="input-field" value="{{ member.nick_name or '' }}" placeholder="مثل: أبو أحمد، الغالي">
+                    <input type="text" name="nick_name" class="input-field" value="{{ member.nick_name or '' }}">
                 </div>
 
                 <div class="form-group">
                     <label>الجنس</label>
                     <select name="gender" class="input-field">
-                        <option value="">-- اختر الجنس --</option>
                         <option value="ذكر" {% if info.gender == "ذكر" %}selected{% endif %}>ذكر</option>
                         <option value="أنثى" {% if info.gender == "أنثى" %}selected{% endif %}>أنثى</option>
                     </select>
@@ -44,42 +42,33 @@
                 </div>
 
                 <div class="form-group">
-                    <label>العلاقة</label>
-                    <select name="relation" class="input-field">
-                        <option value="">-- اختر العلاقة --</option>
-                        <option value="ابن" {% if member.relation == "ابن" %}selected{% endif %}>ابن</option>
-                        <option value="ابنة" {% if member.relation == "ابنة" %}selected{% endif %}>ابنة</option>
-                        <option value="زوج" {% if member.relation == "زوج" %}selected{% endif %}>زوج</option>
-                        <option value="زوجة" {% if member.relation == "زوجة" %}selected{% endif %}>زوجة</option>
-                         <option value="ابن زوج" {% if member.relation == "ابن زوج" %}selected{% endif %}>ابن زوج</option>
-                        <option value="ابنة زوج" {% if member.relation == "ابنة زوج" %}selected{% endif %}>ابنة زوج</option>
-                        <option value="ابن زوجة" {% if member.relation == "ابن زوجة" %}selected{% endif %}>ابن زوجة</option>
-                        <option value="ابنة زوجة" {% if member.relation == "ابنة زوجة" %}selected{% endif %}>ابنة زوجة</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label>كود الأب</label>
-                    <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" placeholder="A0-000-000">
+                    <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" placeholder="A0-000">
                 </div>
 
                 <div class="form-group">
                     <label>كود الأم</label>
-                    <input type="text" name="m_code" class="input-field" value="{{ member.m_code or '' }}" placeholder="M0-000-000">
+                    <input type="text" name="m_code" class="input-field" value="{{ member.m_code or '' }}" placeholder="M0-000">
                 </div>
 
                 <div class="form-group">
-                    <label>كود الزوج/الزوجة</label>
-                    <input type="text" name="h_code" class="input-field" value="{{ member.h_code or member.w_code or '' }}" placeholder="كود الشريك">
+                    <label>كود الزوج (للأنثى)</label>
+                    <input type="text" name="h_code" class="input-field" value="{{ member.h_code or '' }}" placeholder="كود الزوج">
                 </div>
 
                 <div class="form-group">
-                    <label>الحالة</label>
-                    <select name="status" class="input-field">
-                        <option value="حي" {% if info.status == "حي" %}selected{% endif %}>حي</option>
-                        <option value="حية" {% if info.status == "حية" %}selected{% endif %}>حية</option>
-                        <option value="متوفي" {% if info.status == "متوفي" %}selected{% endif %}>متوفي</option>
-                        <option value="متوفية" {% if info.status == "متوفية" %}selected{% endif %}>متوفية</option>
+                    <label>كود الزوجة (للذكر)</label>
+                    <input type="text" name="w_code" class="input-field" value="{{ member.w_code or '' }}" placeholder="كود الزوجة">
+                </div>
+
+                <div class="form-group">
+                    <label>العلاقة</label>
+                    <select name="relation" class="input-field">
+                        <option value="">-- اختر --</option>
+                        {% set relations = ["ابن", "ابنة", "زوج", "زوجة", "ابن زوج", "ابنة زوج", "ابن زوجة", "ابنة زوجة"] %}
+                        {% for rel in relations %}
+                        <option value="{{ rel }}" {% if member.relation == rel %}selected{% endif %}>{{ rel }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
@@ -89,13 +78,21 @@
                 </div>
 
                 <div class="form-group">
-                    <label>تاريخ الوفاة (إن وجد)</label>
-                    <input type="date" name="d_o_d" class="input-field" value="{{ info.d_o_d or '' }}">
+                    <label>مكان الميلاد</label>
+                    <input type="text" name="p_o_b" class="input-field" value="{{ info.p_o_b or '' }}" placeholder="المدينة/الدولة">
                 </div>
 
                 <div class="form-group">
-                    <label>مكان الميلاد</label>
-                    <input type="text" name="p_o_b" class="input-field" value="{{ info.p_o_b or '' }}">
+                    <label>الحالة</label>
+                    <select name="status" class="input-field">
+                        <option value="حي" {% if info.status in ["حي", "حية"] %}selected{% endif %}>حي / حية</option>
+                        <option value="متوفي" {% if info.status in ["متوفي", "متوفية"] %}selected{% endif %}>متوفي / متوفية</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>تاريخ الوفاة (إن وجد)</label>
+                    <input type="date" name="d_o_d" class="input-field" value="{{ info.d_o_d or '' }}">
                 </div>
 
                 <div class="form-group">
@@ -113,31 +110,27 @@
                     <input type="text" name="address" class="input-field" value="{{ info.address or '' }}">
                 </div>
 
-                <div class="form-group" style="grid-column: span 2; background: #f8fafc; padding: 20px; border-radius: 12px; text-align: center; border: 1px dashed #cbd5e1;">
-                    <label style="display: block; margin-bottom: 15px;">صورة العضو الشخصية</label>
-                    
-                    {% if picture_url %}
-                    <div style="margin-bottom: 15px;">
-                        <img src="{{ picture_url }}" alt="الصورة الحالية" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 3px solid var(--accent, #10b981); box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <p style="font-size: 0.8rem; color: #64748b; margin-top: 5px;">الصورة الحالية</p>
+                <div class="form-group" style="grid-column: span 2;">
+                    <div class="file-input-wrapper">
+                        {% if picture_url %}
+                            <img src="{{ picture_url }}" alt="الحالية" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 2px solid var(--accent); margin-bottom: 10px;">
+                        {% endif %}
+                        <label style="display: block; margin-bottom: 5px;">تحديث الصورة الشخصية</label>
+                        <input type="file" name="picture" accept="image/*" class="input-field">
                     </div>
-                    {% endif %}
-                    
-                    <input type="file" name="picture" accept="image/*" class="input-field" style="max-width: 300px; margin: 0 auto;">
-                    <small style="display: block; margin-top: 10px; color: #94a3b8;">اتركه فارغاً للاحتفاظ بالصورة القديمة</small>
                 </div>
             </div>
 
-            <div style="margin-top: 30px;">
-                <button type="submit" class="btn-submit-main">حفظ التغييرات</button>
+            <div style="margin-top: 35px;">
+                <button type="submit" class="btn-submit-main">تحديث بيانات العضو</button>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px;">
-                <a href="/names/details/{{ code }}" class="btn-delete-form" style="color: #64748b; border-color: #e2e8f0; text-decoration: none; text-align: center;">رجوع للتفاصيل</a>
-                <a href="/names" class="btn-delete-form" style="color: #64748b; border-color: #e2e8f0; text-decoration: none; text-align: center;">القائمة الرئيسية</a>
+            <div class="form-footer">
+                <a href="/names/details/{{ code }}" class="cancel-text-link">رجوع للتفاصيل</a>
+                <span style="margin: 0 10px; color: #cbd5e0;">|</span>
+                <a href="/names" class="cancel-text-link">قائمة الشجرة</a>
             </div>
         </form>
     </div>
 </section>
 {% endblock %}
-
