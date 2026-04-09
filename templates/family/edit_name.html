@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}تعديل: {{ member.name }}{% endblock %}
-
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
 {% endblock %}
@@ -19,7 +17,7 @@
             
             <div class="form-grid">
                 <div class="form-group">
-                    <label>الاسم الكامل <span class="required">*</span></label>
+                    <label>الاسم <span class="required">*</span></label>
                     <input type="text" name="name" class="input-field" value="{{ member.name }}" required>
                 </div>
 
@@ -31,6 +29,7 @@
                 <div class="form-group">
                     <label>الجنس</label>
                     <select name="gender" class="input-field">
+                        <option value="">-- اختر --</option>
                         <option value="ذكر" {% if info.gender == "ذكر" %}selected{% endif %}>ذكر</option>
                         <option value="أنثى" {% if info.gender == "أنثى" %}selected{% endif %}>أنثى</option>
                     </select>
@@ -38,27 +37,27 @@
 
                 <div class="form-group">
                     <label>المستوى (الجيل)</label>
-                    <input type="number" name="level" class="input-field" value="{{ member.level }}" min="1">
+                    <input type="number" name="level" class="input-field" value="{{ member.level }}" min="0">
                 </div>
 
                 <div class="form-group">
                     <label>كود الأب</label>
-                    <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" placeholder="A0-000">
+                    <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" >
                 </div>
 
                 <div class="form-group">
                     <label>كود الأم</label>
-                    <input type="text" name="m_code" class="input-field" value="{{ member.m_code or '' }}" placeholder="M0-000">
+                    <input type="text" name="m_code" class="input-field" value="{{ member.m_code or '' }}" >
                 </div>
 
                 <div class="form-group">
                     <label>كود الزوج (للأنثى)</label>
-                    <input type="text" name="h_code" class="input-field" value="{{ member.h_code or '' }}" placeholder="كود الزوج">
+                    <input type="text" name="h_code" class="input-field" value="{{ member.h_code or '' }}" >
                 </div>
 
                 <div class="form-group">
                     <label>كود الزوجة (للذكر)</label>
-                    <input type="text" name="w_code" class="input-field" value="{{ member.w_code or '' }}" placeholder="كود الزوجة">
+                    <input type="text" name="w_code" class="input-field" value="{{ member.w_code or '' }}" >
                 </div>
 
                 <div class="form-group">
@@ -76,23 +75,13 @@
                     <label>تاريخ الميلاد</label>
                     <input type="date" name="d_o_b" class="input-field" value="{{ info.d_o_b or '' }}">
                 </div>
-
+                <div class="form-group">
+                    <label>تاريخ الوفاة</label>
+                    <input type="date" name="d_o_d" class="input-field" value="{{ info.d_o_d or '' }}">
+                </div>
                 <div class="form-group">
                     <label>مكان الميلاد</label>
                     <input type="text" name="p_o_b" class="input-field" value="{{ info.p_o_b or '' }}" placeholder="المدينة/الدولة">
-                </div>
-
-                <div class="form-group">
-                    <label>الحالة</label>
-                    <select name="status" class="input-field">
-                        <option value="حي" {% if info.status in ["حي", "حية"] %}selected{% endif %}>حي / حية</option>
-                        <option value="متوفي" {% if info.status in ["متوفي", "متوفية"] %}selected{% endif %}>متوفي / متوفية</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>تاريخ الوفاة (إن وجد)</label>
-                    <input type="date" name="d_o_d" class="input-field" value="{{ info.d_o_d or '' }}">
                 </div>
 
                 <div class="form-group">
@@ -109,7 +98,18 @@
                     <label>العنوان الحالي</label>
                     <input type="text" name="address" class="input-field" value="{{ info.address or '' }}">
                 </div>
-            </div>
+          
+                <div class="form-group">
+                    <label>الحالة</label>
+                    <select name="status" class="input-field">
+                        <option value="">-- اختر --</option>
+                        {% set stats =  [ "حي" , "حية" , "متوفي" , "متوفية" ]  %}
+                        {% for sts in stats %}
+                        <option value="{{ sts }}" {% if info.status == sts %}selected{% endif %}>{{ sts }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+           </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <div class="file-input-wrapper">
                         {% if picture_url %}
@@ -120,7 +120,6 @@
                     </div>
                 </div>
             
-
             <div style="margin-top: 35px;">
                 <button type="submit" class="btn-submit-main">تحديث بيانات العضو</button>
             </div>

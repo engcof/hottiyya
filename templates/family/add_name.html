@@ -1,7 +1,5 @@
 {% extends "base.html" %}
-
 {% block title %}إضافة عضو جديد - شجرة الحوطية{% endblock %}
-
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
     <style>
@@ -43,7 +41,7 @@
                 <div class="form-group">
                     <label>الكود الشخصي <span class="required">*</span></label>
                     <div class="input-with-status">
-                        <input type="text" name="code" id="memberCode" class="input-field" required placeholder="مثال: A0-494" value="{{ form_data.code or '' }}">
+                        <input type="text" name="code" id="memberCode" class="input-field" required placeholder="مثال: A0-000-494" value="{{ form_data.code or '' }}">
                         <span id="codeStatusIcon" class="status-icon"></span>
                     </div>
                     <small id="codeFeedback" class="feedback-text"></small>
@@ -51,7 +49,7 @@
 
                 <div class="form-group">
                     <label>الاسم <span class="required">*</span></label>
-                    <input type="text" name="name" class="input-field" required value="{{ form_data.name or '' }}" placeholder="الاسم الكامل">
+                    <input type="text" name="name" class="input-field" required value="{{ form_data.name or '' }}" placeholder="الاسم">
                 </div>
 
                 <div class="form-group">
@@ -114,7 +112,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>تاريخ الوفاة (إن وجد)</label>
+                    <label>تاريخ الوفاة</label>
                     <input type="date" name="d_o_d" class="input-field" value="{{ form_data.d_o_d or '' }}">
                 </div>
 

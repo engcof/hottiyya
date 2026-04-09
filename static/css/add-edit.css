@@ -323,25 +323,104 @@ input:checked + .slider:before { transform: translateX(24px); }
     color: #a0aec0; 
     margin-top: 8px;
 }
+/* =========================================
+   تنسيقات الموبايل والتابلت الشاملة (Responsive)
+   ========================================= */
 
-/* --- تحسينات الموبايل (النسخة النهائية) --- */
 @media (max-width: 768px) {
-    .add-edit-page { padding: 15px 10px; }
-
-    .form-card { 
-        padding: 25px 18px; 
-        border-radius: 15px; 
+    /* 1. ضبط الحاوية الخارجية */
+    .add-edit-page {
+        padding: 15px 10px; /* مساحة صغيرة جداً للحواف لاستغلال عرض الشاشة */
     }
 
-    .form-grid { 
-        grid-template-columns: 1fr; /* عمود واحد للموبايل */
+    .form-card {
+        padding: 25px 15px; /* تقليل الحشو الداخلي */
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05); /* ظل أخف للموبايل */
+    }
+
+    /* 2. النصوص والعناوين */
+    .form-header {
+        margin-bottom: 25px;
+    }
+
+    .form-title {
+        font-size: 1.6rem; /* حجم مناسب للموبايل */
+        letter-spacing: -0.5px;
+    }
+
+    .form-subtitle {
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    /* 3. الشبكة (Grid) - الأهم */
+    .form-grid {
+        grid-template-columns: 1fr !important; /* إجبار عمود واحد فقط */
+        gap: 15px; /* تقليل المسافات بين الحقول */
+    }
+
+    .form-group {
+        margin-bottom: 12px;
+    }
+
+    /* جعل الحقول التي تأخذ عمودين في الكمبيوتر تأخذ عموداً واحداً في الموبايل */
+    .form-group[style*="grid-column: span 2"] {
+        grid-column: span 1 !important;
+    }
+
+    /* 4. الحقول والأزرار (Touch Friendly) */
+    .input-field, 
+    .custom-select, 
+    .btn-submit-main, 
+    .btn-delete-form {
+        padding: 15px; /* تكبير مساحة الضغط للأصابع */
+        font-size: 16px !important; /* منع متصفحات iOS من عمل زووم تلقائي مزعج */
+    }
+
+    .btn-submit-main {
+        font-size: 1.1rem;
+        margin-top: 10px;
+    }
+
+    /* 5. رفع الملفات والمحرر */
+    .file-input-wrapper {
+        padding: 20px 10px;
+    }
+
+    .custom-editor {
+        min-height: 250px; /* تقليل الارتفاع في الموبايل */
+        padding: 15px;
+    }
+
+    .editor-toolbar {
+        gap: 5px;
+        padding: 8px;
+    }
+
+    .editor-toolbar button {
+        padding: 8px 10px; /* تسهيل الضغط على أدوات التحرير */
+    }
+
+    /* 6. التذييل (Footer) */
+    .form-footer {
+        flex-direction: column;
         gap: 15px;
     }
 
-    .form-title { font-size: 1.7rem; }
+    .cancel-text-link {
+        font-size: 0.85rem;
+        padding: 10px 0;
+    }
+}
 
-    .input-field, .custom-select, .btn-submit-main {
-        font-size: 16px; /* لمنع الـ Zoom التلقائي في iPhone */
-        padding: 15px;
+/* تحسينات إضافية للشاشات الصغيرة جداً (مثل iPhone SE) */
+@media (max-width: 380px) {
+    .form-title {
+        font-size: 1.4rem;
+    }
+    
+    .form-card {
+        padding: 20px 12px;
     }
 }
