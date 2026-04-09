@@ -1,18 +1,20 @@
 /* =========================================
-   صفحات إضافة وتعديل المحتوى - موقع الحوطية
+   نظام النماذج الموحد (Add/Edit System) - مجتمع الحوطية
    ========================================= */
 
+/* الحاوية الرئيسية للصفحة */
 .add-edit-page {
     padding: 60px 20px;
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* أفضل من center للصفحات الطويلة */
+    align-items: flex-start;
     min-height: 100vh;
     background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
+/* بطاقة النموذج */
 .form-card {
-    max-width: 900px;
+    max-width: 1000px; /* تم التوسيع ليناسب بيانات الشجرة والمقالات */
     width: 100%;
     margin: 0 auto;
     padding: 40px;
@@ -39,19 +41,19 @@
     color: var(--text-light, #64748b);
 }
 
-/* --- نظام الشبكة (Grid) --- */
+/* --- نظام الشبكة المطور (Grid System) --- */
 .form-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(2, 1fr); /* عمودين متساويين في الشاشات الكبيرة */
+    gap: 20px;
     margin-bottom: 25px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    margin-bottom: 20px;
     text-align: right;
+    width: 100%;
 }
 
 .form-group label {
@@ -62,19 +64,25 @@
     font-size: 0.95rem;
 }
 
-.required { color: var(--danger, #ef4444); margin-right: 4px; }
+.required { 
+    color: var(--danger, #ef4444); 
+    margin-right: 4px; 
+}
 
-/* --- الحقول والإدخال --- */
+/* --- الحقول والإدخال الموحدة --- */
 .input-field, 
+.custom-select, 
+.custom-input,
 .form-group input, 
 .form-group select, 
 .form-group textarea {
-    width: 100%;
+    width: 100% !important;
     padding: 14px 18px;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     background: #fff;
     font-size: 1rem;
+    box-sizing: border-box;
     transition: var(--transition, all 0.3s);
 }
 
@@ -86,25 +94,49 @@
     box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
 
-/* --- تذييل النموذج الموحد --- */
-.form-footer {
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
-    text-align: center; /* لضمان توسيط الروابط والنصوص */
-}
-
-.form-footer p {
+/* تحسين شكل المدخلات المكتوبة فقط (Readonly) */
+.readonly-input {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
     color: #64748b;
-    font-size: 0.9rem; /* الحجم الذي اقترحته للنمط الجديد */
-    margin: 0;
+    cursor: not-allowed;
+}
+/* --- إضافات خاصة بصفحات المكتبة والتعديل --- */
+
+/* زر التبديل (Switch) */
+.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+input:checked + .slider { background-color: var(--accent, #10b981); }
+input:checked + .slider:before { transform: translateX(24px); }
+
+/* صناديق التنبيه والمعلومات */
+.alert-info-box {
+    background-color: #eff6ff;
+    color: #1e40af;
+    padding: 15px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 25px;
+    border: 1px solid #dbeafe;
 }
 
-/* تحسين شكل الروابط داخل الفوتر لتتناسق مع cancel-text-link */
-.form-footer .cancel-text-link {
-    display: inline-block;
-    margin-top: 5px;
-    font-weight: 600;
+.alert-error-box {
+    color: #ef4444;
+    background: #fee2e2;
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #fecaca;
+}
+
+.success-container {
+    background: #f0fdf4;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #dcfce7;
+    margin-bottom: 25px;
 }
 /* --- رفع الملفات المطور --- */
 .file-input-wrapper {
@@ -117,6 +149,7 @@
     transition: all 0.3s ease;
     cursor: pointer;
     margin-bottom: 10px;
+    overflow: hidden;
 }
 
 .file-input-wrapper:hover {
@@ -124,19 +157,78 @@
     background: #f0fdf4;
 }
 
-/* لتنسيق الصورة الحالية عند التعديل */
 .current-image img {
-    width: 120px;
-    height: 120px;
+    width: 100px;
+    height: 100px;
     object-fit: cover;
-    border-radius: 12px;
-    border: 3px solid #e2e8f0;
-    margin-top: 10px;
-    transition: transform 0.3s ease;
+    border-radius: 50%;
+    border: 3px solid var(--accent);
+    margin-bottom: 10px;
 }
 
-.current-image img:hover {
-    transform: scale(1.05);
+/* --- الأزرار الأساسية --- */
+.btn-submit-main {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent, #10b981);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.btn-submit-main:hover {
+    filter: brightness(0.9);
+    transform: translateY(-2px);
+}
+
+.btn-delete-form {
+    background: #fff;
+    color: #ef4444;
+    border: 2px solid #ef4444;
+    padding: 12px;
+    border-radius: 12px;
+    width: 100%;
+    margin-top: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: center;
+    display: inline-block;
+}
+
+.btn-delete-form:hover {
+    background: #ef4444;
+    color: #fff;
+}
+
+/* --- تذييل النموذج والروابط --- */
+.form-footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.cancel-text-link {
+    display: inline-block;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.cancel-text-link:hover {
+    color: var(--text);
+    text-decoration: underline;
 }
 
 /* --- المحرر الاحترافي (Rich Text Editor) الموحد --- */
@@ -196,106 +288,12 @@
     font-weight: 600;
 }
 
-/* تحسين شكل المدخلات المكتوبة فقط (Readonly) */
-.readonly-input {
-    background: #f1f5f9;
-    border-color: #e2e8f0;
-    color: #64748b;
-    cursor: not-allowed;
-}
-/* --- إضافات خاصة بصفحات المكتبة والتعديل --- */
-
-/* زر التبديل (Switch) */
-.switch { position: relative; display: inline-block; width: 50px; height: 26px; }
-.switch input { opacity: 0; width: 0; height: 0; }
-.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
-.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-input:checked + .slider { background-color: var(--accent, #10b981); }
-input:checked + .slider:before { transform: translateX(24px); }
-
-/* صناديق التنبيه والمعلومات */
-.alert-info-box {
-    background-color: #eff6ff;
-    color: #1e40af;
-    padding: 15px;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    margin-bottom: 25px;
-    border: 1px solid #dbeafe;
-}
-
-.alert-error-box {
-    color: #ef4444;
-    background: #fee2e2;
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    border: 1px solid #fecaca;
-}
-
-.success-container {
-    background: #f0fdf4;
-    padding: 20px;
-    border-radius: 15px;
-    border: 1px solid #dcfce7;
-    margin-bottom: 25px;
-}
-
-/* زر الحفظ الأساسي */
-.btn-submit-main {
-    width: 100%;
-    padding: 14px;
-    background: var(--accent, #10b981);
-    color: white;
-    border: none;
-    border-radius: 12px;
-    font-weight: 800;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-submit-main:hover {
-    filter: brightness(0.9);
-    transform: translateY(-2px);
-}
-
-/* زر الحذف */
-.btn-delete-form {
-    background: #fff;
-    color: #ef4444;
-    border: 2px solid #ef4444;
-    padding: 12px;
-    border-radius: 12px;
-    width: 100%;
-    margin-top: 10px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-delete-form:hover {
-    background: #ef4444;
-    color: #fff;
-}
-
-.cancel-text-link {
-    display: block;
-    text-align: center;
-    margin-top: 20px;
-    color: #64748b;
-    text-decoration: none;
-    font-size: 0.9rem;
-}
-.cancel-text-link:hover {
-    color: #0f172a;
-    text-decoration: underline;
-}
-/* شاشة الانتظار (Overlay) */
+/* --- شاشة الانتظار (Overlay) --- */
 #overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(255, 255, 255, 0.95);
-    display: none; /* مخفي افتراضياً */
+    display: none;
     flex-direction: column;
     justify-content: center;
     align-items: center;
@@ -311,10 +309,7 @@ input:checked + .slider:before { transform: translateX(24px); }
     animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
 .upload-status-text {
     margin-top: 20px;
@@ -329,58 +324,24 @@ input:checked + .slider:before { transform: translateX(24px); }
     margin-top: 8px;
 }
 
-/* --- الجوال (تحسينات شاملة) --- */
+/* --- تحسينات الموبايل (النسخة النهائية) --- */
 @media (max-width: 768px) {
-    /* 1. ضبط مسافات الحاوية الرئيسية */
-    .add-edit-page {
-        padding: 15px 10px;
-    }
+    .add-edit-page { padding: 15px 10px; }
 
-    /* 2. تصغير حجم البطاقة والخطوط لتناسب الشاشة */
     .form-card { 
         padding: 25px 18px; 
-        border-radius: 20px;
-    }
-    
-    .form-title { 
-        font-size: 1.6rem; 
-        letter-spacing: -0.5px;
+        border-radius: 15px; 
     }
 
-    .form-subtitle {
-        font-size: 0.9rem;
-    }
-
-    /* 3. تحويل الشبكة لعمود واحد (كما فعلت أنت) */
     .form-grid { 
-        grid-template-columns: 1fr; 
+        grid-template-columns: 1fr; /* عمود واحد للموبايل */
         gap: 15px;
     }
 
-    /* 4. تحسين شكل حاوية الـ Switch (صلاحية التحميل) */
-    .success-container {
+    .form-title { font-size: 1.7rem; }
+
+    .input-field, .custom-select, .btn-submit-main {
+        font-size: 16px; /* لمنع الـ Zoom التلقائي في iPhone */
         padding: 15px;
-    }
-    
-    .success-container div label {
-        font-size: 0.95rem;
-    }
-
-    /* 5. ضبط الأزرار لتكون أسهل في اللمس (Touch-friendly) */
-    .btn-submit-main, .btn-delete-form {
-        padding: 16px; /* زيادة مساحة الضغط */
-        font-size: 1rem;
-    }
-
-    /* 6. منع تمدد حقول الرفع */
-    .input-field, .custom-select {
-        font-size: 16px; /* يمنع الـ Zoom التلقائي في أجهزة iPhone */
-    }
-
-    /* 7. تحسين شاشة الانتظار (Overlay) */
-    .upload-status-text {
-        font-size: 1rem;
-        padding: 0 20px;
-        text-align: center;
     }
 }

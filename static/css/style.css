@@ -1858,102 +1858,7 @@ footer {
 }
 /* ==========    نهاية صفحة المقالات   ========== */
 
-/* ========== صفحات تسجيل الدخول والتسجيل ========== */
-.auth-section {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px 20px;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-.auth-card {
-    width: 100%;
-    max-width: 440px;
-    padding: 48px 40px;
-    border-radius: 28px;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-}
-.auth-header {
-    margin-bottom: 32px;
-}
-.auth-title {
-    font-size: 2.4rem;
-    font-weight: 900;
-    color: #0f172a;
-    margin-bottom: 12px;
-}
-.auth-subtitle {
-    font-size: 1.1rem;
-    color: #64748b;
-    line-height: 1.7;
-}
-/* النموذج */
-.auth-form .form-group {
-    margin-bottom: 20px;
-    text-align: right;
-}
-.auth-form label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #0f172a;
-    font-size: 0.95rem;
-    margin-bottom: 5px;
-}
-.auth-form input {
-    width: 100%;
-    padding: 14px 18px;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    background: #ffffff;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-.auth-form input:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
-}
-.send-message-card, .change-password-card {
-    border-radius: 12px;
-    border: 1px solid #dee2e6; /* حد خفيف للفصل */
-    margin-bottom: 32px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    background-color: #ffffff; /* خلفية بيضاء للوضوح */
-}
 
-
-/* تنسيق حقول الإدخال */
-.auth-form .form-control {
-    border-radius: 8px;
-    padding: 10px 15px;
-}
-/* زر الإرسال */
-.submit-btn.full-width {
-    width: 100%;
-    padding: 16px;
-    font-size: 1.1rem;
-    margin-top: 12px;
-}
-/* الفوتر */
-.auth-footer {
-    margin-top: 32px;
-    padding-top: 20px;
-    border-top: 1px solid #e2e8f0;
-}
-.auth-footer p {
-    color: #64748b;
-    font-size: 0.95rem;
-}
-.link-accent {
-    color: var(--accent);
-    font-weight: 600;
-}
-.link-accent:hover {
-    text-decoration: underline;
-}
 /* أنيميشن الظهور */
 @keyframes slideDown {
     from { opacity: 0; transform: translateY(-20px); }
@@ -2198,15 +2103,12 @@ footer {
     }
 
     /* صفحات تسجيل الدخول والإدارة */
-    .auth-card,
-    .form-card,
+   
     .admin-card {
         padding: 30px 20px;
         border-radius: 20px;
     }
-    .form-grid {
-        grid-template-columns: 1fr;
-    }
+   
     .member-names {
         font-size: 2.2rem;
     }
