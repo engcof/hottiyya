@@ -14,7 +14,8 @@
 
 {% block content %}
 <section class="add-edit-page">
-    <div class="form-card" style="max-width: 1000px;"> <div class="form-header">
+    <div class="form-card" style="max-width: 1000px;"> 
+        <div class="form-header">
             <h2 class="form-title">إضافة عضو جديد للشجرة</h2>
             <p class="form-subtitle">يرجى إدخال البيانات الشخصية بدقة لضمان صحة شجرة العائلة</p>
         </div>
@@ -28,7 +29,7 @@
         {% endif %}
 
         {% if error %}
-        <div class="alert error">
+        <div class="alert error"id="success-alert">
             <i class="fas fa-exclamation-circle"></i>
             <span><strong>خطأ:</strong> {{ error }}</span>
             <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
@@ -131,11 +132,11 @@
                     <input type="text" name="phone" class="input-field" value="{{ form_data.phone or '' }}" placeholder="05xxxxxxxx">
                 </div>
                 
-                <div class="form-group" style="grid-column: span 2;">
+                <div class="form-group">
                     <label>العنوان السكني</label>
                     <input type="text" name="address" class="input-field" value="{{ form_data.address or '' }}" placeholder="المدينة، الحي...">
                 </div>
-
+            </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label>صورة العضو الشخصية (اختياري)</label>
                     <div class="file-input-wrapper">
@@ -145,7 +146,7 @@
                                style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
                     </div>
                 </div>
-            </div>
+           
 
             <div style="margin-top: 40px;">
                 <button type="submit" class="btn-submit-main">
