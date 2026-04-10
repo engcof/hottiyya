@@ -4,7 +4,7 @@ import uuid
 from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse,PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -264,11 +264,9 @@ async def sitemap():
     return Response(content="".join(xml_lines), media_type="application/xml")
 
 
-@app.get("/robots.txt")
+@app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
-    # تأكد من عدم وجود مسافات بادئة (Indentation) داخل الـ string
-    content = "User-agent: *\nAllow: /\nSitemap: https://hottiyya.onrender.com/sitemap-v2.xml"
-    return Response(content=content, media_type="text/plain")
+    return "User-agent: *\nAllow: /\nSitemap: https://hottiyya.onrender.com/sitemap-v2.xml"
 # =========================================
 # تشغيل التطبيق
 # =========================================
