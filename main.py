@@ -243,35 +243,25 @@ async def google_verification():
 @app.get("/sitemap-v2.xml")
 async def sitemap():
     base_url = "https://hottiyya.onrender.com"
-    
-    # الروابط الثابتة
     static_pages = [
         {"loc": f"{base_url}/", "changefreq": "daily", "priority": "1.0"},
         {"loc": f"{base_url}/articles", "changefreq": "daily", "priority": "0.8"},
         {"loc": f"{base_url}/news", "changefreq": "daily", "priority": "0.8"},
     ]
     
-    # جلب الروابط الديناميكية من السيرفس
     dynamic_pages = GoogleService.get_all_sitemap_urls(base_url)
     all_pages = static_pages + dynamic_pages
 
-    # بناء الـ XML بدون مسافات بادئة (Stripped)
-    xml_content = (
-        '<?xml version="1.0" encoding="UTF-8"?>\n'
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    )
-    for page in all_pages:
-        xml_content += (
-            f'  <url>\n'
-            f'    <loc>{page["loc"]}</loc>\n'
-            f'    <changefreq>{page["changefreq"]}</changefreq>\n'
-            f'    <priority>{page["priority"]}</priority>\n'
-            f'  </url>\n'
-        )
-    xml_content += '</urlset>'
+    # بناء XML نظيف جداً وبدون مسافات بادئة
+    xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml_lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
     
-    # استخدام Response مع تحديد الـ charset
-    return Response(content=xml_content, media_type="application/xml; charset=utf-8")
+    for page in all_pages:
+        xml_lines.append(f'<url><loc>{page["loc"]}</loc><changefreq>{page["changefreq"]}</changefreq><priority>{page["priority"]}</priority></url>')
+    
+    xml_lines.append('</urlset>')
+    
+    return Response(content="".join(xml_lines), media_type="application/xml")
 
 
 @app.get("/robots.txt")
