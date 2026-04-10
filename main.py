@@ -98,7 +98,7 @@ templates.env.globals.update(can=can)
 # =========================================
 async def analytics_middleware(request: Request, call_next):
     # تجاهل الملفات الثابتة
-    if request.url.path.startswith("/static") or request.url.path in ("/favicon.ico", "/robots.txt", "/sitemap-v2.xml"):
+    if request.url.path.startswith("/static") or request.url.path in ("/favicon.ico", "/robots.txt", "/sitemap-v3.xml"):
         return await call_next(request)
     
 
@@ -240,7 +240,7 @@ async def google_verification():
     # المحتوى يجب أن يكون بالضبط ما بداخل ملف جوجل
     return "google-site-verification: googlea84e43178e487f63.html"
 
-@app.get("/sitemap-v2.xml")
+@app.get("/sitemap-v3.xml")
 async def sitemap():
     base_url = "https://hottiyya.onrender.com"
     static_pages = [
@@ -266,7 +266,8 @@ async def sitemap():
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
-    return "User-agent: *\nAllow: /\nSitemap: https://hottiyya.onrender.com/sitemap-v2.xml"
+    content = "User-agent: *\nAllow: /\nSitemap: https://hottiyya.onrender.com/sitemap-v3.xml"
+    return content.strip() # استخدام strip لضمان عدم وجود سطر فارغ في البداية
 # =========================================
 # تشغيل التطبيق
 # =========================================
