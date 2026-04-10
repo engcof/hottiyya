@@ -266,10 +266,8 @@ async def sitemap():
 
 @app.get("/robots.txt")
 async def robots():
-    content = """User-agent: *
-Allow: /
-Sitemap: https://hottiyya.onrender.com/sitemap-v2.xml
-"""
+    # تأكد من عدم وجود مسافات بادئة (Indentation) داخل الـ string
+    content = "User-agent: *\nAllow: /\nSitemap: https://hottiyya.onrender.com/sitemap-v2.xml"
     return Response(content=content, media_type="text/plain")
 # =========================================
 # تشغيل التطبيق
