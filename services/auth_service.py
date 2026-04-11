@@ -137,7 +137,6 @@ class AuthService:
 
     @classmethod
     def remove_permission(cls, user_id: int, permission_id: int) -> Tuple[bool, str]:
-        """إزالة صلاحية من مستخدم"""
         try:
             with get_db_context() as conn:
                 with conn.cursor() as cur:
@@ -145,6 +144,8 @@ class AuthService:
                         "DELETE FROM user_permissions WHERE user_id = %s AND permission_id = %s", 
                         (user_id, permission_id)
                     )
+                    if cur.rowcount == 0:
+                        return False, "هذه الصلاحية ليست لدى المستخدم أصلاً."
                     conn.commit()
             return True, "تم إزالة الصلاحية بنجاح."
         except Exception as e:

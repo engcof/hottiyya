@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from urllib.parse import quote
 from security.session import set_cache_headers
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permission import can
+from utils.has_permissions import can
 from services.analytics import log_action
 from services.library_service import LibraryService
 import shutil

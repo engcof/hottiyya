@@ -113,12 +113,12 @@
                             <strong>{{ c.username }}</strong>
                             <span class="comment-date">{{ c.created_at.strftime('%d/%m/%Y في %I:%M %p') }}</span>
                         </div>
-                        {% if user and (user.role == "admin" or user.id == c.user_id or (user.id and has_permission(user.id, "delete_comment"))) %}
-                        <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <button type="submit" class="btn-delete-comment" title="حذف التعليق"
-                                onclick="return confirm('متأكد من حذف التعليق؟');">حذف</button>
-                        </form>
+                         {% if user and (user.role == "admin" or user.id == c.user_id or can_delete_any_comment) %}
+                            <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="btn-delete-comment" title="حذف التعليق"
+                                    onclick="return confirm('متأكد من حذف التعليق؟');">حذف</button>
+                            </form>
                         {% endif %}
                     </div>
                     <div class="comment-body">

@@ -4,7 +4,7 @@ from psycopg2.extras import RealDictCursor
 from security.session import set_cache_headers
 from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.permission import can
+from utils.has_permissions import can
 from services.analytics import log_action
 from services.article_service import ArticleService
 import shutil
@@ -91,7 +91,8 @@ async def view_article(request: Request, id: int):
         "csrf_token": csrf_token,
         "can_edit": can(user, "edit_article"),
         "can_delete": can(user, "delete_article"),
-        "can_comment": user is not None
+        "can_comment": user is not None,
+        "can_delete_any_comment": can(user, "delete_comment")
     })
 
 

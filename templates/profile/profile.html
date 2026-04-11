@@ -6,7 +6,6 @@
 {% block content %}
 <section class="profile-page-wrapper">
     <div class="custom-container">
-        
         <div class="user-profile-header">
             <div class="avatar-holder">
                 <span class="avatar-icon">👤</span>
@@ -35,7 +34,6 @@
                             <span class="sender-name">👤 {{ message.sender_username }}</span>
                             <span class="msg-date">{{ message.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
                         </div>
-                        
                         <div class="msg-body">
                             <p class="msg-preview">
                                 {{ message.message[:80] }}{% if message.message|length > 80 %}...{% endif %}
@@ -101,7 +99,6 @@
             </div>
             {% endif %}
         </div>
-
         <div class="profile-section-card shadow-soft">
             <div class="section-header">
                 <h4>✉️ إرسال رسالة جديدة</h4>
@@ -134,7 +131,6 @@
                 {% endif %}
             </form>
         </div>
-
         <div class="profile-section-card shadow-soft">
             <div class="section-header">
                 <h4>🔐 أمن الحساب</h4>
@@ -153,7 +149,6 @@
                 <button type="submit" class="submit-btn-msg secondary-bg-msg">تحديث كلمة المرور</button>
             </form>
         </div>
-
         <div class="back-home-container">
             <a href="/" class="btn-back">العودة للرئيسية</a>
         </div>

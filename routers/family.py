@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
-from utils.permission import can
+from utils.has_permissions import can
 from utils.time_utils import calculate_age_details
 from services.analytics import log_action
 from services.family_service import ( 
