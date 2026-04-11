@@ -1,0 +1,194 @@
+/* ========== ✅ تنسيقات معرض الصور (gallery.css) ✅ ========== */
+
+/* 1. شبكة الصور */
+.gallery-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+    gap: 25px !important;
+    direction: rtl;
+}
+
+/* 2. عنصر الصورة (البطاقة) */
+.gallery-item {
+    background: var(--glass-strong);
+    padding: 15px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.gallery-item:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow);
+}
+
+/* 3. حاوية الصورة */
+.gallery-img-wrapper {
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    background: #f1f5f9; /* لون مؤقت أثناء التحميل */
+}
+
+.gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.5s ease;
+}
+
+.gallery-item:hover .gallery-img {
+    transform: scale(1.1);
+}
+
+/* 4. عناوين وتفاصيل الصورة */
+.gallery-item-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 5. أزرار الفلترة (التصنيفات) */
+.filter-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* 6. زر الحذف الصغير */
+.btn-delete-small {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    background: rgba(239, 68, 68, 0.9);
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.3s;
+    backdrop-filter: blur(4px);
+}
+
+.btn-delete-small:hover {
+    background: #ef4444;
+    transform: scale(1.05);
+}
+
+/* 7. تحسينات الموبايل */
+@media (max-width: 768px) {
+    .gallery-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+        gap: 15px !important;
+    }
+}
+
+/* ========== ✅ تنسيقات المودال (gallery.css) ========== */
+
+/* 1. خلفية المودال (الحاوية الرئيسية) */
+.image-modal {
+    display: none; /* مخفي افتراضياً */
+    position: fixed;
+    z-index: 2000; /* قيمة عالية جداً ليكون فوق الهيدر */
+    padding-top: 50px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.9); /* خلفية سوداء شفافة */
+    backdrop-filter: blur(8px); /* تأثير ضبابي للخلفية */
+    cursor: zoom-out; /* مؤشر الماوس يشير للخروج */
+}
+
+/* 2. حاوية المحتوى (لتوسيط الصورة والعنوان) */
+.modal-content-wrapper {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 900px;
+    text-align: center;
+    cursor: default; /* مؤشر الماوس عادي داخل المحتوى */
+}
+
+/* 3. الصورة داخل المودال */
+.modal-image {
+    width: 100%;
+    height: auto;
+    max-height: 80vh; /* لا تتجاوز 80% من ارتفاع الشاشة */
+    object-fit: contain; /* تحافظ على أبعاد الصورة دون قص */
+    border-radius: 12px;
+    border: 4px solid white;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    
+    /* أنيميشن عند الفتح */
+    animation-name: zoom;
+    animation-duration: 0.4s;
+}
+
+/* 4. عنوان الصورة أسفل المودال */
+.modal-caption {
+    margin: 15px auto;
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 700;
+    direction: rtl;
+}
+
+/* 5. زر الإغلاق (X) */
+.modal-close {
+    position: absolute;
+    top: 20px;
+    left: 35px; /* جهة اليسار لأن المتصفح RTL */
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+    z-index: 2001;
+}
+
+.modal-close:hover,
+.modal-close:focus {
+    color: #ef4444; /* لون أحمر عند التمرير */
+    text-decoration: none;
+    transform: scale(1.1);
+}
+
+/* 6. منع تمرير الصفحة الخلفية */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* 7. أنيميشن الزووم */
+@keyframes zoom {
+    from {transform:scale(0)}
+    to {transform:scale(1)}
+}
+
+/* 8. تحسينات الموبايل */
+@media only screen and (max-width: 768px){
+    .modal-content-wrapper {
+        width: 95%;
+    }
+    .modal-image {
+        max-height: 70vh;
+    }
+    .modal-close {
+        font-size: 30px;
+        top: 15px;
+        left: 20px;
+    }
+}

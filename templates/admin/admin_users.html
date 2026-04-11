@@ -1,7 +1,9 @@
 {% extends "base.html" %}
 
 {% block title %}إدارة المستخدمين{% endblock %}
-
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
+{% endblock %}
 {% block content %}
 <section class="all-page">
     <div class="container">
@@ -83,7 +85,7 @@
                                         <option value="{{ perm.id }}">{{ perm.name }}</option>
                                         {% endfor %}
                                     </select>
-                                    <button type="submit" class="btn-small add">إضافة</button>
+                                    <button type="submit" class="btn-small edit">إضافة</button>
                                 </form>
                             </td>
                             <td>

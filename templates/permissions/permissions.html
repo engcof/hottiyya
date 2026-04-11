@@ -8,11 +8,14 @@
 {% endblock %}
 
 {% block content %}
-<section class="add-edit-page" style="display: block;"> <div class="container" style="max-width: 1100px; margin: 0 auto;">
+<section class="add-edit-page" style="display: block;"> 
+    <div class="container" style="max-width: 1100px; margin: 0 auto;">
         
         <div class="form-header">
             <h1 class="form-title">لوحة الصلاحيات</h1>
-            <p class="form-subtitle">إدارة وتصنيف صلاحيات الوصول للنظام بكل دقة</p>
+              <div class="header-actions">
+                <a href="/admin" class="btn-add" style="background-color: #4b5563;">🏠 العودة للوحة الإدارة</a>
+            </div>
         </div>
 
         {% if success_message %}
@@ -43,8 +46,11 @@
                         <label>التصنيف</label>
                         <input type="text" name="category" class="input-field" required placeholder="مثال: الإدارة">
                     </div>
-                    
-                    <button type="submit" class="btn-submit-main">حفظ الصلاحية</button>
+                   <div style="margin-top: 35px;">
+                        <button type="submit" class="btn-submit-main">
+                         <i class="fas fa-user-plus"></i>حفظ الصلاحية
+                        </button>
+                    </div> 
                 </form>
             </div>
 
@@ -65,10 +71,10 @@
                     </div>
 
                     <div class="form-grid" style="gap: 10px;">
-                        <div class="form-group">
+                        <div class="form-group" style="margin-top: 35px;">
                             <input type="text" name="name" class="input-field" required placeholder="الاسم الجديد">
                         </div>
-                        <div class="form-group">
+                        <div class="form-group" style="margin-top: 35px;">
                             <input type="text" name="category" class="input-field" required placeholder="الصنف الجديد">
                         </div>
                     </div>
@@ -122,7 +128,7 @@
                                 <form method="post" action="/permissions/delete_permission">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="perm_id" value="{{ perm[0] }}">
-                                    <button type="submit" class="btn-table-delete"><i class="fas fa-trash"></i></button>
+                                    <button type="submit" class="btn-table-delete">حذف<i class="fas fa-trash"></i></button>
                                 </form>
                             </td>
                         </tr>

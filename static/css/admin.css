@@ -1,29 +1,30 @@
-/* =========================================
-   لوحة تحكم الإدارة - مجتمع الحوطية
-   ========================================= */
+/* ============================================================
+   NAME: admin.css
+   DESCRIPTION: لوحة تحكم الإدارة - مجتمع الحوطية
+   ============================================================ */
 
-/* تصميم الشبكة الرئيسي للأقسام */
+/* --- 1. الشبكة الرئيسية والبطاقات --- */
 .admin-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* توزيع ذكي للأقسام */
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
     gap: 25px;
     margin-top: 25px;
 }
 
 .admin-section-card {
-    background: var(--white, #fff);
+    background: var(--card-bg, #fff);
     padding: 25px;
-    border-radius: var(--radius, 16px);
-    border: 1px solid var(--border, #e2e8f0);
-    box-shadow: var(--shadow, 0 8px 32px rgba(0,0,0,0.08));
-    transition: var(--transition, all 0.3s ease);
+    border-radius: 16px;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
 }
 
 .admin-section-card h3 {
     margin-bottom: 20px;
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--text, #0f172a);
+    color: var(--text-darker);
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 12px;
     display: flex;
@@ -31,7 +32,7 @@
     gap: 10px;
 }
 
-/* توزيع الأزرار التفاعلية داخل البطاقة */
+/* --- 2. أزرار الأقسام (Card Buttons) --- */
 .grid-buttons {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -44,18 +45,13 @@
     align-items: center;
     justify-content: center;
     padding: 22px 15px;
-    border-radius: var(--radius-sm, 12px);
+    border-radius: 12px;
     text-decoration: none;
-    color: white !important; /* ضمان ظهور الخط بالأبيض */
+    color: white !important;
     font-weight: 700;
-    text-align: center;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 0.95rem;
     gap: 10px;
-}
-
-.card-btn i {
-    font-size: 1.6rem; /* تكبير الأيقونة قليلاً */
 }
 
 .card-btn:hover {
@@ -64,74 +60,107 @@
     filter: brightness(1.1);
 }
 
-/* لوحة الألوان الموحدة (أكثر حيوية) */
-.blue    { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
-.orange  { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.purple  { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
-.indigo  { background: linear-gradient(135deg, #4f46e5, #4338ca); }
-.green   { background: linear-gradient(135deg, #10b981, #059669); }
-.pink    { background: linear-gradient(135deg, #db2777, #be185d); }
-.gray    { background: linear-gradient(135deg, #6b7280, #4b5563); }
-.slate   { background: linear-gradient(135deg, #475569, #334155); }
+/* لوحة الألوان الحيوية */
+.blue   { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+.orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.green  { background: linear-gradient(135deg, #10b981, #059669); }
+.purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+.indigo { background: linear-gradient(135deg, #4f46e5, #4338ca); } 
+.pink { background: linear-gradient(135deg, #db2777, #be185d); }
+.gray { background: linear-gradient(135deg, #6b7280, #4b5563); }
+.slate { background: linear-gradient(135deg, #475569, #334155); }
 
-/* تنسيق أزرار الهيدر (الإجراءات السريعة) */
-.admin-actions {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 10px;
-}
 
-.btn-admin {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 15px;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-decoration: none;
-    color: white;
-    background: var(--text);
-    transition: var(--transition);
-}
 
-.btn-admin:hover {
-    background: var(--accent);
-    transform: translateY(-2px);
-}
-/* تنسيقات إضافية للجداول لتناسب النمط الجديد */
-.admin-table-container {
+/* --- 3. إدارة المستخدمين والجداول --- */
+.admin-card.full {
     background: white;
-    border-radius: 15px;
-    overflow: hidden;
+    border-radius: 20px;
     box-shadow: var(--shadow);
-    border: 1px solid var(--border);
-    margin-top: 20px;
+    overflow: hidden;
 }
-.inline-input-edit {
-    padding: 8px 12px !important;
-    font-size: 0.85rem !important;
-    border-radius: 8px !important;
-    width: auto !important;
-    display: inline-block;
+
+.table-wrapper {
+    overflow-x: auto;
+    padding: 0 20px 20px;
 }
-.btn-table-save {
-    padding: 8px 15px;
-    font-size: 0.8rem;
-    background: var(--accent);
-    color: white;
-    border: none;
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.admin-table th, .admin-table td {
+    padding: 15px;
+    border-bottom: 1px solid var(--border-light);
+    text-align: right;
+}
+
+.admin-table thead th {
+    background-color: #f8fafc;
+    color: var(--text-darker);
+    font-weight: 700;
+}
+
+/* --- 4. الصلاحيات (Permissions Dropdown) --- */
+.permissions-dropdown {
+    background: #f8fafc;
     border-radius: 8px;
+    padding: 5px;
+}
+
+.permissions-summary {
     cursor: pointer;
+    font-weight: 700;
+    color: var(--accent);
+    padding: 5px;
+    list-style: none;
 }
-.btn-table-delete {
-    padding: 8px 15px;
-    font-size: 0.8rem;
-    background: #fee2e2;
-    color: #ef4444;
-    border: 1px solid #fecaca;
+
+.permission-list-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding-top: 10px;
+}
+
+.perm-tag {
+    background: #e0f2f1;
+    color: #00796b;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+/* --- 5. المدخلات الصغيرة داخل الجدول (Inline Edits) --- */
+.small-input, .small-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
     border-radius: 8px;
+    font-size: 0.85rem;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    color: white;
+}
+.btn-small.edit { background: var(--accent); }
+.btn-small.add { background: var(--primary-color); }
+.btn-small.remove { background: var(--danger); }
+.btn-small.delete { background: #000; }
+
+/* --- 6. التجاوب (Mobile) --- */
+@media (max-width: 768px) {
+    .admin-grid { grid-template-columns: 1fr; }
+    .grid-buttons { grid-template-columns: 1fr 1fr; }
+    .card-btn { padding: 15px; font-size: 0.8rem; }
 }
 /* تحسينات الموبايل */
 @media (max-width: 600px) {

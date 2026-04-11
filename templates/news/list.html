@@ -1,63 +1,9 @@
 {% extends "base.html" %}
 {% block title %}الأخبار{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/news.css') }}">
+{% endblock %}
 {% block content %}
-<style>
-    /* تحسينات التصميم لضمان شكل احترافي */
-    .news-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 30px;
-        margin-top: 40px;
-    }
-    .news-card {
-        background: #fff;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        border: 1px solid #f0f0f0;
-        display: flex;
-        flex-direction: column;
-        height: 100%; /* لتوحيد ارتفاع البطاقات */
-    }
-    .news-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-    }
-    .news-thumb {
-        height: 220px;
-        width: 100%;
-        position: relative;
-        overflow: hidden;
-        background-color: #f8f9fa;
-    }
-    .news-thumb img, .news-thumb video {
-        width: 100%;
-        height: 100%;
-        object-fit: cover; /* لضمان عدم تمطط الصورة أو الفيديو */
-        transition: transform 0.5s ease;
-    }
-    .news-content {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-    .news-title {
-        font-size: 1.2rem;
-        font-weight: 700;
-        color: #2c3e50;
-        margin: 10px 0;
-        line-height: 1.4;
-    }
-    .news-excerpt {
-        color: #7f8c8d;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        margin-bottom: 20px;
-    }
-</style>
 
 <section class="all-page">
     <div class="container">

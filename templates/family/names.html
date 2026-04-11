@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}شجرة الحوطية{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/family.css') }}">
+{% endblock %}
 {% block content %}
 <section class="all-page">
      <div class="container">    
@@ -48,7 +50,7 @@
                         {% endif %}
                     </div>
                 </div>
-                <div class="member-f-actions">
+                <div class="member-actions">
                     <a href="/names/details/{{ m.code }}" class="btn-f-action btn-f-view">تفاصيل</a>
                     {% if can_edit %}
                     <a href="/names/edit/{{ m.code }}" class="btn-f-action btn-f-edit">تعديل</a>

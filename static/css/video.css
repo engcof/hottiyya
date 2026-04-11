@@ -1,122 +1,5 @@
-/* ========== ✅ تنسيقات معرض الفيديوهات الموحدة ✅ ========== */
 
-/* 1. حاوية المعرض (الشبكة) */
-.video-gallery-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)) !important;
-    gap: 25px !important;
-    margin-top: 30px;
-    direction: rtl;
-}
-
-/* 2. بطاقة الفيديو (Video Card) */
-.video-card {
-    background: var(--glass-strong);
-    border: 1px solid var(--border);
-    border-radius: var(--radius); /* أو 15px حسب رغبتك */
-    overflow: hidden;
-    transition: var(--transition);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--shadow);
-}
-
-.video-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 45px rgba(0,0,0,0.12);
-}
-
-/* 3. حاوية مشغل الفيديو (Ratio 16:9) */
-.video-player-container {
-    position: relative;
-    width: 100%;
-    padding-top: 56.25%; /* نسبة الارتفاع للعرض */
-    background: #000;
-    overflow: hidden;
-}
-
-.video-player-container video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover;
-}
-
-/* 4. تفاصيل الفيديو والعنوان */
-.video-info {
-    padding: 20px;
-    flex-grow: 1;
-}
-
-.video-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--text);
-    margin-bottom: 12px;
-    line-clamp: 2; 
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.video-meta {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.video-category {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--accent);
-    padding: 4px 12px;
-    border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.video-date {
-    font-size: 0.85rem;
-    color: var(--text-light);
-}
-
-/* 5. أزرار الإدارة (حذف) */
-.video-actions {
-    padding: 15px 20px;
-    border-top: 1px solid var(--border);
-    background: rgba(248, 250, 252, 0.5);
-    display: flex;
-    justify-content: flex-end;
-}
-
-.btn-delete-video {
-    background: transparent;
-    color: var(--danger);
-    border: 1px solid var(--danger);
-    padding: 6px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.btn-delete-video:hover {
-    background: var(--danger);
-    color: white;
-}
-
-
-
-.empty-video-state {
-    text-align: center;
-    padding: 80px 20px;
-    background: var(--glass);
-    border-radius: var(--radius);
-    border: 2px dashed var(--border);
-    color: var(--text-light);
-}
+    /* ========== ✅ معرض الفيديوهات الموحد (video.css) ✅ ========== */
 
 /* 1. حاوية المعرض (الشبكة) */
 .video-grid-container {
@@ -129,14 +12,15 @@
 
 /* 2. بطاقة الفيديو (Video Card) */
 .video-card-item {
-    background: var(--bg); /* استخدام المتغيرات من ملفك الأصلي */
-    border-radius: var(--radius);
+    background: var(--white, #ffffff);
+    border-radius: var(--radius, 15px);
     overflow: hidden;
-    border: 1px solid var(--border);
-    transition: var(--transition);
-    box-shadow: var(--shadow);
+    border: 1px solid var(--border, #eee);
+    transition: var(--transition, 0.3s);
+    box-shadow: var(--shadow, 0 4px 6px rgba(0,0,0,0.05));
     display: flex;
     flex-direction: column;
+    height: 100%;
 }
 
 .video-card-item:hover {
@@ -144,7 +28,7 @@
     box-shadow: 0 15px 45px rgba(0,0,0,0.12);
 }
 
-/* 3. حاوية مشغل الفيديو (Ratio 16:9) */
+/* 3. حاوية مشغل الفيديو (نسبة الأبعاد 16:9) */
 .video-frame {
     position: relative;
     width: 100%;
@@ -158,70 +42,97 @@
     left: 0;
     width: 100% !important;
     height: 100% !important;
-    object-fit: cover;
+    object-fit: cover; /* يضمن ملء الفيديو للمساحة دون تشويه */
 }
 
-/* 4. عنوان الفيديو مع حل مشكلة line-clamp */
+/* 4. تفاصيل الفيديو */
+.video-details {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
 .video-item-title {
     font-size: 1.1rem;
     font-weight: 700;
-    margin: 15px 15px 10px;
-    color: var(--text);
+    margin-bottom: 12px;
+    color: var(--text, #333);
+    line-height: 1.5;
     
-    /* الخاصية القياسية الحديثة لحل الخطأ */
-    line-clamp: 2; 
-    
-    /* دعم المتصفحات القديمة (Chrome, Safari, Edge) */
+    /* تحديد عدد الأسطر بـ 2 وحل مشكلة الفائض */
     display: -webkit-box;
-    -webkit-line-clamp: 2;
+    line-clamp: 2; 
     -webkit-box-orient: vertical;
-    
     overflow: hidden;
     text-overflow: ellipsis;
+    min-height: 3.3rem; /* لضمان توازي العناوين حتى لو كانت سطر واحد */
 }
 
-/* 5. البيانات التعريفية أسفل الفيديو */
+/* 5. البيانات التعريفية (التصنيف والتاريخ) */
 .video-item-meta {
-    padding: 0 15px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-top: auto; /* يدفع الميتا للأسفل */
 }
 
+.video-badge {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent, #10b981);
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
 
-  .video-grid-container {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
-        gap: 25px !important;
-        direction: rtl;
+.video-date {
+    font-size: 0.85rem;
+    color: var(--text-light, #64748b);
+}
+
+/* 6. أزرار التحكم */
+.video-actions {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border, #eee);
+}
+
+.btn-delete-video {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--danger, #ef4444);
+    background: transparent;
+    color: var(--danger, #ef4444);
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-delete-video:hover {
+    background: var(--danger, #ef4444);
+    color: #fff;
+}
+
+/* 7. حالة الفراغ (No Videos) */
+.empty-video-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    background: var(--glass, #f8fafc);
+    border-radius: var(--radius, 15px);
+    border: 2px dashed var(--border, #e2e8f0);
+}
+
+/* 8. تحسينات الموبايل */
+@media (max-width: 768px) {
+    .video-grid-container {
+        grid-template-columns: 1fr !important; /* فيديو واحد في السطر للموبايل */
+        padding: 10px;
     }
-
-    .video-card-item {
-        background: #fff;
-        border-radius: 15px;
-        overflow: hidden;
-        border: 1px solid #eee;
-        transition: 0.3s;
-    }
-
-    .video-frame {
-        position: relative;
-        width: 100%;
-        padding-top: 56.25%; /* Ratio 16:9 */
-        background: #000;
-    }
-
-    .video-frame video {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100% !important;
-        height: 100% !important;
-    }
-
+    
     .video-item-title {
-        font-size: 1.1rem;
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #333;
+        font-size: 1rem;
     }
+}

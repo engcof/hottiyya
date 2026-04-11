@@ -1,10 +1,16 @@
-/* 2. شبكة المقالات */
+/* ============================================================
+   NAME: articles.css
+   DESCRIPTION: نظام عرض المقالات (الشبكة + المقال المنفرد)
+   ============================================================ */
+
+/* --- 1. شبكة المقالات (Articles Grid) --- */
 .articles-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
     gap: 30px;
 }
-/* 3. بطاقة المقال (Article Card) */
+
+/* --- 2. بطاقة المقال (Article Card) --- */
 .articles-card {
     background-color: var(--card-bg);
     border-radius: 12px;
@@ -13,135 +19,18 @@
     display: flex;
     flex-direction: column;
     min-height: 280px; 
-    transition: all 0.2s, border 0.2s;
+    transition: all 0.3s ease;
     border: 1px solid transparent;
-    overflow: hidden; /* لمنع الصورة من الخروج عن الزوايا المنحنية */
+    overflow: hidden;
 }
+
 .articles-card:hover {
+    transform: translateY(-5px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-    border: 1px solid var(--primary-color-light);
-}
-.articles-header {
-    text-align: center;
-    padding-bottom: 25px;
-    border-bottom: 2px solid var(--border);
-    margin-bottom: 30px;
-}
-.articles-title a {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-darker);
-    line-height: 1.0;
-    margin-bottom: 20px;
-    transition: color 0.2s;
-}
-.articles-title a:hover {
-    color: var(--primary-color-light);
-}
-/* بيانات الوصف (Meta) */
-.articles-meta {
-    display: flex;
-    gap: 20px;
-    font-size: 0.85rem;
-    color: var(--text-medium);
-    margin-top: 10px;
-    margin-bottom: 15px;
-    justify-content: center;
-}
-.articles-meta span {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-.articles-meta svg {
-    color: var(--primary-color);
-    width: 16px;
-    height: 16px;
-    flex-shrink: 0;
-}
-.articles-meta strong {
-    font-weight: 700;
-    color: var(--text-dark);
-}
-.authors, .date {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 500;
-}
-/* المقتطف */
-.articles-excerpt {
-    font-size: 0.95rem;
-    color: var(--text-medium);
-    margin-bottom: 20px;
-    flex-grow: 1; 
-}
-/* الفوتر (زر القراءة وعدد التعليقات) */
-.articles-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 15px;
-    border-top: 1px dashed var(--border-light);
-    margin-top: auto; /* يضمن بقاءه في الأسفل */
-}
-.comments-count {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 0.9rem;
-    color: var(--text-medium);
-}
-.comments-count svg {
-    color: var(--text-medium);
+    border-color: var(--primary-color-light);
 }
 
-/* تنسيق حاوية الصورة في بطاقة المقال */
-.articles-image {
-    width: calc(100% + 50px); /* للتمدد بكامل عرض البطاقة (بسبب الـ padding) */
-    margin: -25px -25px 20px -25px; 
-    height: 200px;
-    overflow: hidden;
-    border-radius: 12px 12px 0 0;
-}
-.articles-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* لضمان عدم تشوه الصورة مهما كانت أبعادها */
-    transition: transform 0.3s ease;
-}
-.articles-card:hover .articles-image img {
-    transform: scale(1.05); /* تأثير تكبير بسيط عند التمرير */
-}
-    .articles-content-wrapper {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    margin-bottom: 20px;
-}
-
-/* صندوق الصورة المصغرة */
-.articles-thumbnail-box {
-    flex-shrink: 0; /* منع الصورة من الانكماش */
-    width: 120px;  /* حجم صغير وموحد */
-    height: 120px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-}
-
-.mini-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* لضمان ملء المربع بدون تشويه */
-    transition: transform 0.3s ease;
-}
-
-.articles-card:hover .mini-thumbnail {
-    transform: scale(1.1);
-}
-/* ترتيب العناصر الأساسية */
+/* ترتيب المحتوى (نص + صورة مصغرة) */
 .article-main-content {
     display: flex;
     justify-content: space-between;
@@ -150,51 +39,200 @@
     margin-bottom: 15px;
 }
 
-.articles-info {
-    flex: 1; /* تجعل النص يأخذ المساحة المتبقية */
+.articles-info { flex: 1; }
+
+.articles-title a {
+    font-size: 1.5rem; /* تم تصغيره قليلاً ليتناسب مع البطاقة */
+    font-weight: 700;
+    color: var(--text-darker);
+    line-height: 1.3;
+    transition: color 0.2s;
+    text-decoration: none;
 }
 
-/* تنسيق الصورة المصغرة */
+.articles-title a:hover { color: var(--accent); }
+
+/* تنسيق الصورة المصغرة في البطاقة */
 .article-thumbnail-wrapper {
-    width: 100px;  /* حجم ثابت ومناسب للمصغرات */
-    height: 100px;
+    width: 100px; height: 100px;
     flex-shrink: 0;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--border-light);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .articles-thumb {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* يمنع تمطط الصورة */
+    width: 100%; height: 100%;
+    object-fit: cover;
     transition: transform 0.3s ease;
 }
 
-.articles-card:hover .articles-thumb {
-    transform: scale(1.1);
+.articles-card:hover .articles-thumb { transform: scale(1.1); }
+
+/* بيانات الوصف (Meta) والفوتر */
+.articles-meta {
+    display: flex; gap: 15px;
+    font-size: 0.85rem; color: var(--text-medium);
+    margin-bottom: 15px;
 }
 
-/* في الشاشات الصغيرة جداً */
-@media (max-width: 500px) {
-    .articles-main-content {
-        flex-direction: column-reverse; /* الصورة فوق النص في الجوال */
-        align-items: center;
-        text-align: center;
-    }
-    .articles-thumbnail-wrapper {
-        width: 100%;
-        height: 180px;
-    }
+.articles-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px dashed var(--border-light);
+    margin-top: auto;
+}
 
-    .articles-content-wrapper {
-        flex-direction: column;
+/* --- 3. صفحة المقال المنفرد (Article Single) --- */
+.article-single-section {
+    max-width: 900px;
+    margin: 40px auto 80px;
+    padding: 0 15px;
+}
+
+.article-card.single {
+    background-color: var(--card-bg);
+    border-radius: 15px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.article-cover {
+    width: 100%;
+    max-height: 450px;
+    overflow: hidden;
+}
+
+.article-cover img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+}
+
+.article-header, .article-content { padding: 30px 40px; }
+
+.article-title-big {
+    font-size: clamp(1.8rem, 5vw, 2.8rem);
+    font-weight: 800;
+    color: var(--text-darker);
+    margin-bottom: 20px;
+}
+
+.article-content {
+    font-size: 1.15rem;
+    line-height: 1.8;
+    color: var(--text-dark);
+}
+
+/* --- 4. قسم التعليقات (Comments) --- */
+.comments-section {
+    margin-top: 40px;
+    padding: 30px;
+    background: var(--card-bg, white);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+}
+
+.section-title {
+    font-size: 1.5rem;
+    color: var(--text-darker);
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title .count {
+    font-size: 1.1rem;
+    color: var(--text-medium);
+    background: #f1f5f9;
+    padding: 2px 10px;
+    border-radius: 20px;
+}
+
+/* نموذج التعليق الجديد */
+.add-comment-card {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid var(--border-light);
+}
+
+.comment-form .textarea-wrapper {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.comment-form textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 15px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    resize: vertical;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: border-color 0.3s;
+}
+
+.comment-form textarea:focus {
+    border-color: var(--accent);
+    outline: none;
+    background: white;
+}
+
+.char-counter {
+    position: absolute;
+    bottom: 10px;
+    left: 15px; /* ليتناسب مع RTL */
+    font-size: 0.75rem;
+    color: var(--text-light);
+}
+
+/* زر الإرسال باستخدام النظام الموحد */
+.btn-submit-comment {
+    /* الخصائص الأساسية موروثة من btn-base في الملف الرئيسي */
+    padding: 10px 24px;
+    background-color: var(--accent);
+    color: white;
+    border-radius: 8px;
+    float: left; /* ليكون في يسار النموذج بالعربية */
+}
+
+/* قائمة التعليقات */
+.comment-item {
+    padding: 20px;
+    border-right: 4px solid var(--accent); /* التمييز على اليمين للعربية */
+    background-color: #ffffff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.comment-author strong { color: var(--text-darker); font-size: 1rem; }
+.comment-date { color: var(--text-light); font-size: 0.8rem; margin-right: 10px; }
+
+.comment-body {
+    line-height: 1.7;
+    color: var(--text-dark);
+    white-space: pre-line; /* للحفاظ على تنسيق الأسطر */
+}
+/* --- 5. التجاوب (Responsive) --- */
+@media (max-width: 768px) {
+    .article-header, .article-content { padding: 20px; }
+    .article-main-content {
+        flex-direction: column-reverse;
         align-items: center;
         text-align: center;
     }
-    .articles-thumbnail-box {
-        width: 100%;
-        height: 150px;
-    }
+    .article-thumbnail-wrapper { width: 100%; height: 200px; }
 }

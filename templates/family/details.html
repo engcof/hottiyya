@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% block title %}تفاصيل العضو • {{ full_name }}{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/family.css') }}">
+{% endblock %}
 {% block content %}
 <section class="all-page">
     <div class="container">

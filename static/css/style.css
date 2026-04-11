@@ -726,1218 +726,114 @@ footer {
 }
 /* ==========  نهاية الصفحة الرئيسية ========== */
 
-/* ==========    ✅  صفحه عننا ✅   ========== */
-/* === 1. تنسيق بسم الله الرحمن الرحيم (Bismillah) === */
-.bismillah-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 600px;
-    margin: 40px auto 30px auto;
-    padding: 0 15px;
-}
-.bismillah {
-    font-size: 1.5rem;
-    font-weight: 400;
-    color: var(--text-medium);
-    margin: 0 15px;
-}
-.bismillah-line {
-    flex-grow: 1;
-    height: 1px;
-    background: var(--border);
-    max-width: 100px;
-}
-/* === 2. تنسيق القسم الرئيسي (Hero) === */
-.about-hero {
-    text-align: center;
-    padding: 30px 20px;
-}
-.about-hero .page-title {
-    font-size: 3.5rem;
-    font-weight: 900;
-    color: var(--text-dark);
-    position: relative;
-    margin-bottom: 10px;
-    display: inline-block;
-}
-.about-hero .page-title::after {
-    content: '';
-    display: block;
-    width: 60%;
-    height: 5px;
-    background-color: var(--primary-color);
-    margin: 5px auto 0 auto;
-    border-radius: 5px;
-}
-/* === 3. تنسيق شبكة المحتوى (Grid) === */
-.about-content {
-    margin-top: 50px;
-}
-.about-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 30px;
-    margin-bottom: 50px;
-}
-.about-card {
-    padding: 30px;
-    border-radius: 15px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
-    border-top: 4px solid var(--primary-color); /* شريط علوي أخضر مميز */
-    min-height: 350px;
-    display: flex;
-    flex-direction: column;
-}
-.about-card h2 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--primary-color-dark);
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-light);
-}
-.about-card p {
-    font-size: 1rem;
-    color: var(--text-dark);
-    line-height: 1.7;
-    margin-bottom: 15px;
-}
-/* تنسيق قائمة القيم (ul) */
-.values-list {
-    list-style: none;
-    padding: 0;
-}
-.values-list li {
-    position: relative;
-    padding-right: 25px;
-    margin-bottom: 10px;
-    font-size: 1rem;
-    color: var(--text-medium);
-}
-.values-list li::before {
-    content: '✅'; 
-    position: absolute;
-    right: 0;
-    font-size: 1.1rem;
-    top: -2px;
-}
-/* تنسيق أعلام العائلة (Notable Persons) */
-.notable-person {
-    background-color: #f0fdf4; /* خلفية خضراء خفيفة */
-    border-right: 4px solid var(--primary-color);
-    padding: 10px 15px;
-    margin-bottom: 10px;
-    border-radius: 4px;
-    font-size: 0.95rem;
-}
-.highlight {
-    font-style: italic;
-    color: var(--primary-color);
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border-light);
-}
-/*  4. تنسيق الرسالة الختامية (Final Message) */
-.final-message {
-    max-width: 900px;
-    margin: 50px auto;
-    padding: 40px;
-    border-radius: 15px;
-    background-color: var(--primary-color); 
-    color: var(--text-dark);
-    text-align: center;
-    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.4);
-}
-.final-message h2 {
-    font-size: 2.2rem;
-    font-weight: 800;
-    margin-bottom: 20px;
-    color: var(--text-dark);
-}
-.quote {
-    font-size: 1.15rem;
-    line-height: 1.8;
-    margin-bottom: 20px;
-    font-style: italic;
-    opacity: 0.9;
-}
-.signature {
-    font-weight: 600;
-    font-size: 1rem;
-    display: block;
-    margin-top: 15px;
-    opacity: 0.8;
-}
-/* تنسيق زر العودة للصفحة الرئيسية */
-.submit-btn.large {
-    display: inline-block;
-    padding: 12px 40px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    border-radius: 10px;
-    background-color: var(--accent);
-    color: white;
-    text-decoration: none;
-    transition: background-color 0.2s;
-}
-.submit-btn.large:hover {
-    background-color: var(--accent-hover);
-}
-/* ==========    نهاية صفحة عننا  ========== */
-
-/* ========== ✅  صفحة شجرة العائلة ✅ ========== *
-/* === 2. تنسيق شريط البحث (Search Bar) === */
-.search-bar {
-    margin-bottom: 32px;
-    padding: 20px;
-    border-radius: 20px;
-}
-.search-form {
-    display: flex;
-    gap: 8px;
-    max-width: 600px;
-    margin: 0 auto;
-}
-.search-form input[type="text"]  {
-    flex: 1;
-    padding: 10px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    font-size: 1rem;
-    background: white;
-}
-.search-form input:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
-}
-.search-btn {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 16px;
-    cursor: pointer;
-    align-items: center;
-    gap: 4px;
-    font-weight: 400;
-}
-.clear-search {
-    display: block;
-    text-align: center;
-    margin-top: 12px;
-    color: var(--danger);
-    font-size: 0.95rem;
-}
-/* === 3. تنسيق بطاقات الأعضاء (Grid) === */
-.members-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 20px;
-    margin-bottom: 40px;
-}
-.member-card {
-    padding: 24px;
-    border-radius: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-    transition: var(--transition);
-}
-.member-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-}
-.member-info {
-    flex: 1;
-    min-width: 200px;
-}
-.member-code {
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-}
-.member-code code {
-    background: #ecfdf5;
-    color: var(--accent);
-    padding: 4px 10px;
-    border-radius: 8px;
-    font-weight: bold;
-}
-.member-name {
-    font-size: 1.35rem;
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 6px;
-}
-.nickname-badge {
-    background: #10b981;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-/* إذا كان لا يوجد اسم تدليل */
-.text-muted {
-    color: var(--text-light);
-    font-size: 0.9rem;
-}
-/* === 4. تنسيق أزرار التحكم داخل البطاقة === */
-.member-f-actions {
-    display: flex;
-    margin-top: auto; /* هذا مهم للتأكد من أنها تلتصق بالأسفل */
-    padding-top: 5px; 
-    gap: 8px;
-    flex-wrap: wrap;
-}
-/* ✅ أزرار الإجراءات في بطاقة العضو */
-.btn-f-action {
-    display: inline-block;
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    text-align: center;
-    text-decoration: none;
-    border: 1px solid transparent;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-/* زر التفاصيل (Details) */
-.btn-f-view {
-    background-color: #f0fdf4; /* أخضر فاتح جداً */
-    color: var(--accent);
-    border-color: var(--accent);
-}
-.btn-f-view:hover {
-    background-color: var(--accent);
-    color: white;
-}
-/* زر التعديل (Edit) */
-.btn-f-edit {
-    background-color: #f0fdf4;
-    color: var(--edit);
-    border-color: var(--edit);
-}
-.btn-f-edit:hover {
-    background-color:var(--edit);
-    color: white;
-}
-/* زر الحذف (Delete) - يجب أن يكون أحمر */
-.btn-f-delete {
-    background-color: #fef2f2; 
-    color:var(--danger); 
-    border-color: var(--danger); 
-}
-.btn-f-delete:hover {
-    background-color:var(--danger); 
-    color: white;
-}
-/* === تنسيق صفحة تفاصيل العضو (Member Details) === */
-.member-details-section {
-    padding: 60px 20px;
-    min-height: 100vh;
-    background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
-}
-.member-header {
-    display: grid;
-    text-align: center;
-    margin-bottom:20px;
-    gap: 20px;
-}
-.member-names {
-    font-size: clamp(2.2rem, 6vw, 1.1rem);
-    font-weight: 900;
-    color: #0f172a;
-    margin: 0;
-    line-height: 1.2;
-    padding: 20px 10px;
-}
-.code-badge {
-    background: #ecfdf5;
-    color: var(--accent);
-    padding: 8px 20px;
-    border-radius: 50px;
-    font-weight: bold;
-    font-size: 1.1rem;
-    margin: auto;
-}
-.nickname-big {
-    background: var(--accent);
-    color: white;
-    padding: 10px 32px;
-    border-radius: 50px;
-    font-size: 1.4rem;
-    font-weight: 600;
-}
-.status {
-    padding: 10px 28px;
-    border-radius: 50px;
-    font-weight: 600;
-    font-size: 1.1rem;
-    text-align: center;
-    margin: 0px 0px 20px;
-}
-.status.alive { 
-    background: #dcfce7; 
-    color: #166534; 
-}
-.status.deceased { 
-    background: #fee2e2; 
-    color: #991b1b;
-}
-.member-body {
-    display: grid;
-    grid-template-columns: 300px 1fr;
-    gap: 50px;
-    margin-bottom: 60px;
-}
-.profile-picture {
-    text-align: center;
-}
-.profile-img {
-    width: 260px;
-    height: 260px;
-    object-fit: cover;
-    border-radius: 50%;
-    border: 8px solid white;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-}
-.img-caption {
-    margin-top: 16px;
-    color: #64748b;
-    font-size: 1rem;
-}
-.info-section, .relations-section {
-    background: var(--glass-strong);
-    padding: 32px;
-    border-radius: 24px;
-    box-shadow: var(--shadow);
-}
-
-.info-grid {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-}
-.info-row {
-    justify-content: auto;
-    padding: 14px 0;
-    border-bottom: 1px dashed #e2e8f0;
-}
-.info-label {
-    color: #64748b;
-    font-weight: 600;
-    min-width: 140px;
-}
-.info-value {
-    color: #0f172a;
-    font-weight: 600;
-    text-align: center;
-    flex: 1;
-}
-.info-value a {
-    color: var(--accent);
-    font-weight: 700;
-}
-
-/* العلاقات */
-.relations-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-}
-.relation-card {
-    background: white;
-    padding: 24px;
-    border-radius: 20px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
-}
-.relation-card h5 {
-    margin: 0 0 16px;
-    color: #0f172a;
-    font-weight: 700;
-    font-size: 1.2rem;
-}
-.relation-link {
-    display: block;
-    padding: 10px 16px;
-    background: #f8fafc;
-    color: var(--accent);
-    border-radius: 12px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: var(--transition);
-}
-.relation-link:hover {
-    background: #ecfdf5;
-    transform: translateX(8px);
-}
-.children-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-}
-.child-item {
-    background: #ecfdf5;
-    color: var(--accent);
-    padding: 8px 16px;
-    border-radius: 50px;
-    font-size: 0.95rem;
-    font-weight: 600;
-}
-.child-item:hover {
-    color: var(--primary-color);
-}
-/* 5. تنسيق الأزرار السفلية */
-.action-buttons {
-    text-align: center;
-    margin-top: 50px;
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-}
-
-/* ==========  نهايه صفحة شجرة العائلة  ========== */
-
-/* ========== ✅  تنسيق لوحة التحكم الإدارية (Admin Dashboard)  ✅ ========== */
-.admin-dashboard {
-    max-width: 1300px;
-    margin: 40px auto 80px auto;
-    padding: 10px 20px 80px;
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-}
-/* 1. تنسيق العنوان ورأس الصفحة */
-.dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 40px;
-    padding-bottom: 10px;
-    border-bottom: 4px solid var(--primary-color);
-}
-.dashboard-header .page-title {
-    font-size: 2.8rem;
-    font-weight: 800;
-    color: var(--text-dark);
-}
-.dashboard-header .subtitle {
-    font-size: 1.1rem;
-    color: var(--text-medium);
-}
-/* 3. تنسيق شبكة البطاقات العلوية (إضافة/تعديل) */
-.admin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 28px;
-    margin-bottom: 40px;
-}
-.admin-card {
-   
-    background: white;
-    padding: 32px;
-    border-radius: 24px;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
-    border: 1px solid #e2e8f0;
-
-}
-.admin-card h2 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--primary-color-dark);
-    margin-bottom: 25px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--border-light);
-}
-.admin-form .form-group {
-    margin-bottom: 20px;
-}
-.admin-form input,
-.admin-form select {
-    width: 100%;
-    padding: 10px 15px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 1rem;
-    box-sizing: border-box;
-    margin-top: 5px;
-}
-.admin-form .submit-btn.large {
-    width: 100%;
-    padding: 12px;
-    margin-top: 15px;
-    font-weight: 700;
-    border-radius: 8px;
-    background-color: var(--accent);
-    color: white;
-    border: none;
-    transition: background-color 0.2s;
-}
-.admin-form .submit-btn.large:hover {
-    background-color: var(--accent-hover);
-}
-.admin-form .submit-btn.warning {
-    background-color: #f97316; /* لون برتقالي للتحذير */
-}
-.admin-form .submit-btn.warning:hover {
-    background-color: #ea580c;
-}
-/* 4. تنسيق الجدول الكامل للمستخدمين */
-.admin-card.full {
-    padding: 0; /* إزالة الـ padding للبطاقة التي تحتوي الجدول */
-}
-.admin-card.full h2 {
-    padding: 30px 30px 10px 30px;
-    margin-bottom: 0;
-    border-bottom: 1px solid var(--border-light);
-}
-.table-wrapper {
-    overflow-x: auto; /* السماح بالتمرير الأفقي للجداول الكبيرة */
-    padding: 0 30px 30px 30px;
-}
-.admin-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-    text-align: right;
-}
-.admin-table th, .admin-table td {
-    padding: 12px 15px;
-    border-bottom: 1px solid var(--border-light);
-    font-size: 0.95rem;
-    vertical-align: middle;
-}
-.admin-table thead th {
-    background-color: #f7fdfb; /* خلفية خفيفة لرأس الجدول */
-    font-weight: 700;
-    color: var(--primary-color-dark);
-    text-align: right;
-}
-.admin-table tbody tr:hover {
-    background-color: #f9fafb;
-}
-/* تنسيق الـ Badges والأزرار داخل الجدول */
-.role-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-.role-badge.admin {
-    background-color: #fef9c3;
-    color: #ca8a04;
-}
-.role-badge.manager {
-    background-color: #dbeafe;
-    color: #2563eb;
-}
-.role-badge.user {
-    background-color: #eff6ff;
-    color: #3b82f6;
-}
-/* تعديل هامش الـ perm-tag ليتناسب مع الترتيب الجديد */
-.perm-tag {
-    display: inline-block;
-    background-color: #e0f2f1;
-    color: #00796b;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    margin: 2px 0; /* تغيير الهامش: 2px فوق وتحت، 0 يمين ويسار (سيتم التحكم بالفصل عبر gap) */
-    font-weight: 600;
-}
-/* تنسيق النماذج والأزرار المصغرة (Inline Forms) */
-.inline-form {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-.small-input {
-    width: 100px;
-    padding: 5px 8px;
-    font-size: 0.85rem;
-}
-.small-select {
-    padding: 5px 8px;
-    font-size: 0.85rem;
-    width: 100px;
-}
-.btn-small {
-    padding: 6px 10px;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-.btn-small.edit {
-    background-color: #fcd34d;
-    color: #92400e;
-}
-.btn-small.add {
-    background-color: #6ee7b7;
-    color: #065f46;
-}
-.btn-small.remove {
-    background-color: #fca5a5;
-    color: #991b1b;
-}
-.btn-small.delete {
-    background-color: #ef4444;
-    color: white;
-}
-.btn-small.delete:hover {
-    background-color: #b91c1c;
-}
-/* تنسيق قائمة الصلاحيات المنسدلة في جدول الإدارة */
-.permissions-dropdown {
-    /* تحديد عرض تقريبي معقول لخلية الصلاحيات */
-    min-width: 130px; 
-}
-.permissions-summary {
-    cursor: pointer;
-    font-weight: 600;
-    color: var(--primary-color-dark);
-    padding: 5px 0;
-    list-style: none; /* لإزالة السهم الافتراضي */
-    position: relative;
-    user-select: none;
-    padding-right: 15px; /* مسافة للرمز المخصص */
-}
-/* لإعادة إضافة السهم المخصص وجعله يتغير عند الفتح */
-.permissions-summary::before {
-    content: '▼'; /* رمز سهم للأسفل */
-    font-size: 0.6em;
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--primary-color);
-    transition: transform 0.2s;
-}
-/* تدوير السهم عند فتح القائمة */
-.permissions-dropdown[open] .permissions-summary::before {
-    transform: translateY(-50%) rotate(180deg);
-}
-.permission-list-content {
-    /* تنسيق المحتوى بعد الفتح */
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    padding: 10px 0 0 0;
-    border-top: 1px solid var(--border-light);
-    margin-top: 5px;
-}
-/* ==========  نهاية اللوحة الادارية  ========== */
-
-/* ==========  ✅   صفحة الأخبار (News Page)  ✅  ========== */
-.add-news-wrapper {
-    text-align: center;
-    margin-bottom: 40px;
-}
-/* 2. شبكة الأخبار وبطاقات الخبر */
-.news-grid {
-    display: grid;
-    /* 3 أعمدة على الشاشات الكبيرة */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-    gap: 30px;
-}
-.news-card {
-    background-color: var(--card-bg);
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-    overflow: hidden; /* لاخفاء الصورة الزائدة عن الحواف */
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.news-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-}
-/* الصورة المصغرة */
-.news-thumb {
-    height: 200px;
-    overflow: hidden;
-    position: relative;
-}
-.news-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s;
-}
-.news-card:hover .news-thumb img {
-    transform: scale(1.05);
-}
-.news-content {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
-/* بيانات الوصف (Meta) */
-.news-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    color: var(--text-medium);
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px dashed var(--border-light);
-}
-.news-meta span {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-.news-meta svg {
-    color: var(--primary-color);
-}
-.news-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-.news-excerpt {
-    font-size: 0.95rem;
-    color: var(--text-medium);
-    margin-bottom: 20px;
-    flex-grow: 1;
-}
-/* زر اقرأ المزيد */
-.read-more {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-weight: 600;
-    color: var(--primary-color);
-    text-decoration: none;
-    transition: margin-right 0.2s;
-    margin-top: auto; /* يدفعه للأسفل */
-}
-.read-more:hover {
-    text-decoration: underline;
-    margin-right: 5px;
-}
-.read-more svg {
-    transform: rotate(-45deg); /* تدوير السهم ليبدو متجهًا للأمام */
-    color: var(--primary-color);
-}
-/* 3. تنسيق حالة الفراغ */
-.empty-state {
-    text-align: center;
-    padding: 80px 30px;
-    margin: 50px auto;
-    max-width: 600px;
-    background-color: var(--card-bg);
-    border: 2px dashed var(--primary-color-light);
-    border-radius: 12px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-}
-.empty-state h3 {
-    font-size: 1.8rem;
-    color: var(--text-dark);
-    margin-bottom: 10px;
-}
-.empty-state p {
-    color: var(--text-medium);
-}
-.empty-icon {
-    font-size: 3rem;
-    color: var(--primary-color);
-    margin-bottom: 15px;
-    /* هنا يمكن وضع رمز أو SVG بدلاً من النص "Newspaper" */
-}
-.empty-icon svg {
-    color: var(--primary-color-light);
-}
-/* === تنسيق صفحة تفاصيل الخبر (News Detail) === */
-.news-detail-page {
-    max-width: 900px; /* تحديد عرض للقراءة المريحة */
-    margin: 40px auto 80px auto;
-    padding: 0 15px;
-}
-/* 1. رابط الرجوع الأنيق */
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--primary-color);
-    text-decoration: none;
-    font-weight: 600;
-    margin-bottom: 30px;
-    transition: margin-right 0.2s;
-}
-.back-link:hover {
-    margin-right: 5px;
-}
-.back-link svg {
-    transform: rotate(180deg); /* تدوير السهم ليشير لليمين في اللغة العربية */
-    color: var(--primary-color);
-}
-/* ==========  نهاية صفحة الاخبار  ========== */
-
-/* ========== ✅  صفحة المقالات ✅ ========== */
-
-.btn-primary.large {
-    padding: 12px 30px;
-    font-size: 1.1rem;
-    font-weight: 700;
-    border-radius: 8px;
-    background-color: var(--primary-color-dark);
-    color: white;
-    text-decoration: none;
-    transition: var(--transition);
-}
-.btn-primary.large:hover {
-    background-color: #059669;
-}
-
-/* === تنسيق صفحة عرض المقال الفردي (Article Single) === */
-.article-single-section {
-    max-width: 900px; /* لتضييق نطاق القراءة */
-    margin: 40px auto 80px auto;
-    padding: 0 15px;
-}
-/* 1. رجوع + أزرار التحكم في الأعلى */
-.article-actions-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-light);
-}
-.article-controls {
-    display: flex;
-    gap: 10px;
-}
-/* 2. بطاقة المقال الأساسية */
-.article-card.single {
-    background-color: var(--card-bg);
-    padding: 0;
-    border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-    overflow: hidden; /* لضمان عدم خروج الصورة عن زوايا البطاقة المنحنية */
-}
-/* صورة الغلاف */
-.article-cover {
-    width: 100%;
-    height: 400px; /* طول ثابت للغلاف يعطي فخامة للمقال */
-    margin-bottom: 30px;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    border-bottom: 1px solid var(--border-light);
-}
-.article-cover img {
-    width: 100%;
-    height: auto;
-    display: block;
-    object-fit: cover; /* يمنع تمطط الصورة ويجعلها تملأ المساحة */
-}
-.author-info, .date-info {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* إعادة توزيع الحشو الداخلي للنص بعد إلغاء padding البطاقة */
-.article-header, .article-content {
-    padding: 30px 40px;
-}
-
-/* تنسيق العنوان الكبير */
-.article-title {
-    font-size: 2.8rem;
-    font-weight: 800;
-    margin-bottom: 15px;
-    color: var(--text-darker);
-}
-/* المحتوى */
-.article-content {
-    font-size: 1.15rem;
-    line-height: 1.8;
-    color: var(--text-dark);
-}
-/* 3. قسم التعليقات */
-.comments-section {
-    margin-top: 50px;
-    padding: 30px;
-    border-radius: 12px;
-    background-color: var(--card-bg);
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
-}
-.section-title {
-    font-size: 1.5rem;
-    font-weight: 500;
-    color: var(--primary-color-dark);
-    margin-bottom: 30px;
-}
-.section-title .count {
-    font-size: 1.3rem;
-    color: var(--text-medium);
-    margin-right: 10px;
-    font-weight: 600;
-}
-/* نموذج التعليق */
-.add-comment-card {
-    margin-bottom: 30px;
-    padding: 20px;
-    background-color: #f9fafb;
-    border-radius: 8px;
-    border: 1px solid var(--border-light);
-}
-.comment-form .textarea-wrapper {
-    position: relative;
-    margin-bottom: 10px;
-}
-.comment-form textarea {
-    width: 100%;
-    min-height: 100px;
-    padding: 15px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    resize: vertical;
-    font-size: 1rem;
-}
-.comment-form textarea:focus {
-    border-color: var(--primary-color);
-    outline: none;
-}
-.comment-form .char-counter {
-    position: absolute;
-    bottom: 10px;
-    left: 15px;
-    font-size: 0.8rem;
-    color: var(--text-medium);
-    background-color: inherit;
-    padding: 2px 5px;
-    border-radius: 4px;
-}
-.btn-submit-comment {
-    padding: 10px 20px;
-    background-color: var(--accent);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    float: left; /* لتحريك الزر لليسار */
-}
-.btn-submit-comment:hover {
-    background-color: var(--accent-hover);
-}
-.comment-form::after {
-    content: "";
-    display: block;
-    clear: both; /* لإصلاح مشكلة float */
-}
-/* قائمة التعليقات */
-.comments-list {
-    margin-top: 20px;
-}
-.comment-item {
-    padding: 15px;
-    border-left: 4px solid var(--accent);
-    background-color: #f7fdfb;
-    border-radius: 6px;
-    margin-bottom: 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-}
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 8px;
-    border-bottom: 1px dashed var(--border-light);
-    margin-bottom: 10px;
-}
-.comment-author {
-    font-weight: 700;
-    color: var(--text-dark);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.comment-date {
-    font-size: 0.8rem;
-    color: var(--text-medium);
-    font-weight: 400;
-}
-.btn-delete-comment {
-    background-color: transparent;
-    border: 1px solid var(--danger);
-    color: var(--danger);
-    padding: 3px 8px;
-    font-size: 0.75rem;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: var(--transition);
-}
-.btn-delete-comment:hover {
-    background-color: var(--danger);
-    color: white;
-}
-.comment-body {
-    font-size: 1rem;
-    color: var(--text-darker);
-    line-height: 1.6;
-}
-/* حالة عدم وجود تعليقات/تسجيل دخول */
-.no-comments, .login-prompt {
-    padding: 30px;
-    text-align: center;
-    border: 1px solid var(--border-light);
-    border-radius: 8px;
-    background-color: #f7fdfb;
-    margin-top: 20px;
-}
-.login-link {
-    font-weight: 700;
-    color: var(--accent);
-    text-decoration: underline;
-}
-
-/* أزرار الإجراءات */
-.form-actions {
-    display: flex;
-    justify-content: flex-end; /* تحريك الأزرار لليسار في RTL */
-    gap: 15px;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-light);
-}
-.submit-btn {
-    padding: 12px 25px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-/* زر نشر المقال */
-.submit-btn[type="submit"] {
-    background-color: var(--accent);
-    color: white;
-    border: none;
-    order: 1; /* يجعله الزر الأول (الأقصى لليسار في RTL) */
-}
-.submit-btn[type="submit"]:hover {
-    background-color:var(--accent-hover);
-    transform: translateY(-1px);
-}
-/* زر الرجوع/الإلغاء */
-.form-actions a.submit-btn {
-    background-color: #e5e7eb;
-    color: var(--text-dark);
-    border: none;
-    order: 2; /* يجعله الزر الثاني */
-}
-.form-actions a.submit-btn:hover {
-    background-color: #d1d5db;
-}
-/* ==========    نهاية صفحة المقالات   ========== */
-
-
 /* أنيميشن الظهور */
 @keyframes slideDown {
     from { opacity: 0; transform: translateY(-20px); }
     to   { opacity: 1; transform: translateY(0); }
 }
-/* ========== ✅  الازرار ✅ ========== */
-.btn-add {
+/* ========== ✅ نظام الأزرار الموحد ✅ ========== */
+
+/* 1. الحاوية العامة لأزرار النماذج */
+.form-actions {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    background-color: #f0fdf4;
-    color: var(--accent);
-    padding: 14px 28px;
-    border-radius: 50px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: var(--transition);
-    box-shadow: 0 8px 25px rgba(16,185,129,0.3);
-}
-.btn-add:hover {
-    background-color: var(--accent);
-    color: #f0fdf4;
-    transform: translateY(-3px);
-}
-/* أزرار التعديل والحذف (تنسيقات موحدة) */
-.btn-edit, .btn-delete {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    border: none;
-}
-.btn-edit {
-    background-color: var(--edit); 
-    color: #92400e;
-    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
-}
-.btn-edit:hover {
-    background-color: var(--edit-hover);
-    transform: translateY(-2px);
-}
-.btn-delete {
-    background-color: var(--danger);
-    color: white;
-}
-.btn-delete:hover {
-    background-color: var(--danger-hover);
-}
-.btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 12px 25px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-medium);
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.2s;;
-    font-size: 1rem;
-    background-color: transparent;
-}
-.btn-back:hover {
-    color: #0f172a;
-    margin-right: 5px;
-}
-.btn-back svg {
-    width: 20px;
-    height: 20px;
-    color: var(--text-medium);
-    transform: rotate(180deg); /* تدوير السهم ليشير لليمين */
+    flex-direction: row-reverse; /* يضع الزر الأساسي في أقصى اليسار تلقائياً في RTL */
+    justify-content: flex-start; 
+    gap: 15px;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-light);
 }
 
+/* ========== ✅ النظام الاحترافي المعتمد ✅ ========== */
+
+/* 1. القاعدة المشتركة: نجمع كل أسماء الأزرار لضمان توحيد السلوك */
+/* في الملف الرئيسي - أضف .btn-f-action للقائمة الموحدة */
+.btn-primary, .submit-btn, .btn-add, .btn-edit, .btn-delete, 
+.btn-back, .btn-cancel, .btn-small, .btn-f-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+/* تخصيص أزرار البطاقات (Family Card Actions) */
+.btn-f-action {
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+}
+
+/* زر التفاصيل - أخضر */
+.btn-f-view {
+    background-color: #f0fdf4;
+    color: var(--accent);
+    border-color: var(--accent);
+}
+.btn-f-view:hover { background: var(--accent); color: white; }
+
+/* زر التعديل - برتقالي/ذهبي */
+.btn-f-edit {
+    background-color: #fffbeb;
+    color: var(--edit);
+    border-color: var(--edit);
+}
+.btn-f-edit:hover { background: var(--edit); color: white; }
+
+/* زر الحذف - أحمر */
+.btn-f-delete {
+    background-color: #fef2f2;
+    color: var(--danger);
+    border-color: var(--danger);
+}
+.btn-f-delete:hover { background: var(--danger); color: white; }
+/* 2. الأزرار الأساسية (الحجم الطبيعي) */
+.btn-primary, .submit-btn, .btn-edit, .btn-delete, .btn-back {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+/* 3. الألوان والهوية (Specific Styles) */
+.btn-primary, .submit-btn {
+    background-color: var(--accent);
+    color: white;
+}
+.btn-primary:hover, .submit-btn:hover {
+    background-color: var(--accent-hover);
+    transform: translateY(-2px);
+}
+
+.btn-edit { background-color: var(--edit); color: #92400e; }
+.btn-delete { background-color: var(--danger); color: white; }
+
+/* 4. الاستثناءات (أزرار بأشكال خاصة) */
+.btn-add {
+    padding: 14px 28px;
+    border-radius: 50px; /* دائري */
+    background-color: #f0fdf4;
+    color: var(--accent);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+}
+
+/* 7. تنسيق المدخلات الصغيرة */
+.small-input, .small-select {
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
 /* --- نظام التنبيهات الموحد (Global Alerts) --- */
 .alert {
     padding: 1rem 1.25rem;
@@ -2001,308 +897,6 @@ footer {
 .alert-close:hover {
     opacity: 1;
 }
-
-/* ==================== استجابة التصميم (Responsive Design) ==================== */
-/* شاشات التابلت (Tablet - أقل من 1024 بكسل) */
-@media (max-width: 1024px) {
-    .container {
-        padding: 0 15px;
-    }
-    .nav-links {
-        display: none; 
-    }
-    .mobile-menu-toggle {
-        display: flex; 
-    }
-    
-    /* ✅ إخفاء شريط الإحصائيات في التابلت والموبايل لتجنب ازدحام الهيدر */
-    .royal-stats {
-        display: none; 
-    }
-    /* ✅ إعادة وضع زر المستخدم ليكون على الطرف الأيمن بدلاً من الإحصائيات */
-    .user-area {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        right: 15px;
-        left: auto;
-    }
-    
-    /* تخطيطات Grid */
-    .hero-grid {
-        grid-template-columns: 1fr; 
-        gap: 30px;
-    }
-    .logo-card,
-    .info-card {
-        height: auto;
-        padding: 30px;
-    }
-
-    .about-hero {
-        padding: 80px 15px 50px;
-    }
-    .page-title {
-        font-size: 3.5rem;
-    }
-    .subtitle {
-        font-size: 1.4rem;
-    }
-    .member-body {
-        grid-template-columns: 1fr; 
-        gap: 30px;
-    }
-    .profile-picture {
-        order: -1; 
-    }
-}
-/* شاشات الموبايل (Mobile - أقل من 768 بكسل) */
-@media (max-width: 768px) {
-    header {
-        top: 8px;
-        width: calc(100% - 16px);
-        padding: 4px 12px;
-    }
-    nav {
-        padding: 6px 10px;
-    }
-    .logo {
-        font-size: 1.6rem;
-    }
-    .user-btn {
-        padding: 8px 12px;
-    }
-    .avatar {
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-    }
-    .user-btn span {
-        display: none; 
-    }
-    .chevron {
-        margin-right: -4px;
-    }
-    
-    /* الهيرو */
-    .hero-title {
-        font-size: 3rem;
-    }
-    .hero-text {
-        font-size: 1rem;
-        max-width: 100%;
-    }
-    
-    /* البطاقات الرئيسية */
-    .about-grid, 
-    .members-list, 
-    .articles-grid,
-    .news-grid {
-        grid-template-columns: 1fr; 
-        gap: 20px;
-    }
-
-    /* صفحات تسجيل الدخول والإدارة */
-   
-    .admin-card {
-        padding: 30px 20px;
-        border-radius: 20px;
-    }
-   
-    .member-names {
-        font-size: 2.2rem;
-    }
-    .profile-img {
-        width: 200px;
-        height: 200px;
-    }
-    .info-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .info-label {
-        margin-bottom: 4px;
-        min-width: auto;
-    }
-    /* ✅ تنسيقات الموبايل: جعل الأزرار تأخذ عرض 100% */
-    .form-actions {
-        justify-content: center; 
-    }
-    .submit-btn {
-        flex: 1 1 100%; 
-        padding: 14px 20px;
-    }
-}
-
-
-
-
-/* =======================================
-   Media Queries for Responsiveness
-   (Small Screens & Mobile Devices)
-   ======================================= */
-
-/* تطبيق التنسيقات على الأجهزة التي عرضها أقل من 768 بكسل (الموبايل) */
-@media (max-width: 768px) {
-    
-    /* 1. تقليل التباعد الداخلي للبطاقات */
-    .inbox-card .card-body,
-    .send-message-card .card-body,
-    .change-password-card .card-body {
-        padding: 15px;
-    }
-    /* 2. تحسين مظهر رسالة صندوق الوارد */
-    .notification-item {
-        flex-direction: column; /* ترتيب المحتوى والإجراءات عمودياً */
-        align-items: flex-start !important;
-        padding: 15px; /* تباعد داخلي أكبر */
-        margin-bottom: 10px;
-    }
-    .message-content {
-        width: 100%; /* اجعل المحتوى يملأ العرض */
-        padding-right: 0 !important;
-    }
-    .message-content p.mb-1 {
-        /* فصل وقت الرسالة عن اسم المرسل */
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-    }
-    .message-actions {
-        margin-top: 10px; /* تباعد بين نص الرسالة وزر القراءة */
-        width: 100%;
-        text-align: left; /* تحريك زر القراءة لليسار */
-        margin-left: 0 !important;
-    }
-    /* 3. تصغير حجم العناوين لملائمة الشاشة */
-    .card-title {
-        font-size: 1.2rem;
-        padding: 10px 15px !important;
-    }
-
-    /* 4. زر العودة للرئيسية */
-    .btn-lg {
-        padding: 12px 20px;
-        font-size: 1rem;
-    }
-    
-}
-
-/* تطبيق التنسيقات على الأجهزة التي عرضها أقل من 1024 بكسل (التابلت) */
-@media (max-width: 1024px) {
-    /* تفعيل قائمة الموبايل وإخفاء قائمة سطح المكتب */
-    .nav-links {
-        display: none;
-    }
-    .mobile-menu-toggle {
-        display: flex;
-    }
-    header {
-        max-width: 95%;
-        left: 50%;
-        transform: translateX(-50%);
-    }
-
-}
-
-/* الشارة الظاهرة فوق زر المستخدم (Avatar) */
-.notification-badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    background-color: var(--danger); /* أحمر */
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border-radius: 50%;
-    
-    /* وضعها أعلى يمين الصورة الرمزية */
-    position: absolute;
-    top: 5px; 
-    right: 5px; 
-    z-index: 1;
-    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
-    pointer-events: none; /* لمنعها من اعتراض النقرات على الزر */
-}
-
-/* الشارة الظاهرة داخل القائمة المنسدلة (Inline) */
-.notification-badge-inline {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 6px;
-    background-color: var(--danger);
-    color: white;
-    font-size: 0.8rem;
-    font-weight: 700;
-    border-radius: 12px;
-    float: left; /* دفعها إلى أقصى اليسار */
-    margin-top: -2px;
-    margin-left: 10px;
-}
-/* تعديل بسيط لزر المستخدم ليكون موضعاً نسبياً للشارة */
-.user-btn {
-    position: relative; /* مهم لوضع .notification-badge بشكل صحيح */
-}
-
-/* زر الحذف يكون صغيراً وخفيفاً */
-.message-actions .btn-link {
-    font-size: 0.8rem;
-    line-height: 1;
-}
-/* ========== 💡 فئات Flexbox الأساسية المفقودة (بدائل Bootstrap) 💡 ========== */
-/* أضف هذا التنسيق في CSS ليحل محل الفئة المفقودة من Bootstrap */
-.card-footer {
-    padding: 1rem 1.25rem;
-    border-top: 1px solid var(--border); 
-    background-color: #f8f9fa; /* لون فاتح لخلفية التذييل */
-}
-/* d-flex: تفعيل Flexbox */
-.d-flex {
-    display: flex !important;
-}
-
-/* justify-content-center: توسيط المحتوى الأفقي */
-.justify-content-center {
-    justify-content: center !important;
-}
-
-/* d-inline-block: يجعل العنصر يظهر في سطر ويقبل العرض والارتفاع */
-.d-inline-block {
-    display: inline-block !important;
-}
-
-/* d-none: إخفاء العنصر تماماً */
-.d-none {
-    display: none !important;
-}
-
-/*
-   تفعيل الإظهار على مقاسات الشاشات المتوسطة (md) والتابلت (sm)
-   نستخدم Media Query لتفعيل هذه الفئات فقط عند تجاوز عرض شاشة معين.
-   سنفترض أن مقاس الموبايل ينتهي عند 576px (مقاس sm القياسي) أو 768px (مقاس md القياسي)
-*/
-
-/* 💡 d-sm-inline-block (نظهره عند مقاس التابلت فما فوق) */
-@media (min-width: 576px) { 
-    .d-sm-inline-block {
-        display: inline-block !important;
-    }
-}
-
-/* 💡 d-md-inline-block (نظهره عند مقاس أكبر) */
-@media (min-width: 768px) {
-    .d-md-inline-block {
-        display: inline-block !important;
-    }
-}
-
-/* ========== 💡 تنسيقات الترقيم الأساسية 💡 ========== */
 /* ========== ترقيم الصفحات (Pagination) ========= */
 .pagination {
     display: flex; /* يجعل عناصر li تظهر أفقياً */
@@ -2389,8 +983,198 @@ footer {
     border-color: var(--accent);
     font-weight: 600;
 }
-@media (max-width: 768px) {
-    .page-link {
-        padding: 0.40rem 0.65rem;
+/* ============================================================
+   تنسيق الاستجابة الموحد (Unified Responsive Design)
+   ============================================================ */
+
+/* 1. الشاشات المتوسطة والتابلت (أقل من 1024 بكسل) */
+@media (max-width: 1024px) {
+    .container { padding: 0 15px; }
+    
+    /* الهيدر والقائمة */
+    .nav-links { display: none; }
+    .mobile-menu-toggle { display: flex; }
+    header {
+        max-width: 95%;
+        left: 50%;
+        transform: translateX(-50%);
     }
- }
+
+    /* إخفاء الإحصائيات لتوفير مساحة */
+    .royal-stats { display: none; }
+    
+    .user-area {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 15px;
+        left: auto;
+    }
+
+    /* توزيع الهيرو والمعلومات */
+    .hero-grid, .member-body {
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    .logo-card, .info-card { height: auto; padding: 30px; }
+    .profile-picture { order: -1; }
+
+    .about-hero { padding: 80px 15px 50px; }
+    .page-title { font-size: 3rem; }
+}
+
+/* 2. شاشات الموبايل (أقل من 768 بكسل) - القسم الشامل */
+@media (max-width: 768px) {
+    
+    /* الهيدر والعناصر العلوية */
+    header {
+        top: 8px;
+        width: calc(100% - 16px);
+        padding: 4px 12px;
+    }
+    .logo { font-size: 1.5rem; }
+    .user-btn span { display: none; } /* إخفاء اسم المستخدم والاكتفاء بالأيقونة */
+    .avatar { width: 36px; height: 36px; font-size: 1rem; }
+
+    /* العناوين والنصوص */
+    .hero-title { font-size: 2.5rem; }
+    .page-title { font-size: 1.8rem; }
+    .member-names { font-size: 2rem; }
+
+    /* تحويل كل الشبكات (Grids) لعمود واحد */
+    .hero-grid, .about-grid, .news-grid, .articles-grid, 
+    .admin-grid, .members-list, .form-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+
+    /* البطاقات والجداول */
+    .admin-section-card, .news-card, .article-card, .about-card, .inbox-card .card-body {
+        padding: 15px;
+        border-radius: 15px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -15px;
+        padding: 0 15px;
+    }
+
+    /* النماذج والأزرار (العرض الكامل لسهولة الضغط) */
+    .form-card { padding: 25px 15px; border-radius: 0; border: none; box-shadow: none; }
+    .submit-btn, .btn-action-news, .btn-add, .btn-edit, .btn-delete, .btn-lg {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 20px;
+        display: flex;
+    }
+
+    /* تحسين الرسائل والإشعارات */
+    .notification-item {
+        flex-direction: column;
+        align-items: flex-start !important;
+        padding: 15px;
+    }
+    .message-content { width: 100%; padding-right: 0 !important; }
+    .message-actions { margin-top: 10px; width: 100%; text-align: left; }
+
+    /* تفاصيل المقالات والأخبار */
+    .featured-media { margin: 20px -15px; border-radius: 0; }
+    .article-body-content { font-size: 1.1rem; line-height: 1.8; }
+    
+    /* شريط الترقيم */
+    .page-link { padding: 0.40rem 0.65rem; }
+}
+
+/* 3. شاشات الموبايل الصغيرة جداً (أقل من 480 بكسل) */
+@media (max-width: 480px) {
+    .bismillah { font-size: 1.1rem; }
+    .grid-buttons { grid-template-columns: 1fr; }
+    .profile-img { width: 180px; height: 180px; }
+}
+
+/* 4. كلاسات التحكم في الظهور (Helper Classes) */
+@media (min-width: 576px) { .d-sm-inline-block { display: inline-block !important; } }
+@media (min-width: 768px) { .d-md-inline-block { display: inline-block !important; } }
+
+/* الشارة الظاهرة فوق زر المستخدم (Avatar) */
+.notification-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background-color: var(--danger); /* أحمر */
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 50%;
+    
+    /* وضعها أعلى يمين الصورة الرمزية */
+    position: absolute;
+    top: 5px; 
+    right: 5px; 
+    z-index: 1;
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+    pointer-events: none; /* لمنعها من اعتراض النقرات على الزر */
+}
+
+/* الشارة الظاهرة داخل القائمة المنسدلة (Inline) */
+.notification-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background-color: var(--danger);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 12px;
+    float: left; /* دفعها إلى أقصى اليسار */
+    margin-top: -2px;
+    margin-left: 10px;
+}
+/* تعديل بسيط لزر المستخدم ليكون موضعاً نسبياً للشارة */
+.user-btn {
+    position: relative; /* مهم لوضع .notification-badge بشكل صحيح */
+}
+
+/* زر الحذف يكون صغيراً وخفيفاً */
+.message-actions .btn-link {
+    font-size: 0.8rem;
+    line-height: 1;
+}
+/* ========== 💡 فئات Flexbox الأساسية المفقودة (بدائل Bootstrap) 💡 ========== */
+/* أضف هذا التنسيق في CSS ليحل محل الفئة المفقودة من Bootstrap */
+.card-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border); 
+    background-color: #f8f9fa; /* لون فاتح لخلفية التذييل */
+}
+/* d-flex: تفعيل Flexbox */
+.d-flex {
+    display: flex !important;
+}
+
+/* justify-content-center: توسيط المحتوى الأفقي */
+.justify-content-center {
+    justify-content: center !important;
+}
+
+/* d-inline-block: يجعل العنصر يظهر في سطر ويقبل العرض والارتفاع */
+.d-inline-block {
+    display: inline-block !important;
+}
+
+/* d-none: إخفاء العنصر تماماً */
+.d-none {
+    display: none !important;
+}
+
+
+
+
+/* ========== 💡 تنسيقات الترقيم الأساسية 💡 ========== */

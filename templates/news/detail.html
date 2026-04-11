@@ -1,105 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ item.title }} - الأخبار{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/news.css') }}">
+{% endblock %}
 {% block content %}
-<style>
-    /* تنسيقات الصفحة الفاخرة */
-    .news-detail-page {
-        padding: 40px 0;
-        background-color: #f9fbff;
-        min-height: 100vh;
-    }
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        color: #6c757d;
-        font-weight: 600;
-        margin-bottom: 25px;
-        transition: color 0.3s;
-    }
-    .back-link:hover { color: #007bff; }
-
-    .news-article {
-        background: #fff;
-        padding: 40px;
-        border-radius: 30px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-        max-width: 1000px;
-        margin: 0 auto;
-    }
-
-    .article-header { text-align: center; margin-bottom: 40px; }
-    .article-title {
-        font-size: 2.8rem;
-        font-weight: 800;
-        color: #2c3e50;
-        line-height: 1.3;
-        margin-bottom: 20px;
-    }
-    .article-meta {
-        display: flex;
-        justify-content: center;
-        gap: 25px;
-        color: #7f8c8d;
-        font-size: 1rem;
-    }
-    .article-meta span { display: flex; align-items: center; gap: 6px; }
-
-    /* حاوية الوسائط الملكية */
-    .featured-media {
-        margin: 30px 0;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-        background: #000;
-    }
-    .featured-media img, .featured-media video {
-        width: 100%;
-        display: block;
-        max-height: 600px;
-        object-fit: contain;
-    }
-
-    .article-content {
-        font-size: 1.3rem;
-        line-height: 2;
-        color: #34495e;
-        text-align: justify;
-        margin: 40px 0;
-    }
-
-    /* أزرار الإدارة */
-    .article-actions {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        padding-top: 30px;
-        border-top: 2px solid #f1f3f5;
-    }
-    .btn-edit, .btn-delete {
-        padding: 12px 30px;
-        border-radius: 15px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        border: none;
-    }
-    .btn-edit { background: #ffc107; color: #000; }
-    .btn-edit:hover { background: #e0a800; transform: translateY(-3px); }
-    .btn-delete { background: #ff4d4d; color: #fff; cursor: pointer; }
-    .btn-delete:hover { background: #cc0000; transform: translateY(-3px); }
-
-    @media (max-width: 768px) {
-        .article-title { font-size: 1.8rem; }
-        .news-article { padding: 20px; }
-    }
-</style>
-
 <section class="news-detail-page">
     <div class="container">
         
@@ -111,9 +15,9 @@
         </a>
 
         <article class="news-article">
-            <header class="article-header">
-                <h1 class="article-title">{{ item.title }}</h1>
-                <div class="article-meta">
+            <header class="news-article-header">
+                <h1 class="news-article-title">{{ item.title }}</h1>
+                <div class="news-article-meta">
                     <span class="meta-author">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -151,7 +55,7 @@
             </div>
 
             {% if can_edit or can_delete %}
-            <div class="article-actions">
+            <div class="news-article-actions">
                 {% if can_edit %}
                 <a href="/news/edit/{{ item.id }}" class="btn-edit">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

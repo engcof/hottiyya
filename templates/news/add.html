@@ -19,20 +19,20 @@
             
             <div class="form-group">
                 <label>عنوان الخبر <span class="required">*</span></label>
-                <input type="text" name="title" class="input-field" placeholder="اكتب عنواناً واضحاً..." required>
+                <input type="text" name="title" class="input-field" value="{{ form_data.get('title', '') }}"placeholder="اكتب عنواناً واضحاً..." required>
             </div>
 
             <div class="form-group">
                 <label>تفاصيل الخبر <span class="required">*</span></label>
-                <textarea name="content" class="input-field" rows="8" placeholder="اكتب تفاصيل الخبر هنا..." required></textarea>
+                <textarea name="content" class="input-field" rows="8" value="{{ form_data.get('content', '') }}"placeholder="اكتب تفاصيل الخبر هنا..." required></textarea>
             </div>
 
             <div class="form-grid">
                 <div class="form-group">
                     <label>الناشر</label>
-                    <input type="text" value="{{ user.username or 'غير معروف' }}" readonly class="input-field readonly-input">
+                    <input type="text" name="author" value="{{ user.username or 'غير معروف' }}" readonly class="input-field readonly-input">
                 </div>
-
+                
                 <div class="form-group">
                     <label>صورة الخبر</label>
                     <div class="file-input-wrapper">
@@ -58,8 +58,11 @@
                     <i class="fas fa-paper-plane"></i> نشر الخبر
                 </button>
             </div>
-            
-            <a href="/news" class="cancel-text-link">رجوع للأخبار</a>
+              <div class="form-footer">
+                <a href="/news"  class="cancel-text-link">
+                    <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>إلغاء والعودة للأخبار
+                </a>
+            </div>
         </form>
     </div>
 </section>
