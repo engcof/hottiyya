@@ -16,11 +16,18 @@ def has_permission(user_id: int, permission: str) -> bool:
         return False
 
 def can(user: dict, perm: str) -> bool:
-    """المساعد الشامل الذي تستخدمه في القوالب والراوترات"""
     if not user:
         return False
-    # الأدمن يمر دائماً
+        
+    # 1. الأدمن له كامل الصلاحيات دائماً (بيانات من الجلسة)
     if user.get("role") == "admin":
         return True
-    # التحقق للمستخدمين العاديين من قاعدة البيانات
-    return bool(user.get("id") and has_permission(user.get("id"), perm))       
+    
+    # 2. للمستخدم العادي: نأخذ الـ ID فقط من الجلسة 
+    user_id = user.get("id")
+    if not user_id:
+        return False
+        
+    # 3. نسأل قاعدة البيانات "الآن" (Live Check)
+    # هذا يضمن أنه بمجرد ضغطك على "حفظ" في لوحة التحكم، يظهر الزر عند المستخدم في الرشة القادمة
+    return has_permission(user_id, perm)

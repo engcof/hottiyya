@@ -26,14 +26,12 @@ def is_safe_html(content):
     forbidden_tags = ["<script", "javascript:", "onclick", "<iframe", "<object"]
     return not any(tag in content.lower() for tag in forbidden_tags)
 
-
 # === عرض قائمة المقالات (باستخدام الخدمة) ===
 @router.get("/", response_class=HTMLResponse)
 async def list_articles(request: Request, page: int = 1):
     user = request.session.get("user")
     can_add = can(user, "add_article")
     can_delete = can(user, "delete_article") 
-
 
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
