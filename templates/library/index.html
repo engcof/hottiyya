@@ -147,9 +147,9 @@
                     {# الترقيم الذكي #}
                     {% for p in page_numbers %}
                         <li class="page-item {% if p == current_page %}active{% endif %} 
-                            {# إخفاء الأرقام المتوسطة في الموبايل لعدم تمدد الشاشة #}
-                            {% if p != current_page and p != 1 and p != total_pages %}
-                                d-none d-sm-inline-block 
+                            {# الإخفاء الصارم في الموبايل #}
+                            {% if p != 1 and p != total_pages and p != current_page %}
+                                d-none d-md-inline-block 
                             {% endif %}">
                             <a class="page-link" href="/library/?page={{ p }}{{ query_params }}">{{ p }}</a>
                         </li>

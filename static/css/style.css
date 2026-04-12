@@ -1175,12 +1175,28 @@ footer {
     display: inline-block !important;
 }
 
-/* d-none: إخفاء العنصر تماماً */
-.d-none {
-    display: none !important;
+/* إخفاء افتراضي للعناصر المحددة */
+.d-none { 
+    display: none !important; 
 }
 
+/* الإظهار في الشاشات من حجم التابلت (768px) فما فوق */
+@media (min-width: 768px) { 
+    .d-md-inline-block { 
+        display: inline-block !important; 
+    } 
+}
 
+/* تحسين شكل الأزرار في الموبايل */
+@media (max-width: 767px) {
+    .page-link {
+        padding: 8px 12px !important;
+        font-size: 0.85rem !important;
+    }
+    .pagination {
+        gap: 4px !important;
+    }
+}
 
 
 /* ========== 💡 تنسيقات الترقيم الأساسية 💡 ========== */

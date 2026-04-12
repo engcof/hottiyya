@@ -18,19 +18,8 @@ from security.session import set_cache_headers
 from utils.has_permissions import can
 from utils.time_utils import calculate_age_details
 from services.analytics import log_action
-from services.family_service import ( 
-    search_and_fetch_names, 
-    fetch_names_no_search, 
-    get_member_details, 
-    is_code_exists,
-    add_new_member,
-    update_member_data,
-    get_member_for_edit,
-    delete_member,
-    get_next_available_code,
-    
-    get_family_table_backup_text
-)
+from services.family_service import FamilyService
+
 
 load_dotenv()
 IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
@@ -47,6 +36,7 @@ def validate_parent_code(code_value, code_name):
         return f"كود {code_name} غير صحيح"
     return None
 # ====================== قائمة الأعضاء ======================
+
 @router.get("/", response_class=HTMLResponse)
 async def show_names(
     request: Request, 
@@ -55,55 +45,38 @@ async def show_names(
     success: Optional[str] = Query(None)
 ):
     user = request.session.get("user")
-    if not user:
-        return RedirectResponse("/auth/login")
-    
-    # 2. التحقق من صلاحية view_tree (الأدمن مستثنى تلقائياً داخل دالة can)
-    if not can(user, "view_tree"):
-        # تحويل المستخدم للرئيسية مع رسالة خطأ إذا لم يملك الصلاحية
+    if not user or not can(user, "view_tree"):
         return RedirectResponse("/?error=no_permission")
 
     can_add    = can(user, "add_member")
     can_edit   = can(user, "edit_member")
     can_delete = can(user, "delete_member")
 
-    # 💡 يجب إضافة توليد وتخزين الرمز هنا (إذا لم يكن موجودًا)
     csrf_token = generate_csrf_token() 
     request.session["csrf_token"] = csrf_token
 
-    # ----------------------------------------------------
-    # 1. معالجة رسائل النجاح 💡
-    # ----------------------------------------------------
+    # معالجة رسائل النجاح
     success_message = None
     if success == "member_deleted":
         success_message = "✅ تم حذف العضو بنجاح."
     elif success == "member_updated":
         success_message = "✅ تم تحديث بيانات العضو بنجاح."
-    # ----------------------------------------------------
-    # 1. استدعاء دالة الخدمة لجلب البيانات (مع معالجة البحث)
-    # ----------------------------------------------------
+
+    # 💡 استدعاء الكلاس FamilyService
     search_query = q.strip() if q else None
     
-    if search_query:
-        # جلب البيانات مع البحث
-        members, current_page, totals_pages, total_count = search_and_fetch_names(search_query, page)
-    else:
-        # جلب البيانات بدون بحث
-        members, current_page, totals_pages, total_count = fetch_names_no_search(page)
+    # لاحظ أننا نستخدم FamilyService دائماً الآن
+    members, current_page, totals_pages, total_count = FamilyService.search_and_fetch_names(search_query or "", page)
         
-    # ----------------------------------------------------
-    # 2. توليد قائمة أرقام الصفحات (Pagination Logic) - بقي كما هو
-    # ----------------------------------------------------
-    
-    PAGES_TO_SHOW = 7  # (يمكنك اختيار 5 أو 7 حسب الرغبة)
+    # منطق الترقيم (Pagination)
+    PAGES_TO_SHOW = 7
     page_numbers = set()
-    
     page_numbers.add(1)
     if totals_pages > 1:
         page_numbers.add(totals_pages)
         
-    start = max(2, current_page - PAGES_TO_SHOW // 2)
-    end = min(totals_pages - 1, current_page + PAGES_TO_SHOW // 2)
+    start = max(2, page - PAGES_TO_SHOW // 2)
+    end = min(totals_pages - 1, page + PAGES_TO_SHOW // 2)
     
     if start <= 2:
         end = min(totals_pages - 1, PAGES_TO_SHOW + 1)
@@ -113,87 +86,49 @@ async def show_names(
     for p in range(start, end + 1):
         if p > 1 and p < totals_pages:
             page_numbers.add(p)
-
     page_numbers = sorted(list(page_numbers))
-
     
-    # ----------------------------------------------------
-    # 3. عرض النتيجة
-    # ----------------------------------------------------
     response = templates.TemplateResponse("family/names.html", {
-        "request": request,
-        "user": user,
-        "members": members,
-        "current_page": current_page,    
-        "totals_pages": totals_pages,     
-        "page_numbers": page_numbers, 
-        "q": q,
-        "csrf_token": csrf_token,
-        "can_add": can_add,
-        "can_edit": can_edit,
-        "can_delete": can_delete,
-        "success": success_message
+        "request": request, "user": user, "members": members,
+        "current_page": current_page, "totals_pages": totals_pages,     
+        "page_numbers": page_numbers, "q": q,
+        "csrf_token": csrf_token, "can_add": can_add, "can_edit": can_edit,
+        "can_delete": can_delete, "success": success_message
     })
     set_cache_headers(response)
     return response
-
 # ====================== تفاصيل العضو ======================
 @router.get("/details/{code}", response_class=HTMLResponse)
 async def name_details(request: Request, code: str):
     user = request.session.get("user")
-    if not user:
-        return RedirectResponse("/auth/login")
+    if not user: return RedirectResponse("/auth/login")
 
-    # 1. استدعاء دالة الخدمة لجلب جميع التفاصيل المطلوبة
-    details = get_member_details(code)
-
+    details = FamilyService.get_member_details(code)
     if not details:
         raise HTTPException(status_code=404, detail="العضو غير موجود")
     
-    # 💡 الخطوة الجديدة: حساب تفاصيل العمر والوفاة
-   
-
-    # 2. تفريغ البيانات من قاموس الـ details لتبسيط التمرير للقالب
-    member = details["member"]
-    info = details["info"]
-    picture_url = details["picture_url"]
-    full_name_no_nick = details["full_name"]
-    display_nick_name = details["nick_name"]
-    mother_full_name = details["mother_full_name"]
-    wives = details["wives"]
-    husbands = details["husbands"]
-    children = details["children"]
-    gender = details["gender"]
-    dob_str = info.get("d_o_b")
-    dod_str = info.get("d_o_d")
+    # 💡 استخراج البيانات لتتوافق مع أسماء المتغيرات في القالب
+    member_data = details["member"] 
     
-   #
-    db_age_at_death = info.get("age_at_death") 
-    age_details = calculate_age_details(dob_str, dod_str)
+    # حساب العمر
+    age_details = calculate_age_details(member_data.get("d_o_b"), member_data.get("d_o_d"))
+    db_age = member_data.get("age_at_death")
+    if db_age is not None and str(db_age).isdigit():
+        age_details["age_at_death"] = int(db_age)
 
-    # 💡 التعديل: ضمان تحويل القيمة إلى عدد صحيح (int) إذا كانت غير None وليست سلسلة نصية فارغة
-    final_age_at_death = None
-
-    if db_age_at_death is not None and db_age_at_death != '':
-        try:
-            # تحويلها إلى int لضمان أنها رقم
-            final_age_at_death = int(db_age_at_death)
-        except (TypeError, ValueError):
-            # في حالة فشل التحويل (وهذا لا ينبغي أن يحدث إذا كانت البيانات نظيفة)
-            final_age_at_death = None
-
-    if final_age_at_death is not None:
-        age_details["age_at_death"] = final_age_at_death
-    # 3. عرض النتيجة
     response = templates.TemplateResponse("family/details.html", {
-        "request": request, "user": user, "member": member, "info": info,
-        "picture_url": picture_url, 
-        "full_name": full_name_no_nick,     
-        "nick_name": display_nick_name,     
-        "mother_full_name": mother_full_name, 
+        "request": request,
+        "user": user,
+        "member": member_data,     # يحتوي على البيانات الأساسية (code, name, etc)
+        "info": member_data,       # 💡 نمرر نفس القاموس باسم info لأن القالب يستخدمه
+        "full_name": details["full_name"],
+        "mother_full_name": details["mother_name"],
+        "children": details["children"],
+        "picture_url": details["picture_url"],
         "age_details": age_details,
-        "wives": wives,
-        "husbands": husbands, "children": children, "gender": gender
+        "gender": member_data.get("gender"),
+        "wives": details.get("wives", []), # تأكد من وجودها في السيرفس أو أضفها
+        "husbands": details.get("husbands", [])
     })
     set_cache_headers(response)
     return response
@@ -359,7 +294,7 @@ async def add_name(
     # === 11. تحقق من تكرار الكود في قاعدة البيانات (باستخدام الخدمة) ===
     elif not error:
         # استخدام دالة الخدمة
-        if is_code_exists(code):
+        if FamilyService.is_code_exists(code):
             error = "هذا الكود مستخدم من قبل! اختر كودًا آخر."
 
     # === 12. رفع الصورة (نوع الملف فقط) ===
@@ -375,25 +310,30 @@ async def add_name(
     # ================================
     if not error:
         try:
-            # 💡 تجميع البيانات لإرسالها لطبقة الخدمة
             member_data = {
-                "code": code, "name": name, "f_code": f_code, "m_code": m_code,
-                "w_code": w_code, "h_code": h_code, "relation": relation, 
-                "level": level_int, 
+                "code": code, 
+                "name": name, 
+                "f_code": f_code, 
+                "m_code": m_code,
+                "w_code": w_code, 
+                "h_code": h_code, 
+                "relation": relation, 
+                "level": level_int,  # 👈 تغيير من level إلى level_int لضمان إرسال رقم صحيح
                 "nick_name": nick_name, 
-                "d_o_b": d_o_b, "d_o_d": d_o_d, 
-                "gender": gender, "email": email, "phone": phone,
-                "address": address, "p_o_b": p_o_b, "status": status
+                "d_o_b": d_o_b if d_o_b else None, # التأكد من تمرير None إذا كانت فارغة
+                "d_o_d": d_o_d if d_o_d else None,
+                "gender": gender, 
+                "email": email, 
+                "phone": phone,
+                "address": address, 
+                "p_o_b": p_o_b, 
+                "status": status
             }
-            # 1. تنفيذ الحفظ الفعلي في قاعدة البيانات أولاً
-            add_new_member(member_data, picture, ext)
-
-            # 2. 🟢 هنا المكان الصحيح للسجل (بعد نجاح الحفظ فقط)
-            log_action(
-                user_id=user['id'], 
-                action="إضافة فرد", 
-                details=f"تم إضافة {name} بنجاح إلى شجرة العائلة"
-            )
+            # 💡 استدعاء الدالة من الكلاس
+            # داخل دالة add_name بعد التحقق من الصورة
+            ext = os.path.splitext(picture.filename)[1].lower() if picture.filename else None
+            FamilyService.add_new_member(member_data, picture, ext) # أضف ext هنا
+            log_action(user['id'], "إضافة فرد", f"تم إضافة {name}")
 
             success = f"تم حفظ {name} بنجاح!"
 
@@ -413,7 +353,8 @@ async def add_name(
             
         except Exception as e:
             # 💡 إذا حدث خطأ في قاعدة البيانات، يتم تعيين رسالة الخطأ والاستمرار في مسار الفشل أدناه
-            error = "حدث خطأ أثناء الحفظ. حاول مرة أخرى."
+           print(f"DATABASE ERROR: {e}") # 👈 سيظهر لك في الـ Terminal سبب المشكلة بالضبط
+           error = f"حدث خطأ أثناء الحفظ: {str(e)}" # سيظهر الخطأ للمستخدم مؤقتاً للتشخيص
            
     # ----------------------------------------------------
     # 💡 مسار الفشل الموحد (Failure Path)
@@ -444,12 +385,12 @@ async def suggest_code(prefix: str): # نستخدم prefix بدلاً من lette
         return {"next_code": ""}
     
     # نرسل البادئة كاملة للدالة
-    next_code = get_next_available_code(prefix)
+    next_code = FamilyService.get_next_code(prefix)
     return {"next_code": next_code}
 
 @router.get("/check-code-availability")
 async def check_code(code: str):
-    exists = is_code_exists(code.strip().upper())
+    exists = FamilyService.is_code_exists(code.strip().upper())
     return {"available": not exists}
 
 # ====================== تعديل عضو ======================
@@ -463,7 +404,7 @@ async def edit_name_form(request: Request, code: str):
     request.session["csrf_token"] = csrf_token
 
     # 1. استدعاء دالة الخدمة لجلب البيانات
-    details = get_member_for_edit(code)
+    details = FamilyService.get_member_for_edit(code)
 
     if not details:
         return templates.TemplateResponse("family/edit_name.html", {
@@ -615,14 +556,15 @@ async def update_name(request: Request,
             # 💡 تجميع البيانات لإرسالها لطبقة الخدمة
             member_data = {
                 "name": name, "f_code": f_code, "m_code": m_code, "w_code": w_code, 
-                "h_code": h_code, "relation": relation, "level_int": level_int, 
+                "h_code": h_code, "relation": relation, "level": level_int, 
                 "nick_name": nick_name, "gender": gender, 
                 "d_o_b": d_o_b, "d_o_d": d_o_d, 
                 "email": email, "phone": phone, "address": address, 
                 "p_o_b": p_o_b, "status": status
             }
             # استدعاء دالة الخدمة للتحديث
-            update_member_data(code, member_data, picture, ext)
+            ext = os.path.splitext(picture.filename)[1].lower() if picture.filename else None
+            FamilyService.update_member_data(code, member_data, picture, ext)
 
             # 2. 🟢 هنا المكان الصحيح للسجل (بعد نجاح الحفظ فقط)
             log_action(
@@ -636,23 +578,33 @@ async def update_name(request: Request,
           
         except Exception as e:
             # إذا فشلت عملية قاعدة البيانات (حالة استثناء)
-            error = "حدث خطأ أثناء التحديث. حاول مرة أخرى."
+            print(f"DATABASE ERROR: {e}") # 👈 سيظهر لك في الـ Terminal سبب المشكلة بالضبط
+            error = f"حدث خطأ أثناء التحديث: {str(e)}" # سيظهر الخطأ للمستخدم مؤقتاً للتشخيص
+        
     
     # ------------------------------------------------------------------
     # 💡 مسار الفشل (Failure Path)
     # يتم تنفيذه فقط إذا فشل التحقق الأولي أو فشل تحديث قاعدة البيانات
     # ------------------------------------------------------------------
     
-    details = get_member_for_edit(code) # استدعاء دالة الخدمة مرة واحدة
+    details = FamilyService.get_member_for_edit(code) # استدعاء دالة الخدمة مرة واحدة
 
     # 💡 يتم تعيين المتغيرات هنا لضمان أن القالب يجدها
     if details:
         member = details["member"]
         info = details["info"]
         picture_url = details["picture_url"]
+        member["name"] = name
+        member["level"] = level
+        member["nick_name"] = nick_name
+        info["phone"] = phone
+        info["email"] = email
+        info["address"] = address
+        info["p_o_b"] = p_o_b
+        info["status"] = status
     else:
         # إذا لم يتم العثور على العضو (في حالة خطأ حرج)، نستخدم بيانات النموذج الحالية قدر الإمكان
-        member = {"code": code, "name": name, "level": level_int, "nick_name": nick_name}
+        member = {"code": code, "name": name, "level": level, "nick_name": nick_name}
         info = {"d_o_b": d_o_b, "d_o_d": d_o_d, "email": email, "phone": phone, "address": address, "p_o_b": p_o_b, "status": status}
         picture_url = None
 
@@ -678,33 +630,17 @@ async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
     # 2. التحقق من CSRF
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
-    
-    # 3. استدعاء دالة الخدمة للحذف
     try:
-        # تنفيذ الحذف الفعلي من قاعدة البيانات
-        delete_member(code)
-        
-        # 🟢 إضافة سجل النشاط هنا (بعد نجاح الحذف وقبل التوجيه)
-        # لم نضف اسم المستخدم داخل النص لمنع التكرار في الجدول
-        log_action(
-            user_id=user['id'], 
-            action="حذف فرد", 
-            details=f"تم حذف العضو صاحب الكود: {code} نهائياً من شجرة العائلة"
-        )
-        
-        # 4. التوجيه بعد النجاح
+        # 💡 الحذف عبر الكلاس
+        FamilyService.delete_member(code)
+        log_action(user['id'], "حذف فرد", f"الكود: {code}")
         return RedirectResponse("/names?success=member_deleted", status_code=303)
-        
-    except Exception as e:
-        # في حال فشل الحذف، لن يتم تسجيل أي نشاط في السجل الشامل
-        raise HTTPException(status_code=500, detail=f"فشل الحذف للعضو {code}.")
-    
-
-
-
+    except Exception:
+        raise HTTPException(status_code=500)
+  
 @router.get("/export/table-backup-txt")
 async def export_table_backup():
-    content = get_family_table_backup_text()
+    content = FamilyService.get_family_table_backup_text()
     
     if not content:
         return Response(content="الجدول فارغ", media_type="text/plain")

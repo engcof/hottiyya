@@ -74,28 +74,17 @@
                     <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
                         <a class="page-link" href="/names?page={{ current_page - 1 }}{{ query_params }}">السابق</a>
                     </li>
-                    
-                    {% set prev_p = 0 %}
+                   
                     {% for p in page_numbers %}
-                                
                         <li class="page-item {% if p == current_page %}active{% endif %} 
-                                
-                                /* 💡 المنطق الجديد: أخفِ الرقم p على الأجهزة الصغيرة (sm) إذا لم يكن: */
-                                /* 1. الصفحة الحالية (active) */
-                                /* 2. الصفحة الأولى (p == 1) */
-                                /* 3. الصفحة الأخيرة (p == totals_pages) */
-                                
-                                {% if p != current_page and p != 1 and p != totals_pages %}
-                                        d-none d-sm-inline-block 
-                                {% endif %}
-                                
-                                ">
+                            {# الإخفاء الصارم في الموبايل #}
+                            {% if p != 1 and p != totals_pages and p != current_page %}
+                                d-none d-md-inline-block 
+                            {% endif %}">
+                            
                             <a class="page-link" href="/names?page={{ p }}{{ query_params }}">{{ p }}</a>
                         </li>
-                        
-                        {% set prev_p = p %}
                     {% endfor %}
-
                     <li class="page-item {% if current_page == totals_pages %}disabled{% endif %}">
                         <a class="page-link" href="/names?page={{ current_page + 1 }}{{ query_params }}">التالي</a>
                     </li>
