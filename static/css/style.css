@@ -39,18 +39,22 @@ h1, h2, h3, .logo, .page-title {
   --border: #e2e8f0;
   --glass: rgba(255, 255, 255, 0.75);
   --glass-strong: rgba(255, 255, 255, 0.92);
+  --primary: #10b981;        
+  --primary-hover: #059669;
   --accent: #10b981;        
   --accent-hover: #059669;
   --edit: #fcd34d;
   --edit-hover: #f59e0b;
   --danger:#ef4444;
   --danger-hover:#dc2626;
-  --shadow:0 8px 32px rgba(0,0,0,0.08);
-  --shadow1:0 10px 40px rgba(0,0,0,0.1);
+  --shadow:   0 4px 12px rgba(0,0,0,0.05);
+  --shadow1: 0 8px 32px rgba(0,0,0,0.08);
   --radius: 16px;
-  --radius-sm: 12px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 /* === Glassmorphism خفيف وأنيق === */
 .glass {
   background: var(--glass);
@@ -80,7 +84,7 @@ header {
     border:1px solid var(--border);
     border-radius:20px;
     box-shadow:var(--shadow);
-    z-index:1000;
+    z-index:2000;
     transition:var(--transition);
 }
 .header-container {
@@ -174,8 +178,9 @@ nav {
 }
 .dropdown {
     position: absolute;
-    top: calc(100% + 12px);
+   top: calc(100% + 15px);
     right: 0;
+    pointer-events: none;
     width: 260px;
     background: white;
     border-radius: 18px;
@@ -188,6 +193,7 @@ nav {
     overflow: hidden;
 }
 .dropdown.show {
+    pointer-events: auto;
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
@@ -395,7 +401,7 @@ footer {
     left: 0;
     right: 0;
     bottom: 0;
-    
+    pointer-events: none;
     /* ✅ مسار الصورة: يجب التأكد من صحة هذا المسار! */
     background-image: url('/static/uploads/Hottiyya1.jpg'); 
     background-size: contain; /* لتناسب الصورة دون قص */

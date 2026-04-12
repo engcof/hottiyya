@@ -109,7 +109,18 @@
     width: 100%; height: 100%;
     object-fit: cover;
 }
-
+.article-actions-top {
+    
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-light);
+}
+.article-controls {
+    display: flex;
+    gap: 10px;
+}
 .article-header, .article-content { padding: 30px 40px; }
 
 .article-title-big {

@@ -2,6 +2,7 @@
 {% block title %}صفحتي الشخصية - {{ user.username }}{% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/profile.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
 {% endblock %}
 {% block content %}
 <section class="profile-page-wrapper">
@@ -19,7 +20,7 @@
         {% endif %}
 
         {% if error %}
-        <div class="custom-alert alert-danger">{{ error }}</div>
+        <div class="custom-alert alert-danger flash-message">{{ error }}</div>
         {% endif %}
    
         <div class="profile-section-card shadow-soft">
@@ -103,11 +104,11 @@
             <div class="section-header">
                 <h4>✉️ إرسال رسالة جديدة</h4>
             </div>
-            <form method="post" action="/profile/send-message" class="custom-form">
+            <form method="post" action="/profile/send-message" >
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 
                 {% if user.role == 'admin' %}
-                    <div class="form-group-custom">
+                    <div class="form-group">
                         <label>المستلم:</label>
                         <select name="recipient_id" class="input-field" required>
                             <option value="">اختر المستخدم...</option>
@@ -121,7 +122,7 @@
                     <div class="info-note">سيتم توجيه الرسالة إلى إدارة الموقع.</div>
                 {% endif %}
                 
-                <div class="form-group-custom">
+                <div class="form-group">
                     <label>نص الرسالة:</label>
                     <textarea name="message" class="input-field" rows="3" required></textarea>
                 </div>
@@ -131,27 +132,30 @@
                 {% endif %}
             </form>
         </div>
-        <div class="profile-section-card shadow-soft">
-            <div class="section-header">
+        <div class="form-card" >
+            <div class="form-header">
                 <h4>🔐 أمن الحساب</h4>
             </div>
-            <form method="post" action="/profile/change-password" class="custom-form">
+            <form method="post" action="/profile/change-password" >
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <div class="form-group-custom">
+                <div class="form-group">
                     <input type="password" name="current_password" class="input-field" placeholder="كلمة السر الحالية" required>
                 </div>
-                <div class="form-group-custom">
+                <div class="form-group">
                     <input type="password" name="new_password" class="input-field" placeholder="كلمة السر الجديدة" required minlength="6">
                 </div>
-                <div class="form-group-custom">
+                <div class="form-group">
                     <input type="password" name="confirm_password" class="input-field" placeholder="تأكيد كلمة السر الجديدة" required>
                 </div>
                 <button type="submit" class="submit-btn-msg secondary-bg-msg">تحديث كلمة المرور</button>
             </form>
         </div>
-        <div class="back-home-container">
-            <a href="/" class="btn-back">العودة للرئيسية</a>
+        <div class="form-footer">
+            <a href="/" class="cancel-text-link">
+                <i class="fas fa-arrow-right"></i>العودة للرئيسية
+            </a>
         </div>
+       
     </div>
 </section>
 {% block extra_js %}
