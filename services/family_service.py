@@ -336,14 +336,15 @@ class FamilyService:
 
                     # 2. تحديث جدول family_info (بدون nick_name إلا إذا أضفته للقاعدة)
                     cur.execute("""
-                        UPDATE family_info 
-                        SET gender=%s, email=%s, phone=%s, address=%s, p_o_b=%s, status=%s
-                        WHERE code_info=%s
-                    """, (
-                        data.get('gender'), data.get('email'),
-                        data.get('phone'), data.get('address'), data.get('p_o_b'), 
-                        data.get('status'), code
-                    ))
+                        INSERT INTO family_info (code_info, gender, email, phone, address, p_o_b, status)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s)
+                        ON CONFLICT (code_info) DO UPDATE SET
+                            gender = EXCLUDED.gender, email = EXCLUDED.email,
+                            phone = EXCLUDED.phone, address = EXCLUDED.address,
+                            p_o_b = EXCLUDED.p_o_b, status = EXCLUDED.status
+                    """, (code, data["gender"], data["email"], data["phone"], 
+                        data["address"], data["p_o_b"], data["status"]))
+                            
 
                     # 3. تحديث التواريخ (ON CONFLICT ضرورية هنا لأن بعض الأعضاء القدامى قد لا يملكون سجلاً في هذا الجدول)
                     cur.execute("""
@@ -352,7 +353,7 @@ class FamilyService:
                         ON CONFLICT (code) DO UPDATE 
                         SET d_o_b = EXCLUDED.d_o_b, d_o_d = EXCLUDED.d_o_d
                     """, (code, data.get('d_o_b'), data.get('d_o_d')))
-
+                  
                     # 4. الصورة
                     if picture_file and picture_file.filename:
                         filename = f"{code}{extension}"
