@@ -37,13 +37,33 @@
             {% for book in books %}
             <div class="book-card">
                 <div class="book-cover-wrapper">
-                    {# سيستخدم الغلاف المستخرج الذي رفعناه يدوياً #}
-                    <img src="{{ book.cover_url }}" class="book-cover" alt="{{ book.title }}"
-                        onerror="this.src='https://res.cloudinary.com/demo/image/upload/v1/sample.jpg'">
-                    
-                    <div class="book-overlay">
-                        <a href="/library/view/{{ book.id }}" class="btn-quick-view">قراءة الآن</a>
-                    </div>
+                        {% if ".pdf" not in book.file_url|lower and "cloudinary" not in book.cover_url %}
+                            {# غلاف افتراضي مولد برمجياً لملفات الورد والبوربوينت #}
+                            <div class="custom-default-cover">
+                                <div class="cover-header">
+                                    {% if "doc" in book.file_url|lower %}
+                                        <i class="fas fa-file-word"></i> مستند Word
+                                    {% else %}
+                                        <i class="fas fa-file-powerpoint"></i> عرض تقديمي
+                                    {% endif %}
+                                </div>
+                                <div class="cover-body">
+                                    <span class="book-title-placeholder">{{ book.title }}</span>
+                                </div>
+                                <div class="cover-footer">
+                                    {{ book.author }}
+                                </div>
+                            </div>
+                        {% else %}
+                            {# عرض الغلاف الطبيعي للـ PDF أو إذا كان المرفوع يدوياً #}
+                            <img src="{{ book.cover_url }}" class="book-cover" alt="{{ book.title }}"
+                                onerror="this.src='/static/images/default_pdf_cover.jpg'">
+                        {% endif %}
+
+                        <div class="book-overlay">
+                            <a href="/library/view/{{ book.id }}" class="btn-quick-view" target="_blank">قراءة الآن</a>
+                        </div>
+                   
                 </div>
               
                 <div class="book-info">

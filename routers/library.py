@@ -231,9 +231,9 @@ async def admin_system_cleanup(request: Request):
     
     return {"status": "success", "deleted_files_count": count}
 
+
 @router.get("/view/{book_id}", response_class=HTMLResponse)
 async def view_book(request: Request, book_id: int):
-    # 1. جلب البيانات من السيرفس (تأكد من تحديث دالة increment_view لتعيد dict)
     book_data = LibraryService.increment_view(book_id)
     
     if not book_data or book_data['file_url'] in ['pending', 'error']:
@@ -241,33 +241,42 @@ async def view_book(request: Request, book_id: int):
 
     file_url = book_data['file_url']
     book_title = book_data['title']
+    ext = file_url.split('.')[-1].split('?')[0].lower()
 
-    if "drive.google.com" in file_url:
+    # أ- ملفات Word و PowerPoint
+    if any(x in ext for x in ['doc', 'docx', 'ppt', 'pptx']):
+        import urllib.parse
+        target_url = file_url
+        if "cloudinary" in file_url:
+            # إضافة صيغة الملف تجعل مشغل مايكروسوفت يتعرف عليه فوراً
+            target_url = f"{file_url}?format={ext}"
+        
+        encoded_url = urllib.parse.quote(target_url, safe='')
+        embed_url = (
+            f"https://view.officeapps.live.com/op/embed.aspx?src={encoded_url}"
+            f"&wdStartOn=1&wdEmbedCode=0&wdMobileView=1" # وضع الموبايل الإجباري
+        )
+        # ملاحظة: تم توحيد الـ return في نهاية الدالة لتقليل تكرار الكود
+    
+    # ب- ملفات PDF من Google Drive
+    elif "drive.google.com" in file_url:
         import urllib.parse as urlparse
         url_data = urlparse.urlparse(file_url)
         query = urlparse.parse_qs(url_data.query)
         file_id = query.get('id', [None])[0]
-        
-        # استخدام رابط الـ preview المباشر لضمان التوافق مع iframe ومنع خطأ 400
-        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
-        
-        # تصحيح المسار: حذف المائلة الأولى "library/..." وليس "/library/..."
-        return templates.TemplateResponse("library/viewer_google.html", {
-            "request": request,
-            "embed_url": embed_url,
-            "book_id": book_id,
-            "book_title": book_title
-        })
+        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"  
     
+    # ج- ملفات PDF من Cloudinary (عرض مباشر عبر المتصفح)
     else:
-        # تصحيح المسار لـ Cloudinary أيضاً
-        return templates.TemplateResponse("library/viewer_pdfjs.html", {
-            "request": request,
-            "file_url": file_url,
-            "book_id": book_id,
-            "book_title": book_title
-        })
-    
+        embed_url = file_url
+
+    return templates.TemplateResponse("library/viewer_google.html", {
+        "request": request, 
+        "embed_url": embed_url,
+        "book_id": book_id, 
+        "book_title": book_title
+    })
+
 @router.get("/download/{book_id}")
 async def download_book(book_id: int):
     book_data = LibraryService.increment_download(book_id)
@@ -276,9 +285,12 @@ async def download_book(book_id: int):
 
     file_url = book_data['file_url']
     
-    # التحميل المباشر من Cloudinary بدون تعديلات في الرابط لتجنب خطأ 400
     if "cloudinary" in file_url:
-        final_url = file_url.replace('/upload/', '/upload/fl_attachment/')
+        # تأكد من أن الرابط ينتهي بالامتداد الصحيح ليتم التحميل بشكل سليم
+        if "/upload/" in file_url and "fl_attachment" not in file_url:
+            final_url = file_url.replace('/upload/', '/upload/fl_attachment/')
+        else:
+            final_url = file_url
     else:
         final_url = file_url
 

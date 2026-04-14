@@ -1,38 +1,139 @@
 {% extends "base.html" %}
-{% block title %}قراءة: {{ book_title }}{% endblock %}
-
 {% block content %}
+<div class="viewer-container">
+    <div class="viewer-header">
+        <a href="javascript:void(0)" onclick="window.close();" class="nav-icon-btn close-danger">
+            <i class="fas fa-times"></i>
+            <span class="btn-text">إغلاق</span>
+        </a>
+
+        <div class="book-info-title">{{ book_title }}</div>
+
+        <a href="/library/download/{{ book_id }}" class="nav-icon-btn download-success">
+            <i class="fas fa-download"></i>
+            <span class="btn-text">تحميل</span>
+        </a>
+    </div>
+
+    <div class="iframe-wrapper">
+        <iframe 
+            src="{{ embed_url }}" 
+            allow="autoplay" 
+            allowfullscreen>
+        </iframe>
+    </div>
+</div>
+
 <style>
-    /* إخفاء العناصر غير الضرورية */
-    nav, footer, .floating-btn { display: none !important; }
-    body, html { margin: 0; padding: 0; height: 100vh; overflow: hidden; background: #2d3748; }
+    /* تصفير صارم للمساحات */
+   /* التعديل الذهبي لحل مشكلة المساحة السوداء */
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 100% !important;
+        width: 100% !important;
+        overflow: hidden !important;
+        background-color: #000 !important; 
+    }
+
+    .viewer-container { 
+        display: flex; 
+        flex-direction: column; 
+        height: 100vh; 
+        height: 100dvh; /* للموبايلات الحديثة */
+        width: 100vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+
+    nav, footer, .floating-btn, header { display: none !important; }
+  
     
     .viewer-header {
         height: 56px;
-        background: #1a202c;
+        background: #1a1a1a;
+        color: white;
+        padding: 0 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #333;
+        z-index: 100;
+    }
+
+    .book-info-title { 
+        font-weight: 600; 
+        font-size: 0.9rem; 
+        text-align: center;
+        white-space: nowrap; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        max-width: 45%;
+        color: #eee;
+    }
+
+    /* تصميم أزرار الأيقونات الجديد */
+    .nav-icon-btn {
+        text-decoration: none;
         display: flex;
         align-items: center;
-        padding: 0 20px;
-        justify-content: space-between;
-        border-bottom: 1px solid #4a5568;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 50px; /* دائرية */
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+        color: white;
     }
-    .iframe-container {
-        height: calc(100vh - 56px);
+
+    .close-danger { background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; color: #e74c3c; }
+    .close-danger:hover { background: #e74c3c; color: white; }
+
+    .download-success { background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #2ecc71; }
+    .download-success:hover { background: #2ecc71; color: white; }
+
+  /* أضف أو استبدل هذه الأجزاء في القالب الخاص بك */
+
+/* ضمان تمدد الكتاب ليملأ العرض المتاح بالكامل */
+    .iframe-wrapper { 
+        flex-grow: 1; 
         width: 100%;
+        background: #fff; /* خلفية بيضاء تحت الكتاب */
+        position: relative;
     }
+
+    iframe {
+        position: absolute;
+        width: 100% !important;
+        height: 100% !important;
+        border: none;
+    }
+.iframe-wrapper iframe {
+    top: 0;
+    left: 0;
+    /* إضافة تجانس لنوع العرض */
+    color-scheme: light; 
+}
+
+/* تحسين الموبايل بشكل خاص */
+@media (max-width: 576px) {
+    .viewer-container {
+        /* منع أي زحزحة ناتجة عن شريط العنوان في بعض المتصفحات */
+        height: 100dvh; 
+    }
+    
+    .iframe-wrapper {
+        /* إجبار المشغل على عدم ترك هوامش جانبية */
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* تصغير الأزرار لتوفير مساحة أكبر للكتاب */
+    .nav-icon-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.75rem;
+    }
+}
 </style>
-
-<div class="viewer-header">
-    <a href="/library/" class="btn btn-sm btn-outline-light">
-        <i class="fas fa-arrow-right ml-2"></i> عودة للمكتبة
-    </a>
-    <h6 class="text-white m-0 text-truncate px-3">{{ book_title }}</h6>
-    <a href="/library/download/{{ book_id }}" class="btn btn-sm btn-success">
-        <i class="fas fa-download"></i>
-    </a>
-</div>
-
-<div class="iframe-container">
-    <iframe src="{{ embed_url }}" width="100%" height="100%" style="border: none;" allow="autoplay"></iframe>
-</div>
 {% endblock %}

@@ -60,52 +60,51 @@ class LibraryService:
     @staticmethod
     async def process_and_get_metadata(file: UploadFile):
         temp_input = None
+        ext = os.path.splitext(file.filename)[1].lower()
+        
         try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
                 shutil.copyfileobj(file.file, tmp)
                 temp_input = tmp.name
 
-            temp_output = temp_input.replace(".pdf", "_compressed.pdf")
+            final_local_path = temp_input
+            cover_url = None
             
-            # عملية الضغط باستخدام Ghostscript
-            gs_command = ["gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4", "-dPDFSETTINGS=/ebook", 
-                          "-dNOPAUSE", "-dQUIET", "-dBATCH", f"-sOutputFile={temp_output}", temp_input]
-            process = await asyncio.create_subprocess_exec(*gs_command)
-            await process.wait()
+            # إذا كان الملف PDF: نقوم بالضغط واستخراج الغلاف
+            if ext == ".pdf":
+                temp_output = temp_input.replace(".pdf", "_compressed.pdf")
+                gs_command = ["gs", "-sDEVICE=pdfwrite", "-dCompatibilityLevel=1.4", "-dPDFSETTINGS=/ebook", 
+                            "-dNOPAUSE", "-dQUIET", "-dBATCH", f"-sOutputFile={temp_output}", temp_input]
+                process = await asyncio.create_subprocess_exec(*gs_command)
+                await process.wait()
 
-            # --- التعديل الجديد: مقارنة الحجم واختيار الأصغر ---
-            if os.path.exists(temp_output):
-                compressed_size = os.path.getsize(temp_output)
-                original_size = os.path.getsize(temp_input)
-                
-                # إذا كان الضغط سيئاً وزاد الحجم، نعتمد الأصلي
-                if compressed_size > original_size:
-                    os.remove(temp_output)
-                    final_local_path = temp_input
-                    print(f"ℹ️ تم استخدام الملف الأصلي لأن الضغط زاد الحجم ({original_size/1024/1024:.2f}MB)")
-                else:
+                if os.path.exists(temp_output):
                     final_local_path = temp_output
                     if os.path.exists(temp_input): os.remove(temp_input)
-                    print(f"✅ تم ضغط الملف بنجاح ({compressed_size/1024/1024:.2f}MB)")
+
+                # استخراج الغلاف
+                temp_cover = final_local_path.replace(".pdf", ".jpg")
+                doc = fitz.open(final_local_path)
+                pix = doc.load_page(0).get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+                pix.save(temp_cover)
+                doc.close()
+                cover_res = cloudinary.uploader.upload(temp_cover, folder="hottiyya_library/covers")
+                cover_url = cover_res.get("secure_url")
+                if os.path.exists(temp_cover): os.remove(temp_cover)
+            
             else:
-                final_local_path = temp_input
-            # ------------------------------------------------
+                # للملفات الأخرى (Word/PPT): نضع رابط صورة افتراضية حسب النوع
+                icons = {
+                    '.doc': 'https://example.com/word_icon.png',
+                    '.docx': 'https://example.com/word_icon.png',
+                    '.ppt': 'https://example.com/ppt_icon.png',
+                    '.pptx': 'https://example.com/ppt_icon.png'
+                }
+                cover_url = icons.get(ext, 'https://example.com/default_book_icon.png')
 
             file_size_mb = os.path.getsize(final_local_path) / (1024 * 1024)
-            size_str = f"{file_size_mb:.2f} MB"
+            return final_local_path, cover_url, f"{file_size_mb:.2f} MB"
 
-            # استخراج الغلاف فوراً
-            temp_cover = final_local_path.replace(".pdf", ".jpg")
-            doc = fitz.open(final_local_path)
-            pix = doc.load_page(0).get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
-            pix.save(temp_cover)
-            doc.close()
-            
-            cover_res = cloudinary.uploader.upload(temp_cover, folder="hottiyya_library/covers")
-            
-            if os.path.exists(temp_cover): os.remove(temp_cover)
-            
-            return final_local_path, cover_res.get("secure_url"), size_str
         except Exception as e:
             if temp_input and os.path.exists(temp_input): os.remove(temp_input)
             raise e
@@ -113,37 +112,50 @@ class LibraryService:
     @staticmethod
     def background_upload(file_path: str, filename: str, book_id: int):
         """
-        المرحلة الثانية (خلفية):
-        تتعامل مع الرفع المستأنف للملفات الكبيرة وتحديث الحالة عند الفشل.
+        المرحلة الثانية (خلفية): دعم PDF, Word, PowerPoint
+        تتعامل مع الرفع المستأنف وتحديث الحالة.
         """
         os.environ['no_proxy'] = '*'
         try:
+            # 1. تجهيز البيانات الأساسية
+            ext = os.path.splitext(filename)[1].lower()
             file_size_mb = os.path.getsize(file_path) / (1024 * 1024)
             final_url = None
+            
+            # خريطة أنواع الملفات (Mimetypes)
+            mimetypes = {
+                '.pdf': 'application/pdf',
+                '.doc': 'application/msword',
+                '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                '.ppt': 'application/vnd.ms-powerpoint',
+                '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+            }
+            current_mime = mimetypes.get(ext, 'application/octet-stream')
+            
+            # تنظيف اسم الملف لاستخدامه في الرابط
+            clean_filename = re.sub(r'[^\w\s-]', '', filename.split('.')[0]).strip().replace(' ', '_')
 
+            # 2. منطق الرفع بناءً على الحجم
             if file_size_mb < 10:
-                # الرفع لـ Cloudinary للملفات الصغيرة (سريع ومستقر)
-                clean_filename = re.sub(r'[^\w\s-]', '', filename.split('.')[0]).strip().replace(' ', '_')
+                # --- الرفع لـ Cloudinary (للملفات الصغيرة) ---
                 res = cloudinary.uploader.upload(
                     file_path, 
                     resource_type="raw", 
-                    # استخدام public_id هو ما يحدد اسم الملف النهائي في الرابط
-                    public_id=f"hottiyya_library/books/{clean_filename}.pdf", 
+                    # أضفنا {ext} لضمان احتفاظ الملف بصيغته الأصلية عند التحميل
+                    public_id=f"hottiyya_library/books/{clean_filename}{ext}", 
                     folder="hottiyya_library/books",
                     access_control=[{"access_type": "anonymous"}]
                 )
                 final_url = res['secure_url']
-            # داخل دالة background_upload
+            
             else:
-                # الرفع لـ Google Drive للملفات الكبيرة (أكبر من 10MB)
+                # --- الرفع لـ Google Drive (للملفات الكبيرة > 10MB) ---
                 service = LibraryService.get_drive_service()
-                
-                # استخدام أصغر حجم ممكن للـ Chunk لضمان عدم حدوث Timeout أثناء الرفع
-                chunk_size = 2 * 1024 * 1024  
+                chunk_size = 2 * 1024 * 1024  # 2MB لكل جزء
                 
                 media = MediaFileUpload(
                     file_path, 
-                    mimetype='application/pdf', 
+                    mimetype=current_mime, 
                     resumable=True, 
                     chunksize=chunk_size
                 )
@@ -156,56 +168,38 @@ class LibraryService:
                 
                 response = None
                 retries = 0
-                max_retries = 20 # زدنا المحاولات لضمان عدم الفشل
+                max_retries = 15
                 
                 while response is None:
                     try:
-                        # تنفيذ رفع الجزء الحالي
                         status, response = request.next_chunk()
                         if status:
-                            progress = int(status.progress() * 100)
-                            print(f"🔼 جاري رفع كتاب {book_id}: {progress}%")
-                            
+                            print(f"🔼 جاري رفع كتاب {book_id}: {int(status.progress() * 100)}%")
                     except (socket.timeout, httplib2.ServerNotFoundError, Exception) as e:
                         retries += 1
-                        if retries > max_retries:
-                            raise e
-                        
-                        # انتظار تصاعدي قبل المحاولة القادمة
-                        wait_time = min(retries * 5, 30) 
-                        print(f"⚠️ انقطاع مؤقت: {e}. محاولة رقم {retries}...")
-                        time.sleep(wait_time)
-                        
-                        # إعادة بناء الخدمة إذا تكرر الخطأ لضمان تجديد الاتصال
-                        if retries % 3 == 0:
-                            service = LibraryService.get_drive_service()
+                        if retries > max_retries: raise e
+                        time.sleep(min(retries * 5, 30))
+                        if retries % 3 == 0: service = LibraryService.get_drive_service()
                 
                 if response and 'id' in response:
                     file_id = response.get('id')
-                    
-                    # جعل الملف متاحاً للجميع (Public)
-                    try:
-                        service.permissions().create(
-                            fileId=file_id,
-                            body={'type': 'anyone', 'role': 'reader'}
-                        ).execute()
-                    except Exception as e:
-                        print(f"⚠️ فشل جعل الملف عاماً: {e}")
-
+                    # جعل الملف متاحاً للتحميل العام
+                    service.permissions().create(
+                        fileId=file_id,
+                        body={'type': 'anyone', 'role': 'reader'}
+                    ).execute()
                     final_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-            # تحديث الرابط في قاعدة البيانات عند النجاح
-            with get_db_context() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("UPDATE library SET file_url = %s WHERE id = %s", (final_url, book_id))
-                    conn.commit()
-            
-            print(f"✅ تم اكتمال رفع الكتاب رقم {book_id} بنجاح.")
-            
+            # 3. تحديث قاعدة البيانات عند النجاح
+            if final_url:
+                with get_db_context() as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("UPDATE library SET file_url = %s WHERE id = %s", (final_url, book_id))
+                        conn.commit()
+                print(f"✅ تم اكتمال رفع الكتاب رقم {book_id} بنجاح.")
+                
         except Exception as e:
-            
             traceback.print_exc()
-            # في حال الفشل: نقوم بتغيير الحالة في القاعدة لكي لا تظل "pending"
             with get_db_context() as conn:
                 with conn.cursor() as cur:
                     cur.execute("UPDATE library SET file_url = %s WHERE id = %s", ('error', book_id))
@@ -213,7 +207,6 @@ class LibraryService:
             print(f"❌ خطأ في الرفع الخلفي للكتاب {book_id}: {e}")
             
         finally:
-            # حذف الملف المحلي دائماً لتوفير مساحة السيرفر
             if os.path.exists(file_path): 
                 os.remove(file_path)
 
