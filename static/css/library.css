@@ -424,7 +424,11 @@
     font-weight: bold;
     line-height: 1.4;
     display: -webkit-box;
-    -webkit-line-clamp: 3; /* يظهر أول 3 أسطر فقط من العنوان */
+    
+    /* أضف السطرين معاً لضمان التوافق التام */
+    -webkit-line-clamp: 3; 
+    line-clamp: 3; 
+    
     -webkit-box-orient: vertical;
     overflow: hidden;
 }

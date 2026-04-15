@@ -241,36 +241,32 @@ async def view_book(request: Request, book_id: int):
     file_url = book_data['file_url']
     book_title = book_data['title']
     
-    # تنظيف الرابط من أي بارامترات زائدة قد تربك المشغلات
+    # تنظيف الرابط وتجهيزه
     clean_url = file_url.split('?')[0]
     ext = clean_url.split('.')[-1].lower()
     
-    # تحويل الرابط ليكون آمنًا ومباشرًا
+    # ضمان استخدام https لروابط Cloudinary
     target_url = file_url.replace("http://", "https://") if "cloudinary" in file_url else file_url
 
     import urllib.parse
     encoded_url = urllib.parse.quote(target_url, safe='')
 
-    # الحالات الثلاث للعرض:
-    
-    # 1. ملفات Word و PowerPoint (مشغل مايكروسوفت)
-    if any(x in ext for x in ['doc', 'docx', 'ppt', 'pptx']):
-        embed_url = (
-            f"https://view.officeapps.live.com/op/embed.aspx?src={encoded_url}"
-            f"&wdStartOn=1&wdEmbedCode=0&wdMobileView=1"
-        )
-    
-    # 2. ملفات Google Drive (مشغل جوجل درايف الأصلي)
-    elif "drive.google.com" in target_url:
+    # 1. إذا كان الملف من Google Drive (يعمل دائماً)
+    if "drive.google.com" in target_url:
         import urllib.parse as urlparse
         url_data = urlparse.urlparse(target_url)
         query = urlparse.parse_qs(url_data.query)
         file_id = query.get('id', [None])[0]
         embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
     
-    # 3. ملفات PDF (سواء من Cloudinary أو غيره) لضمان الفتح في الموبايل
+    # 2. ملفات Word/Office من أي مصدر آخر (Cloudinary مثلاً)
+    # سنستخدم مشغل Google Viewer بدلاً من Microsoft لأنه يحل مشكلة الأمان في الإنتاج
+    elif any(x in ext for x in ['doc', 'docx', 'ppt', 'pptx']):
+        embed_url = f"https://docs.google.com/viewer?url={encoded_url}&embedded=true"
+    
+    # 3. ملفات PDF وكل ما تبقى
     else:
-        # استخدام مشغل جوجل الوسيط لضمان الفتح داخل الـ iframe في الجوال
+        # استخدام مشغل جوجل لضمان العرض المباشر في الموبايل والكمبيوتر
         embed_url = f"https://docs.google.com/viewer?url={encoded_url}&embedded=true"
 
     return templates.TemplateResponse("library/viewer_google.html", {
