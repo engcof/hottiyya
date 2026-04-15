@@ -231,7 +231,6 @@ async def admin_system_cleanup(request: Request):
     
     return {"status": "success", "deleted_files_count": count}
 
-
 @router.get("/view/{book_id}", response_class=HTMLResponse)
 async def view_book(request: Request, book_id: int):
     book_data = LibraryService.increment_view(book_id)
@@ -241,34 +240,38 @@ async def view_book(request: Request, book_id: int):
 
     file_url = book_data['file_url']
     book_title = book_data['title']
-    ext = file_url.split('.')[-1].split('?')[0].lower()
+    
+    # تنظيف الرابط من أي بارامترات زائدة قد تربك المشغلات
+    clean_url = file_url.split('?')[0]
+    ext = clean_url.split('.')[-1].lower()
+    
+    # تحويل الرابط ليكون آمنًا ومباشرًا
+    target_url = file_url.replace("http://", "https://") if "cloudinary" in file_url else file_url
 
-    # أ- ملفات Word و PowerPoint
+    import urllib.parse
+    encoded_url = urllib.parse.quote(target_url, safe='')
+
+    # الحالات الثلاث للعرض:
+    
+    # 1. ملفات Word و PowerPoint (مشغل مايكروسوفت)
     if any(x in ext for x in ['doc', 'docx', 'ppt', 'pptx']):
-        import urllib.parse
-        target_url = file_url
-        if "cloudinary" in file_url:
-            # إضافة صيغة الملف تجعل مشغل مايكروسوفت يتعرف عليه فوراً
-            target_url = f"{file_url}?format={ext}"
-        
-        encoded_url = urllib.parse.quote(target_url, safe='')
         embed_url = (
             f"https://view.officeapps.live.com/op/embed.aspx?src={encoded_url}"
-            f"&wdStartOn=1&wdEmbedCode=0&wdMobileView=1" # وضع الموبايل الإجباري
+            f"&wdStartOn=1&wdEmbedCode=0&wdMobileView=1"
         )
-        # ملاحظة: تم توحيد الـ return في نهاية الدالة لتقليل تكرار الكود
     
-    # ب- ملفات PDF من Google Drive
-    elif "drive.google.com" in file_url:
+    # 2. ملفات Google Drive (مشغل جوجل درايف الأصلي)
+    elif "drive.google.com" in target_url:
         import urllib.parse as urlparse
-        url_data = urlparse.urlparse(file_url)
+        url_data = urlparse.urlparse(target_url)
         query = urlparse.parse_qs(url_data.query)
         file_id = query.get('id', [None])[0]
-        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"  
+        embed_url = f"https://drive.google.com/file/d/{file_id}/preview"
     
-    # ج- ملفات PDF من Cloudinary (عرض مباشر عبر المتصفح)
+    # 3. ملفات PDF (سواء من Cloudinary أو غيره) لضمان الفتح في الموبايل
     else:
-        embed_url = file_url
+        # استخدام مشغل جوجل الوسيط لضمان الفتح داخل الـ iframe في الجوال
+        embed_url = f"https://docs.google.com/viewer?url={encoded_url}&embedded=true"
 
     return templates.TemplateResponse("library/viewer_google.html", {
         "request": request, 
