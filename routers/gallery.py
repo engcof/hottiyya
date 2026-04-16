@@ -1,5 +1,6 @@
 import re
 from typing import Optional
+from urllib import request, request, response
 from fastapi import APIRouter, Request, Form, HTTPException, Query, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
 from services.gallery_service import GalleryService
@@ -14,33 +15,42 @@ from services.analytics import log_action
 router = APIRouter(prefix="/gallery", tags=["gallery"])
 
 
-# 1. عرض المعرض (تم تحديثه لإضافة CSRF والصلاحيات للواجهة)
+# 1. عرض المعرض 
 @router.get("/", response_class=HTMLResponse)
-async def get_gallery(request: Request, category: str = Query(None), success: Optional[str] = Query(None)):
+async def get_gallery(
+    request: Request, 
+    category: str = Query(None), 
+    page: int = Query(1, ge=1), # استقبال رقم الصفحة
+    success: Optional[str] = Query(None)
+):
     user = request.session.get("user")
-    images = GalleryService.get_all_images(category)
-   # جلب التصنيفات باستخدام الدالة الجديدة التي أضفناها في السيرفس
+    per_page = 12
+    
+    # جلب الصور والإجمالي من السيرفس
+    images, total_images = GalleryService.get_all_images(category, page, per_page)
+    
+    # حساب إجمالي الصفحات
+    total_pages = (total_images + per_page - 1) // per_page
+    
+    # جلب التصنيفات
     categories = GalleryService.get_categories()
 
-    # توليد توكن الأمان لكل جلسة
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
-    # تجهيز رسائل النجاح
-    messages = {
-        "added": "✅ تم إضافة الصورة بنجاح.",
-        "deleted": "✅ تم حذف الصورة بنجاح."
-    }
+    messages = {"added": "✅ تم إضافة الصورة بنجاح.", "deleted": "✅ تم حذف الصورة بنجاح."}
     
     response = templates.TemplateResponse("gallery/index.html", {
         "request": request,
         "user": user,
         "images": images,
         "selected_category": category,
-        "csrf_token": csrf_token,
         "categories": categories,
+        "current_page": page,
+        "total_pages": total_pages,
+        "page_numbers": range(1, total_pages + 1),
+        "csrf_token": csrf_token,
         "can_add": can(user, "add_gallery"),
-        "can_edit": can(user, "edit_gallery"),
         "can_delete": can(user, "delete_gallery"),
         "success": messages.get(success)
     })
@@ -136,24 +146,38 @@ async def add_new_image(
     
 
 @router.post("/delete/{image_id}")
-async def delete_photo(request: Request, image_id: int):
+async def delete_photo(
+    request: Request, 
+    image_id: int, 
+    page: int = Query(1), # استقبال رقم الصفحة الحالية
+    category: str = Query(None) # استقبال التصنيف الحالي إن وجد
+):
     user = request.session.get("user")
-    # فحص الصلاحية أولاً (فقط engcof أو الأدمن)
+    
+    # 1. فحص الصلاحية
     if not can(user, "delete_gallery"):
         raise HTTPException(status_code=403)
     
     # 2. التحقق من CSRF
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
+    
     try:
         if GalleryService.delete_image(image_id):
-            # تسجيل بصمة engcof في السجل
+            # تسجيل النشاط
             log_action(
                 user_id=user['id'],
                 action="حذف صورة",
-                details=f"تم حذف مادة من المعرض (ID: {image_id}) وإزالتها من التخزين السحابي"
+                details=f"تم حذف مادة من المعرض (ID: {image_id}) وإزالتها من السحابة"
             )
-            return RedirectResponse("/gallery?success=deleted", status_code=303)
+            
+            # بناء رابط العودة الذكي
+            redirect_url = f"/gallery?success=deleted&page={page}"
+            if category and category != "None":
+                redirect_url += f"&category={category}"
+                
+            return RedirectResponse(url=redirect_url, status_code=303)
+            
     except Exception as e:
-        # في حال فشل الحذف، لن يتم تسجيل أي نشاط في السجل الشامل
-        raise HTTPException(status_code=500, detail=f"فشل الحذف للصورة {image_id}.")    
+        print(f"Delete Error: {e}")
+        raise HTTPException(status_code=500, detail=f"فشل الحذف للصورة {image_id}.")

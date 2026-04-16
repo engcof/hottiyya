@@ -36,12 +36,13 @@
             <div class="gallery-item">
             
                 {% if can_delete %}
-                    <form action="/gallery/delete/{{ image.id }}" method="POST" onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
+                    <form action="/gallery/delete/{{ image.id }}?page={{ current_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}" 
+                        method="POST" 
+                        onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button type="submit" class="btn-delete-small">حذف</button>
                     </form>
                 {% endif %}
-
                 <div onclick="openModal('{{ image.image_url }}', '{{ image.title }}')" style="cursor: pointer;">
                     <div class="gallery-img-wrapper">
                         <img src="{{ image.image_url }}" alt="{{ image.title }}" class="gallery-img" loading="lazy">
@@ -60,6 +61,33 @@
             </div>
             {% endfor %}
         </div>
+        {% if total_pages > 1 %}
+        <div class="card-footer d-flex justify-content-center mt-4">
+            <nav aria-label="ترقيم معرض الصور">
+                <ul class="pagination">
+                    {# الحفاظ على التصنيف عند التنقل بين الصفحات #}
+                    {% set cat_param = "&category=" + selected_category if selected_category else "" %} 
+                    
+                    <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                        <a class="page-link" href="/gallery/?page={{ current_page - 1 }}{{ cat_param }}">السابق</a>
+                    </li>
+                
+                    {% for p in page_numbers %}
+                        <li class="page-item {% if p == current_page %}active{% endif %} 
+                            {% if p != 1 and p != total_pages and (p < current_page - 1 or p > current_page + 1) %}
+                                d-none d-md-inline-block 
+                            {% endif %}">
+                            <a class="page-link" href="/gallery/?page={{ p }}{{ cat_param }}">{{ p }}</a>
+                        </li>
+                    {% endfor %}
+
+                    <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="/gallery/?page={{ current_page + 1 }}{{ cat_param }}">التالي</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
     </div>
 </section>
 

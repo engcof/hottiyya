@@ -45,26 +45,41 @@ class GalleryService:
             return image_id
 
     @staticmethod
-    def get_all_images(category=None):
-        """جلب جميع الصور مع اسم المستخدم الذي قام برفعها"""
+    def get_all_images(category=None, page=1, per_page=12):
+        """جلب الصور مع ترقيم الصفحات"""
+        offset = (page - 1) * per_page
+        
         with get_db_context() as conn:
             with conn.cursor() as cur:
-                # نستخدم JOIN لجلب اسم المستخدم (username) من جدول users
+                # 1. استعلام لجلب إجمالي عدد الصور لتحديد عدد الصفحات
+                count_query = "SELECT COUNT(*) FROM gallery"
+                if category and category != "الكل":
+                    count_query += " WHERE category = %s"
+                    cur.execute(count_query, (category,))
+                else:
+                    cur.execute(count_query)
+                total_images = cur.fetchone()[0]
+
+                # 2. استعلام جلب البيانات مع LIMIT و OFFSET
                 query = """
                     SELECT g.*, u.username 
                     FROM gallery g
                     LEFT JOIN users u ON g.user_id = u.id
                 """
+                params = []
                 if category and category != "الكل":
                     query += " WHERE g.category = %s"
-                    query += " ORDER BY g.created_at DESC;"
-                    cur.execute(query, (category,))
-                else:
-                    query += " ORDER BY g.created_at DESC;"
-                    cur.execute(query)
+                    params.append(category)
+                
+                query += " ORDER BY g.created_at DESC LIMIT %s OFFSET %s;"
+                params.extend([per_page, offset])
+                
+                cur.execute(query, tuple(params))
                 
                 columns = [desc[0] for desc in cur.description]
-                return [dict(zip(columns, row)) for row in cur.fetchall()]
+                images = [dict(zip(columns, row)) for row in cur.fetchall()]
+                
+                return images, total_images
             
     @staticmethod
     def get_categories():
