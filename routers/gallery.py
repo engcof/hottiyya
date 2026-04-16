@@ -126,8 +126,6 @@ async def add_new_image(
         print(f"Error: {e}")
         raise HTTPException(status_code=500, detail="حدث خطأ أثناء معالجة الصورة")
     
-   
-
 
 @router.post("/delete/{image_id}")
 async def delete_photo(request: Request, image_id: int):
