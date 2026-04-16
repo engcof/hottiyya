@@ -19,10 +19,8 @@ router = APIRouter(prefix="/gallery", tags=["gallery"])
 async def get_gallery(request: Request, category: str = Query(None), success: Optional[str] = Query(None)):
     user = request.session.get("user")
     images = GalleryService.get_all_images(category)
-
-    can_add    = can(user, "add_gallery")
-    can_edit   = can(user, "edit_gallery")
-    can_delete = can(user, "delete_gallery")
+   # جلب التصنيفات باستخدام الدالة الجديدة التي أضفناها في السيرفس
+    categories = GalleryService.get_categories()
 
     # توليد توكن الأمان لكل جلسة
     csrf_token = generate_csrf_token()
@@ -40,6 +38,7 @@ async def get_gallery(request: Request, category: str = Query(None), success: Op
         "images": images,
         "selected_category": category,
         "csrf_token": csrf_token,
+        "categories": categories,
         "can_add": can(user, "add_gallery"),
         "can_edit": can(user, "edit_gallery"),
         "can_delete": can(user, "delete_gallery"),
@@ -97,13 +96,20 @@ async def add_new_image(
     # 3. الرفع إلى Cloudinary أولاً
     # نمرر ملف الصورة المرفوع إلى الدالة التي أنشأناها في gallery_service
     try:
+        # تأكيد العودة لبداية الملف لضمان قراءة البيانات كاملة
+        await image.seek(0)
         
-        
-        # نستخدم image.file للحصول على تدفق البيانات (stream)
+        # نمرر الملف للدالة المحسنة
         cloudinary_url = upload_to_cloudinary(image.file)
         
         if not cloudinary_url:
-            raise HTTPException(status_code=500, detail="فشل رفع الصورة إلى التخزين السحابي")
+            # في حال فشل الرفع، نرجع المستخدم لصفحة الإضافة مع رسالة واضحة
+            return templates.TemplateResponse("gallery/add.html", {
+                "request": request, 
+                "user": request.session.get("user"), 
+                "error": "فشل الاتصال بـ Cloudinary، يرجى المحاولة مرة أخرى",
+                "csrf_token": generate_csrf_token()
+            })
 
         # 4. الحفظ في قاعدة البيانات باستخدام الرابط الناتج
         GalleryService.add_image(
@@ -123,8 +129,10 @@ async def add_new_image(
         return RedirectResponse(url="/gallery?success=added", status_code=303)
 
     except Exception as e:
-        print(f"Error: {e}")
-        raise HTTPException(status_code=500, detail="حدث خطأ أثناء معالجة الصورة")
+        print(f"Server Internal Error: {e}")
+        return templates.TemplateResponse("gallery/add.html", {
+            "request": request, "user": user, "error": "حدث خطأ فني غير متوقع", "csrf_token": generate_csrf_token()
+        })
     
 
 @router.post("/delete/{image_id}")

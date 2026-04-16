@@ -13,13 +13,20 @@ cloudinary.config(
     api_secret = os.getenv("CLOUDINARY_SECRET"),
     secure = True
 )
-def upload_to_cloudinary(file_path):
-    """دالة لرفع الصورة وإرجاع الرابط المباشر"""
+def upload_to_cloudinary(file_stream):
+    """دالة لرفع الصورة باستخدام تدفق البيانات مباشرة"""
     try:
-        result = cloudinary.uploader.upload(file_path, folder="hottiyya_gallery")
+        # قراءة محتوى الملف للتأكد من إرساله كاملاً
+        file_content = file_stream.read()
+        
+        result = cloudinary.uploader.upload(
+            file_content, 
+            folder="hottiyya_gallery",
+            resource_type="auto" # لضمان التعرف التلقائي على الامتداد
+        )
         return result.get("secure_url")
     except Exception as e:
-        print(f"Cloudinary Error: {e}")
+        print(f"Cloudinary Error: {e}") # هذا سيظهر في الـ Logs
         return None
 
 class GalleryService:
@@ -58,6 +65,20 @@ class GalleryService:
                 
                 columns = [desc[0] for desc in cur.description]
                 return [dict(zip(columns, row)) for row in cur.fetchall()]
+            
+    @staticmethod
+    def get_categories():
+        """جلب قائمة التصنيفات الفريدة التي تحتوي على صور"""
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT DISTINCT category 
+                    FROM gallery 
+                    WHERE category IS NOT NULL AND category != ''
+                    ORDER BY category ASC;
+                """)
+                return [row[0] for row in cur.fetchall()]
+
     @staticmethod
     def delete_image(image_id):
         """حذف صورة من المعرض ومن السحابة معاً"""

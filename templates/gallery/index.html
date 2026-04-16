@@ -20,12 +20,17 @@
             {% endif %}
         </div>
 
-        <div class="filter-container">
+      <div class="filter-container">
             <a href="/gallery/" class="btn-f-action {% if not selected_category %}btn-f-view{% else %}glass{% endif %}" style="text-decoration: none;">الكل</a>
-            <a href="/gallery/?category=مناسبات" class="btn-f-action {% if selected_category == 'مناسبات' %}btn-f-view{% else %}glass{% endif %}" style="text-decoration: none;">مناسبات</a>
-            <a href="/gallery/?category=تاريخي" class="btn-f-action {% if selected_category == 'تاريخي' %}btn-f-view{% else %}glass{% endif %}" style="text-decoration: none;">تاريخي</a>
+            
+            {% for cat in categories %}
+            <a href="/gallery/?category={{ cat }}" 
+            class="btn-f-action {% if selected_category == cat %}btn-f-view{% else %}glass{% endif %}" 
+            style="text-decoration: none;">
+            {{ cat }}
+            </a>
+            {% endfor %}
         </div>
-
         <div class="gallery-grid">
             {% for image in images %}
             <div class="gallery-item">
