@@ -51,9 +51,14 @@
                     </div>
                 </div>
                 <div class="member-actions">
-                    <a href="/names/details/{{ m.code }}" class="btn-f-action btn-f-view">تفاصيل</a>
+                    <a href="/names/details/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-view">
+                        التفاصيل
+                    </a>
+                   
                     {% if can_edit %}
-                    <a href="/names/edit/{{ m.code }}" class="btn-f-action btn-f-edit">تعديل</a>
+                    <a href="/names/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">
+                        تعديل
+                    </a>
                     {% endif %}
                     {% if can_delete %}
                     <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">

@@ -99,7 +99,12 @@ async def show_names(
     return response
 # ====================== تفاصيل العضو ======================
 @router.get("/details/{code}", response_class=HTMLResponse)
-async def name_details(request: Request, code: str):
+async def name_details(
+    request: Request, 
+    code: str,
+    page: int = Query(1), # 💡 استقبال رقم الصفحة من الرابط
+    q: str = Query("")    # 💡 استقبال نص البحث من الرابط
+    ):
     user = request.session.get("user")
     if not user: return RedirectResponse("/auth/login")
 
@@ -128,7 +133,9 @@ async def name_details(request: Request, code: str):
         "age_details": age_details,
         "gender": member_data.get("gender"),
         "wives": details.get("wives", []), # تأكد من وجودها في السيرفس أو أضفها
-        "husbands": details.get("husbands", [])
+        "husbands": details.get("husbands", []),
+        "current_page": page,
+        "search_query": q
     })
     set_cache_headers(response)
     return response
@@ -437,7 +444,9 @@ async def update_name(request: Request,
                       #d_o_b: str = Form(None), d_o_d: str = Form(None),
                       email: str = Form(None), phone: str = Form(None),
                       address: str = Form(None), p_o_b: str = Form(None),
-                      status: str = Form(None), picture: UploadFile = File(None)):
+                      status: str = Form(None), picture: UploadFile = File(None),
+                      page: int = Form(1),    # 💡 استلام رقم الصفحة
+                      q: str = Form("")):
     
     user = request.session.get("user")
     if not user or not can(user, "edit_member"):
@@ -573,8 +582,13 @@ async def update_name(request: Request,
                 details=f"تم تعديل بيانات العضو {name} (الكود: {code}) بنجاح"
             )
 
-            # إذا نجح التحديث، وجه المستخدم لصفحة التفاصيل أو القائمة
-            return RedirectResponse(f"/names/details/{code}", status_code=303)
+            # 🟢 التعديل المطلوب: العودة لصفحة القائمة مع الحفاظ على الفلتر والصفحة
+            redirect_url = f"/names?page={page}"
+            if q and q != "None":
+                import urllib.parse
+                redirect_url += f"&q={urllib.parse.quote(q)}"
+            
+            return RedirectResponse(url=redirect_url, status_code=303)
           
         except Exception as e:
             # إذا فشلت عملية قاعدة البيانات (حالة استثناء)

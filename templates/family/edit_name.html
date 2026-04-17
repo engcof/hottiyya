@@ -14,7 +14,8 @@
 
         <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data" class="news-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            
+            <input type="hidden" name="page" value="{{ request.query_params.get('page', 1) }}">
+            <input type="hidden" name="q" value="{{ request.query_params.get('q', '') }}">
             <div class="form-grid">
                 <div class="form-group">
                     <label>الاسم <span class="required">*</span></label>
@@ -127,7 +128,7 @@
             <div class="form-footer">
                 <a href="/names/details/{{ code }}" class="cancel-text-link">رجوع للتفاصيل</a>
                 <span style="margin: 0 10px; color: #cbd5e0;">|</span>
-                <a href="/names" class="cancel-text-link">قائمة الشجرة</a>
+                <a href="/names?page={{ request.query_params.get('page', 1) }}&q={{ request.query_params.get('q', '') }}" class="cancel-text-link">قائمة الشجرة</a>
             </div>
         </form>
     </div>

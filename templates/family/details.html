@@ -161,14 +161,16 @@
 
         <!-- الأزرار السفلية -->
         <div class="action-buttons">
-            {% if user.role == "admin"%}
-            <a href="/names/edit/{{ member.code }}" class="btn-edit">
+            {% if user.role == "admin" %}
+            <a href="/names/edit/{{ member.code }}?page={{ current_page }}&q={{ search_query }}" class="btn-edit">
                 تعديل البيانات
             </a>
             {% endif %}
-            <a href="/names" class="btn-back">
+            
+            <a href="/names?page={{ current_page }}&q={{ search_query }}" class="btn-back">
                 رجوع إلى شجرة العائلة
             </a>
+         
         </div>
     </div>
 </section>
