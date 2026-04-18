@@ -60,17 +60,18 @@
     margin-bottom: 40px;
 }
 
+
 .member-card {
     padding: 20px;
     border-radius: 16px;
     display: flex;
     flex-direction: column; 
     align-items: flex-start; 
-    /* هذه القيمة هي المسافة الموحدة بين (الكود والاسم) و (الاسم واللقب) و (اللقب والأزرار) */
     gap: 12px; 
     background: white;
     border: 1px solid #edf2f7;
     transition: var(--transition);
+    min-width: 0; /* 💡 هذا هو المفتاح لمنع البطاقة من التمدد خارج الشاشة */
 }
 .member-card:hover {
     transform: translateY(-6px);
@@ -86,8 +87,10 @@
 }
 
 /* إجبار الاسم على سطر واحد */
+/* 2. تحديث الاسم لمنع الخروج عن الحدود */
 .member-name {
-    width: 100%;
+    width: 100%; /* سيأخذ العرض المتاح له داخل البطاقة */
+    max-width: 100%; /* 💡 ضمان عدم تجاوز العرض */
     font-size: 1.3rem;
     font-weight: 700;
     line-height: 1.2;
@@ -96,6 +99,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: right;
+    display: block; /* ضروري لعمل ellipsis */
 }
 .member-actions {
     width: 100%;
@@ -211,6 +215,16 @@
 }
 /* تحسينات الموبايل */
 @media (max-width: 992px) {
+    .member-name { font-size: 1.0rem; }
     .member-body { grid-template-columns: 1fr; }
     .profile-img { width: 200px; height: 200px; }
+}
+
+/* تأكد من إضافة هذا في الموبايل */
+@media (max-width: 600px) {
+    .members-list {
+        grid-template-columns: 1fr; /* عمود واحد للموبايل */
+        padding-left: 15px;
+        padding-right: 15px;
+    }
 }
