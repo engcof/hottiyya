@@ -15,7 +15,7 @@
             </p>
 
             {% if member.nick_name %}
-            <div class="nickname-display">
+            <div class="">
                 <span class="nickname-big">{{ member.nick_name }}</span>
             </div>
             {% endif %}
@@ -101,7 +101,7 @@
                         {% if mother_full_name %}
                         <a href="/names/details/{{ member.m_code }}" class="relation-link">{{ mother_full_name }}</a>
                         {% else %}
-                        <span class="text-muted">غير معروفة</span>
+                        <span class="text-muted">غير مسجلة</span>
                         {% endif %}
                     </div>
 
@@ -166,10 +166,7 @@
                 تعديل البيانات
             </a>
             {% endif %}
-            
-            <a href="/names?page={{ current_page }}&q={{ search_query }}" class="btn-back">
-                رجوع إلى شجرة العائلة
-            </a>
+              <a href="/names?page={{ request.query_params.get('page', 1) }}{% if request.query_params.get('q') and request.query_params.get('q') != 'None' %}&q={{ request.query_params.get('q') }}{% endif %}" class="btn-back">رجوع إلى شجرة العائلة</a>
          
         </div>
     </div>

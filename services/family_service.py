@@ -54,7 +54,7 @@ class FamilyService:
                 
                 # جلب البيانات
                 cur.execute(f"""
-                    SELECT code, public.get_full_name(code, 7, FALSE) AS full_name, nick_name
+                    SELECT code, public.get_full_name(code, 5, FALSE) AS full_name, nick_name
                     FROM family_search
                     WHERE {sql_condition}
                     ORDER BY public.normalize_arabic(full_name) ASC

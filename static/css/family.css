@@ -2,23 +2,37 @@
    NAME: names.css
    DESCRIPTION: نظام متكامل لشجرة العائلة وتفاصيل الأعضاء
    ============================================================ */
-
 /* --- 1. التنسيقات العامة والمشتركة --- */
 .nickname-badge, .nickname-big {
-    background: var(--accent);
-    color: white;
+    display: inline-block;
+    padding: 4px 16px;
+    min-width: 80px;
+    background: #f1f5f9;
+    color: var(--accent);
     font-weight: 600;
     border-radius: 50px;
     text-align: center;
+    font-size: 0.85rem;
+    border: 1px solid #e2e8f0;
+}
+.code-badge {
+    display: inline-block;
+    padding: 6px 20px;
+    background: #ecfdf5;
+    color: var(--accent);
+    border-radius: 50px; /* جعل الكود يشبه الشارة (Badge) */
+    font-weight: bold;
+    font-size: 1.1rem;
+    border: 1px solid #a7f3d0;
 }
 
-.code-badge, .member-code code {
+.member-code code {
     background: #ecfdf5;
     color: var(--accent);
     border-radius: 8px;
     font-weight: bold;
+    margin: 10px 0;
 }
-
 /* --- 2. شريط البحث (Search Bar) --- */
 .search-bar { margin-bottom: 32px; padding: 20px; }
 .search-form { display: flex; gap: 8px; max-width: 600px; margin: 0 auto; }
@@ -47,36 +61,55 @@
 }
 
 .member-card {
-    padding: 24px;
-    border-radius: 20px;
+    padding: 20px;
+    border-radius: 16px;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
+    flex-direction: column; 
+    align-items: flex-start; 
+    /* هذه القيمة هي المسافة الموحدة بين (الكود والاسم) و (الاسم واللقب) و (اللقب والأزرار) */
+    gap: 12px; 
+    background: white;
+    border: 1px solid #edf2f7;
     transition: var(--transition);
-    background: white; /* تأكد من وجود خلفية */
 }
-
 .member-card:hover {
     transform: translateY(-6px);
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
 }
 
+/* نلغي الهوامش تماماً لنعتمد على gap البطاقة فقط */
+.member-code, .member-name, .member-nickname {
+    width: 100%;
+    margin: 0 !important; 
+    padding: 0 !important;
+    text-align: right;
+}
+
+/* إجبار الاسم على سطر واحد */
 .member-name {
-    font-size: 1.35rem;
-    font-weight: 600;
-    color: #0f172a;
-    margin-bottom: 6px;
+    width: 100%;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1a202c;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
 }
 .member-actions {
+    width: 100%;
     display: flex;
-    margin-top: auto; /* هذا مهم للتأكد من أنها تلتصق بالأسفل */
-    margin-left: auto; /* هذا مهم للتأكد من أنها تلتصق باليسار */
-    padding-top: 5px; 
-    gap: 8px;
     flex-wrap: wrap;
+    gap: 8px;
+    /* أضفنا حداً علوياً بسيطاً لتمييز منطقة الأزرار دون التأثير على المسافة */
+    padding-top: 12px; 
+    border-top: 1px solid #f1f5f9; 
+    justify-content: flex-start;
+    /* نضمن أن الأزرار لا تبتعد عن اللقب أكثر من قيمة الـ gap */
+    margin-top: 0; 
 }
+
 /* --- 4. صفحة تفاصيل العضو (Member Details) --- */
 .member-details-section {
     padding: 60px 20px;
@@ -85,6 +118,11 @@
 }
 
 .member-header { text-align: center; margin-bottom: 20px; display: grid; gap: 15px; }
+/* --- تنسيق الكود في صفحة التفاصيل (التوسيط) --- */
+.member-header .member-code {
+    text-align: center; /* هنا التوسيط الصحيح */
+    margin: 10px 0;
+}
 
 .member-names {
     font-size: clamp(1.8rem, 5vw, 2.5rem);
@@ -155,7 +193,22 @@
 }
 
 .relation-link:hover { transform: translateX(-5px); color: var(--accent-hover); }
-
+.children-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.child-item {
+    background: #ecfdf5;
+    color: var(--accent);
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.child-item:hover {
+    color: var(--primary-color);
+}
 /* تحسينات الموبايل */
 @media (max-width: 992px) {
     .member-body { grid-template-columns: 1fr; }

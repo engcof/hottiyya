@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block title %}سجل العمليات{% endblock %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
+{% endblock %}
 
 {% block content %}
 <section class="all-page">
@@ -12,7 +16,6 @@
         </div>
 
         <div class="admin-card full">
-            <h2>سجل النشاطات</h2>
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>

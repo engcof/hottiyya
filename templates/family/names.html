@@ -39,32 +39,27 @@
         <div class="members-list">
             {% for m in members %}
             <div class="member-card glass">
-                <div class="member-info">
-                    <div class="member-code"><code>{{ m.code }}</code></div>
-                    <div class="member-name"><strong>{{ m.full_name }}</strong></div>
-                    <div class="member-nickname">
-                        {% if m.nick_name %}
+                <div class="member-code"><code>{{ m.code }}</code></div>
+                <div class="member-name"><strong>{{ m.full_name }}</strong></div>
+                
+                <div class="member-nickname">
+                    {% if m.nick_name %}
                         <span class="nickname-badge">{{ m.nick_name }}</span>
-                        {% else %}
+                    {% else %}
                         <span class="text-muted">—</span>
-                        {% endif %}
-                    </div>
+                    {% endif %}
                 </div>
+                
                 <div class="member-actions">
-                    <a href="/names/details/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-view">
-                        التفاصيل
-                    </a>
-                   
+                    <a href="/names/details/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-view">التفاصيل</a>
                     {% if can_edit %}
-                    <a href="/names/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">
-                        تعديل
-                    </a>
+                        <a href="/names/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">تعديل</a>
                     {% endif %}
                     {% if can_delete %}
-                    <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;" onsubmit="return confirm('هل أنت متأكد من حذف {{ m.full_name }}؟');">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                        <button type="submit" class="btn-f-action btn-f-delete">حذف</button>
-                    </form>
+                        <form method="post" action="/names/delete/{{ m.code }}?page={{ current_page }}&q={{ q }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button type="submit" class="btn-f-action btn-f-delete">حذف</button>
+                        </form>
                     {% endif %}
                 </div>
             </div>
