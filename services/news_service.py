@@ -21,15 +21,34 @@ class NewsService:
             print(f"❌ Error uploading news media: {e}")
             return None
 
-    
     @staticmethod
-    def get_all_news():
-        """جلب كافة الأخبار مرتبة من الأحدث للأقدم"""
+    def get_all_news(page: int = 1, limit: int = 10, q: str = None):
+        """جلب الأخبار مع الترقيم والبحث"""
+        offset = (page - 1) * limit
+        
+        # بناء شرط البحث
+        where_clause = ""
+        params = []
+        if q:
+            where_clause = "WHERE title ILIKE %s OR content ILIKE %s"
+            search_term = f"%{q}%"
+            params = [search_term, search_term]
+            
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM news ORDER BY created_at DESC")
-                return cur.fetchall()
-
+                # جلب البيانات المفلترة
+                cur.execute(f"""
+                    SELECT * FROM news {where_clause} 
+                    ORDER BY created_at DESC LIMIT %s OFFSET %s
+                """, (*params, limit, offset))
+                news = cur.fetchall()
+                
+                # جلب العدد الكلي للنتائج المفلترة
+                cur.execute(f"SELECT COUNT(*) as total FROM news {where_clause}", params)
+                total = cur.fetchone()['total']
+                
+        return news, total
+    
     @staticmethod
     def get_news_by_id(news_id):
         """جلب خبر محدد بواسطة المعرف"""

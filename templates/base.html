@@ -1,15 +1,12 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#ffffff">
-    
     <meta name="description" content="موقع الحوطية - المنصة الرسمية . استكشف شجرة العائلة، الأخبار، المقالات، والمعرض الرقمي,المكتبة ,مناهج ومقررات سودانية. بوابتكم الرقمية للتاريخ .">
     <meta name="keywords" content="الحوطية, موقع الحوطية ,مناهج ومقررات سودانية">
     <meta name="author" content="Osmancof">
-    
     <meta property="og:title" content="موقع الحوطية">
     <meta property="og:description" content="بوابتكم الرقمية للتاريخ .">
     <meta property="og:image" content="/static/icon/og-image.jpg"> <meta property="og:url" content="https://hottiyya.onrender.com">
@@ -30,59 +27,64 @@
                 <li><a href="/gallery" {% if request.path.startswith('/gallery') %}class="active"{% endif %}>معرض الصور</a></li>
                 <li><a href="/video" {% if request.path.startswith('/video') %}class="active"{% endif %}>معرض الفيديوهات</a></li>
                 <li><a href="/library" {% if request.path.startswith('/library') %}class="active"{% endif %}>المكتبة</a></li>
-                {% if user and can(user, 'view_tree') %}
+                {% if user and can_view%}
                 <li><a href="/names" {% if request.path.startswith('/names') %}class="active"{% endif %}>شجرة الحوطية</a></li>
                 {% endif %}
                 {% if user and user.role == "admin" %}
                 <li><a href="/admin" {% if request.path.startswith('/admin') %}class="active"{% endif %}>الإدارة</a></li>
                 {% endif %}
             </ul>
-            <div class="user-area">
-                {% if user %}
+            <div class="mobile-header-actions">
+                 {% if user %}
+                <div class="user-area">
                     <button class="user-btn" id="userBtn" aria-haspopup="true" aria-expanded="false">
-                        <span class="avatar">{{ user.username[0] | upper }}</span>
-                        
+                        {% if user and user.username %}
+                            <span class="avatar big">{{ user.username[0] | upper }}</span>
+                        {% else %}
+                            <span class="avatar big">?</span>
+                        {% endif %}
+                     
                         {# استخدام unread_count الممرر من الروتر #}
                         {% if unread_count and unread_count > 0 %}
                         <span class="notification-badge">{{ unread_count }}</span>
                         {% endif %}
-                        
                         <svg class="chevron" viewBox="0 0 24 24" width="16" height="16">
                             <path fill="currentColor" d="M7 10l5 5 5-5z"/>
                         </svg>
                     </button>
-                    
-                    <div class="dropdown" id="userDropdown">
-                        <div class="dropdown-header">
-                            <span class="avatar big">{{ user.username[0] | upper }}</span>
-                            <div>
-                                <div class="name">{{ user.username }}</div>
-                                <div class="role">
-                                    {% if user.role == 'admin' %}مدير النظام
-                                    {% elif user.role == 'manager' %}مدير
-                                    {% else %}عضو{% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <a href="/profile" class="dropdown-link">
-                            <span>صفحتي الشخصية</span>
-                            {% if unread_count and unread_count > 0 %}
-                            <span class="notification-badge-inline">{{ unread_count }}</span>
-                            {% endif %}
-                        </a>
-                        
-                        <a href="/auth/logout" class="dropdown-link logout">تسجيل الخروج</a>
-                    </div>
+                </div>    
                 {% else %}
                     <a href="/auth/login" class="desktop-only-login">تسجيل الدخول</a>
                 {% endif %}
+                <button class="mobile-menu-toggle" id="mobileToggle">
+                    القائمة
+                </button>
             </div>
-           
-            <button class="mobile-menu-toggle" id="mobileToggle">
-                <span></span><span></span><span></span>
-            </button>
         </nav>
+        <div class="dropdown" id="userDropdown">
+            <div class="dropdown-header">
+                {% if user and user.username %}
+                    <span class="avatar big">{{ user.username[0] | upper }}</span>
+                    <div>
+                        <div class="name">{{ user.username }}</div>
+                        <div class="role">
+                            {% if user.role == 'admin' %}مدير النظام
+                            {% elif user.role == 'manager' %}مدير
+                            {% else %}عضو{% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="name">زائر</div>
+                {% endif %}
+            </div>
+            <a href="/profile" class="dropdown-link">
+                <span>صفحتي الشخصية</span>
+                {% if unread_count and unread_count > 0 %}
+                <span class="notification-badge-inline">{{ unread_count }}</span>
+                {% endif %}
+            </a>
+            <a href="/auth/logout" class="dropdown-link logout">تسجيل الخروج</a>
+        </div>
         <div class="mobile-nav" id="mobileNav">
             <a href="/">الرئيسية</a>
             <a href="/news">الأخبار</a>
@@ -90,16 +92,19 @@
             <a href="/gallery">معرض الصور</a>
             <a href="/video">معرض الفيديوهات</a>
             <a href="/library">المكتبة</a>
-            {% if user and user.role == "admin" %}<a href="/admin">الإدارة</a>{% endif %}
+            {% if user and can_view%}
+            <a href="/names">شجرة الحوطية</a>
+            {% endif %}
+            {% if user and user.role == "admin" %}
+            <a href="/admin">الإدارة</a>
+            {% endif %}
             {% if user %}
-                <a href="/names">شجرة الحوطية</a>
-                <a href="/profile">صفحتي الشخصية</a>
-                <a href="/auth/logout" class="logout">تسجيل الخروج</a>
+            <a href="/profile">صفحتي الشخصية</a>
+            <a href="/auth/logout" class="logout">تسجيل الخروج</a>
             {% else %}
                 <a href="/auth/login">تسجيل الدخول</a>
             {% endif %}
         </div>
-        
     </header>
 
     <main>{% block content %}{% endblock %}</main>

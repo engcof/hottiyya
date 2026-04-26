@@ -10,7 +10,7 @@ from services.analytics import log_action
 from services.library_service import LibraryService
 import shutil
 import os
-from core.templates import templates
+from core.templates import templates, get_global_context
 import html 
 
 router = APIRouter(prefix="/library", tags=["Library"])
@@ -29,15 +29,15 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     # تمرير نص البحث للسيرفس
     books, total_pages , page_numbers= LibraryService.get_books_paginated(category, page, PER_PAGE, q)
    
-
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
 
+   # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
     
-    response = templates.TemplateResponse("library/index.html", {
-        "request": request, 
-        "user": user, 
-        "can_add": can_add,
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "can_add": can_add,
         "csrf_token": csrf_token,
         "books": books, 
         "categories": CATEGORIES,
@@ -47,6 +47,8 @@ async def list_library(request: Request, category: str = "الكل", page: int =
         "total_pages": total_pages,
         "q": q  
     })
+    
+    response = templates.TemplateResponse("library/index.html", context)
     set_cache_headers(response)
     return response
     

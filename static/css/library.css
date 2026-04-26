@@ -446,3 +446,34 @@
 .custom-default-cover:has(.fa-file-powerpoint) {
     background: linear-gradient(135deg, #d24726, #e67e22); /* برتقالي بوربوينت */
 }
+
+/* تنسيق الفلاتر ليطابق القائمة الرئيسية */
+.library-filters a {
+    text-decoration: none;
+    color: var(--text-color); /* اللون المعتمد للقائمة */
+    font-weight: 500;
+    padding: 5px 10px;
+    transition: color 0.3s ease;
+    border-bottom: 2px solid transparent; /* مظهر الخط أسفل الرابط */
+}
+
+/* تنسيق حالة النشاط (Active) */
+.library-filters a.active {
+    color: var(--primary); /* اللون المعتمد للرابط النشط */
+    border-bottom: 2px solid var(--primary);
+}
+
+/* تأثير عند المرور بالماوس */
+.library-filters a:hover {
+    color: var(--primary);
+}
+
+/* مظهر الموبايل (تمرير أفقي) */
+@media (max-width: 768px) {
+    .library-filters {
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 10px;
+        justify-content: flex-start !important;
+    }
+}

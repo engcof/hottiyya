@@ -91,15 +91,7 @@ class FamilyService:
                     if isinstance(member_data.get(key), date):
                         member_data[key] = member_data[key].isoformat()
 
-                # 3. تحديد الجنس من العلاقة إذا كان الحقل فارغاً
-                gender = member_data.get("gender")
-                if not gender and member_data.get("relation"):
-                    rel = member_data["relation"]
-                    if rel in ("ابن", "زوج", "ابن زوج", "ابن زوجة"):
-                        gender = "ذكر"
-                    elif rel in ("ابنة", "زوجة", "ابنة زوج", "ابنة زوجة"):
-                        gender = "أنثى"
-
+               
                 # 4. جلب الأم والأبناء والاسم الكامل
                 cur.execute("SELECT public.get_full_name(%s, NULL, TRUE) AS m_name", (member_data.get("m_code"),))
                 m_res = cur.fetchone()
@@ -110,10 +102,19 @@ class FamilyService:
 
                 cur.execute("SELECT public.get_full_name(%s, NULL, FALSE) AS display_name", (code,))
                 display_name = cur.fetchone()["display_name"]
-
+                
+                # 3. تحديد الجنس من العلاقة إذا كان الحقل فارغاً
+                gender = member_data.get("gender")
+                if not gender and member_data.get("relation"):
+                    rel = member_data["relation"]
+                    if rel in ("ابن", "زوج", "ابن زوج", "ابن زوجة"):
+                        gender = "ذكر"
+                    elif rel in ("ابنة", "زوجة", "ابنة زوج", "ابنة زوجة"):
+                        gender = "أنثى"
+                    
                 wives = []
                 husbands = []
-
+               
                 # 5. منطق الزوجات (للذكر)
                 if gender == "ذكر":
                     wife_ids = set()

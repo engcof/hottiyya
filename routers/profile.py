@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException, status, Form, Query 
 from fastapi.responses import HTMLResponse, RedirectResponse
-from core.templates import templates
+from core.templates import templates, get_global_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
 from services.profile_service import ProfileService
@@ -44,9 +44,12 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)):
     error_message = request.session.pop("profile_error", None)
     success_message = request.session.pop("profile_success", None)
 
-    response = templates.TemplateResponse("profile/profile.html", {
-        "request": request,
-        "user": user,
+    
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "csrf_token": csrf_token,
         "notifications": inbox_data["unread_count"],
         "inbox_messages": inbox_data["messages"],
@@ -57,6 +60,8 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)):
         "success_msg": success_message,
         "admin_id": PRIMARY_ADMIN_ID if user.get("role") != "admin" else None
     })
+    
+    response = templates.TemplateResponse("profile/profile.html",context)
     set_cache_headers(response)
     return response
 

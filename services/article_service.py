@@ -96,6 +96,14 @@ class ArticleService:
                 """, (article_id,))
                 comments = cur.fetchall()
                 return article, comments
+    
+    @staticmethod
+    def get_article_by_id(article_id):
+        """جلب مقال محدد بواسطة المعرف"""
+        with get_db_context() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT * FROM articles WHERE id = %s", (article_id,))
+                return cur.fetchone()
 
     @staticmethod
     async def update_article(article_id, title, content, image_file=None):
@@ -122,6 +130,7 @@ class ArticleService:
                 """, (title, content, image_url, article_id))
                 conn.commit()
                 return True
+    
     @staticmethod
     def delete_article(article_id):
         """حذف المقال وملفاته من السحابة والتعليقات المرتبطة به"""

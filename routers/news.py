@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
+from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException,Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from psycopg2.extras import RealDictCursor
 from services.news_service import NewsService
@@ -8,7 +8,7 @@ from postgresql import get_db_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.has_permissions import can
 from security.session import set_cache_headers
-from core.templates import templates
+from core.templates import templates, get_global_context
 import shutil
 import os
 import html # تم إضافة استيراد html
@@ -19,29 +19,42 @@ router = APIRouter(prefix="/news", tags=["news"])
 UPLOAD_DIR = "static/uploads/news"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# التعبيرات النمطية للتحقق من نظافة المحتوى (عربي، إنجليزي، أرقام، علامات ترقيم شائعة)
-VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
-VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r]+"
-VALID_AUTHOR_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+# التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
+VALID_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+    
+# Regex شامل يسمح بجميع رموز HTML وعلامات الترقيم والتشكيل العربي
+VALID_CONTENT_REGEX = r"[\s\S]*"
 
-
+# الحل الأفضل هو التأكد فقط من وجود محتوى وعدم وجود وسوم خبيثة (مثل <script>)
+def is_safe_html(content):
+    forbidden_tags = ["<script", "javascript:", "onclick", "<iframe", "<object"]
+    return not any(tag in content.lower() for tag in forbidden_tags)
 
 # === عرض الأخبار (القائمة) ===
 @router.get("/", response_class=HTMLResponse)
-async def list_news(request: Request):
+async def list_news(request: Request, page: int = Query(1, ge=1), q: str = Query(None)):
     user = request.session.get("user")
-    # التحقق من صلاحية الإضافة لغرض عرض الزر في القالب
     can_add = can(user, "add_news")
     
-    # استخدام السيرفس لجلب الأخبار
-    news = NewsService.get_all_news()
+    # 1. جلب البيانات من السيرفس
+    limit = 10
+    news, total = NewsService.get_all_news(page=page, limit=limit, q=q)
+    total_pages = (total + limit - 1) // limit
+
+    # 2. تجهيز السياق الموحد
+    context = get_global_context(request)
     
-    response = templates.TemplateResponse("news/list.html", {
-        "request": request,
-        "user": user,
-        "news": news,
-        "can_add": can_add
+    # 3. تحديث السياق بالبيانات الخاصة بهذه الصفحة
+    context.update({
+        "news": news,         
+        "can_add": can_add,
+        "current_page": page,
+        "total_pages": total_pages,
+        "q": q
     })
+    
+    # 4. إرسال القالب (لاحظ تمرير context فقط)
+    response = templates.TemplateResponse("news/list.html", context)
     set_cache_headers(response)
     return response
 
@@ -113,23 +126,26 @@ async def add_news(
     author_stripped = author.strip()
     
     error = None
-
+    
+   
+    # 1. التحقق من الأخطاء (التصحيح)
     if not title_stripped:
-        error = "عنوان الخبر مطلوب."
-    elif not content_stripped:
-        error = "محتوى الخبر مطلوب."
+        error ="عنوان الخبر مطلوب."
+    elif not re.fullmatch(VALID_REGEX, title_stripped):
+        error = "العنوان يحتوي على رموز غير مسموح بها."
+    # التحقق من الأمان عبر الدالة التي كتبناها
+    elif not is_safe_html(content_stripped):
+        error = "المحتوى يحتوي على وسوم غير مسموح بها."
+     # فحص الـ Regex للمحتوى (تأكد أنه يشمل رموز HTML كما في ردنا السابق)
+    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
+        error = "المحتوى يحتوي على رموز غير مسموح بها."
     elif not author_stripped:
         error = "اسم الكاتب مطلوب."
-    
-    # التحقق من نظافة العنوان
-    elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
-        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
-    # التحقق من نظافة المحتوى
-    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
-        error = "المحتوى يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
     # التحقق من نظافة الكاتب
-    elif not re.fullmatch(VALID_AUTHOR_REGEX, author_stripped):
+    elif not re.fullmatch(VALID_REGEX, author_stripped):
         error = "اسم الكاتب يحتوي على رموز غير مسموح بها."
+ 
+
 
     # في حال وجود خطأ، نعيد المستخدم إلى نموذج الإضافة مع رسالة الخطأ وبياناته
     if error:
@@ -143,17 +159,12 @@ async def add_news(
             "form_data": {"title": title, "content": content, "author": author}
         })
 
-
-    # تنظيف البيانات باستخدام html.escape لمنع XSS
-    title_safe = html.escape(title_stripped)
-    content_safe = html.escape(content_stripped)
-    author_safe = html.escape(author_stripped)
     try:
         # استخدام السيرفس للحفظ والرفع للسحابة
         news_id = NewsService.create_news(
-            title=title_safe,
-            content=content_safe,
-            author=author_safe,
+            title=title_stripped,
+            content=content_stripped,
+            author=author_stripped,
             media_file=image.file if image and image.filename else None
         )
 
@@ -202,7 +213,8 @@ async def update_news(
     title: str = Form(...),
     content: str = Form(...),
     author: str = Form(...),
-    image: UploadFile = File(None)
+    image: UploadFile = File(None),
+    page: int = Form(1)
 ):
     user = request.session.get("user")
     if not can(user, "edit_news"):
@@ -219,34 +231,34 @@ async def update_news(
     
     error = None
 
+   # 1. التحقق من الأخطاء (التصحيح)
     if not title_stripped:
-        error = "عنوان الخبر مطلوب."
-    elif not content_stripped:
-        error = "محتوى الخبر مطلوب."
+        error ="عنوان الخبر مطلوب."
+    elif not re.fullmatch(VALID_REGEX, title_stripped):
+        error = "العنوان يحتوي على رموز غير مسموح بها."
+    # التحقق من الأمان عبر الدالة التي كتبناها
+    elif not is_safe_html(content_stripped):
+        error = "المحتوى يحتوي على وسوم غير مسموح بها (مثل script أو iframe)."
+    # فحص الـ Regex للمحتوى (تأكد أنه يشمل رموز HTML كما في ردنا السابق)
+    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
+        error = "المحتوى يحتوي على رموز غير مسموح بها."
     elif not author_stripped:
         error = "اسم الكاتب مطلوب."
-    
-    # التحقق من نظافة العنوان
-    elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
-        error = "العنوان يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
-    # التحقق من نظافة المحتوى
-    elif not re.fullmatch(VALID_CONTENT_REGEX, content_stripped):
-        error = "المحتوى يحتوي على رموز غير مسموح بها. يُسمح بالعربية والإنجليزية والأرقام وعلامات الترقيم الشائعة فقط."
     # التحقق من نظافة الكاتب
-    elif not re.fullmatch(VALID_AUTHOR_REGEX, author_stripped):
+    elif not re.fullmatch(VALID_REGEX, author_stripped):
         error = "اسم الكاتب يحتوي على رموز غير مسموح بها."
+ 
 
     # في حال وجود خطأ، نعيد المستخدم إلى نموذج التعديل مع رسالة الخطأ وبياناته
     if error:
         csrf_token = generate_csrf_token()
         request.session["csrf_token"] = csrf_token
         
-        with get_db_context() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM news WHERE id = %s", (id,))
-                item = cur.fetchone()
-                if not item:
-                    raise HTTPException(404, "الخبر غير موجود أثناء التعديل.")
+      # استخدام السيرفس بدلاً من الاستعلام المباشر
+        item = NewsService.get_news_by_id(id)
+        
+        if not item:
+            raise HTTPException(404, "الخبر غير موجود أثناء التعديل.")
         
         # تحديث الحقول بقيم الـ Form الجديدة لعرضها للمستخدم
         item['title'] = title
@@ -261,14 +273,12 @@ async def update_news(
             "error": error
         })
 
-
-    
     try:
         # استخدام السيرفس المحدث
         success = NewsService.update_news(
             news_id=id,
             title=html.escape(title.strip()),
-            content=html.escape(content.strip()),
+            content=content_stripped,
             author=html.escape(author.strip()),
             media_file=image.file if image and image.filename else None
         )
@@ -280,7 +290,8 @@ async def update_news(
                 action="تعديل خبر",
                 details=f"قام {user['username']} بتعديل الخبر رقم ({id}) بعنوان: {title_stripped[:30]}..."
             ) 
-            return RedirectResponse(f"/news/{id}", status_code=303)
+            #return RedirectResponse(f"/news/{id}", status_code=303)
+            return RedirectResponse(f"/news?page={page}", status_code=303)
         raise HTTPException(404, "الخبر غير موجود")
     except Exception as e:
         print(f"❌ Error during update: {e}")
@@ -308,6 +319,7 @@ async def delete_news(request: Request, id: int):
                 details=f"قام {user['username']} بحذف الخبر رقم ({id}) نهائياً مع ملفاته."
             )
             return RedirectResponse("/news", status_code=303)
+           
         else:
             raise HTTPException(404, "الخبر غير موجود")
             

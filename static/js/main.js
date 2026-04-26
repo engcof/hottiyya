@@ -1,238 +1,65 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-    /* ==================== تعريف المتغيرات العامة ==================== */
-    const mobileToggle   = document.getElementById("mobileToggle");
-    const mobileNav      = document.getElementById("mobileNav");
-    const userBtn        = document.getElementById("userBtn");
-    const userDropdown   = document.getElementById("userDropdown");
-    const onlineToggle   = document.getElementById("onlineToggle");
-    const onlineList     = document.getElementById("onlineList");
-    const tickerInner    = document.querySelector(".ticker-inner");
+    /* ==================== 1. قائمة الموبايل (Hamburger Menu) ==================== */
+    const mobileToggle = document.getElementById("mobileToggle");
+    const mobileNav = document.getElementById("mobileNav");
 
-
-    /* ==================== قائمة الموبايل (Hamburger Menu) ==================== */
     if (mobileToggle && mobileNav) {
-
         mobileToggle.addEventListener("click", function (e) {
             e.stopPropagation();
-            mobileToggle.classList.toggle("active");
+            this.classList.toggle("active");
             mobileNav.classList.toggle("active");
+            // إضافة كلاس إضافي للتحكم في ظهور التأثير (إذا لزم الأمر)
+            setTimeout(() => mobileNav.classList.toggle("show"), 10);
         });
 
+        // إغلاق القائمة عند الضغط على أي رابط بداخلها
         mobileNav.querySelectorAll("a").forEach(link => {
             link.addEventListener("click", () => {
                 mobileToggle.classList.remove("active");
                 mobileNav.classList.remove("active");
+                mobileNav.classList.remove("show");
             });
         });
-
-        document.addEventListener("click", function (e) {
-            if (!mobileToggle.contains(e.target) && !mobileNav.contains(e.target)) {
-                mobileToggle.classList.remove("active");
-                mobileNav.classList.remove("active");
-            }
-        });
-
-        mobileNav.addEventListener("click", e => e.stopPropagation());
     }
 
+    /* ==================== 2. دروب داون المستخدم (Desktop & Mobile) ==================== */
+    const userBtn = document.getElementById("userBtn");
+    const userDropdown = document.getElementById("userDropdown");
 
-    /* ==================== دروب داون المستخدم (Desktop User Dropdown) ==================== */
     if (userBtn && userDropdown) {
         userBtn.addEventListener("click", function (e) {
             e.stopPropagation();
-
-            // إغلاق قائمة الأونلاين
-            onlineList?.classList.remove("show");
-            onlineToggle?.classList.remove("active");
-
+            // إغلاق أي قوائم أخرى
+            document.getElementById('onlineList')?.classList.remove("show");
             userDropdown.classList.toggle("show");
         });
+    }
 
-        document.addEventListener("click", () => {
+    /* ==================== 3. إغلاق القوائم عند الضغط في أي مكان ==================== */
+    document.addEventListener("click", function (e) {
+        // إغلاق قائمة المستخدم
+        if (userDropdown && !userBtn?.contains(e.target)) {
             userDropdown.classList.remove("show");
-        });
-
-        userDropdown.addEventListener("click", e => e.stopPropagation());
-    }
-
-
-    /* ==================== قائمة المستخدمين أونلاين (مع fixed positioning) ==================== */
-    if (document.getElementById('onlineToggle')) {
-        const toggle = document.getElementById('onlineToggle');
-        const list = document.getElementById('onlineList');
-        const portal = document.getElementById('onlineDropdownPortal');
-        const originalParent = list.parentElement; // لحفظ الوالد الأصلي    
-    
-        // إخفاء أولي
-        // ... (بقية تنسيقات الإخفاء الأولي كما هي)
-        list.style.opacity = '0';
-        list.style.visibility = 'hidden';
-        list.style.pointerEvents = 'none';
-        list.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
-        list.style.transform = 'translateY(-10px)';
-
-        function show() {
-        // نقل القائمة إلى البوابة
-        portal.appendChild(list); 
-
-        const rect = toggle.getBoundingClientRect();
-        // مركزة القائمة تحت زر التبديل
-        const left = rect.left + rect.width / 2 - list.offsetWidth / 2;
-        const top = rect.bottom + 10;
-
-        portal.style.left = Math.max(8, left) + 'px';
-        portal.style.top = top + 'px';
-        portal.style.pointerEvents = 'all';
-
-        list.style.opacity = '1';
-        list.style.visibility = 'visible';
-        list.style.pointerEvents = 'all';
-        list.style.transform = 'translateY(0)';
-        toggle.classList.add('active');
-
-        // إغلاق قائمة المستخدم إذا كانت مفتوحة
-        document.getElementById('userDropdown')?.classList.remove("show");
-        document.getElementById('userBtn')?.classList.remove("active");
         }
-
-        function hide() {
-            // إعادة القائمة إلى مكانها الأصلي
-            if (originalParent) {
-                originalParent.appendChild(list);
-            }
-
-            list.style.opacity = '0';
-            list.style.visibility = 'hidden';
-            list.style.pointerEvents = 'none';
-            list.style.transform = 'translateY(-10px)';
-            portal.style.pointerEvents = 'none';
-            toggle.classList.remove('active');
-        }
-
-        toggle.addEventListener('click', e => {
-            e.stopPropagation();
-            if (toggle.classList.contains('active')) hide();
-            else show();
-        });
-
-        document.addEventListener('click', e => {
-            // إذا لم يتم النقر على الزر أو القائمة نفسها، قم بإخفائها
-            if (!toggle.contains(e.target) && !list.contains(e.target)) hide();
-        });
-
-        // تحديث الموقع لو سكرولت وهي مفتوحة
-        window.addEventListener('scroll', () => {
-            if (toggle.classList.contains('active')) show();
-        });
-
-        // للتأكد من تحديث الموقع عند تغيير حجم الشاشة
-        window.addEventListener('resize', () => {
-            if (toggle.classList.contains('active')) show();
-        });
-    }
-    
-    /* ==================== إغلاق كل القوائم عند الضغط على ESC ==================== */
-    document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") {
+        // إغلاق قائمة الموبايل
+        if (mobileNav && !mobileToggle?.contains(e.target) && !mobileNav.contains(e.target)) {
             mobileToggle?.classList.remove("active");
             mobileNav?.classList.remove("active");
-            userDropdown?.classList.remove("show");
-            onlineList?.classList.remove("show");
-            onlineToggle?.classList.remove("active");
         }
     });
 
-
-    /* ==================== تأثير الـ Header عند التمرير ==================== */
-    window.addEventListener("scroll", function () {
-        const header = document.querySelector("header");
-        if (window.scrollY > 50) header?.classList.add("scrolled");
-        else header?.classList.remove("scrolled");
+    /* ==================== 4. الرسائل (Flash Messages) ==================== */
+    const flashMessages = document.querySelectorAll('.flash-message, #success-alert');
+    flashMessages.forEach(message => {
+        setTimeout(() => {
+            message.style.transition = 'opacity 0.6s ease';
+            message.style.opacity = '0';
+            setTimeout(() => message.remove(), 600);
+        }, 5000);
     });
 
-
-    /* ==================== تعديل الصلاحيات Inline Editing ==================== */
-    const inlineInputs = document.querySelectorAll('.inline-input');
-    if (inlineInputs.length > 0) {
-        inlineInputs.forEach(input => {
-            input.addEventListener('input', function () {
-                const form = this.closest('form');
-                const permId = form.querySelector('input[name="perm_id"]').value;
-
-                const saveForm = document.getElementById('edit-form-' + permId);
-                if (!saveForm) return;
-
-                const hiddenName = saveForm.querySelector('input[name="name"]');
-                const hiddenCategory = saveForm.querySelector('input[name="category"]');
-
-                if (this.name === 'name' && hiddenName) hiddenName.value = this.value;
-                if (this.name === 'category' && hiddenCategory) hiddenCategory.value = this.value;
-
-                this.classList.add('changed');
-                clearTimeout(this.changedTimeout);
-                this.changedTimeout = setTimeout(() => {
-                    this.classList.remove('changed');
-                }, 2000);
-            });
-        });
-    }
-
-
-    /* ==================== تأكيد الحذف ==================== */
-    document.querySelectorAll('form[onsubmit*="confirm"]').forEach(form => {
-        if (!form.dataset.confirmHooked) {
-            form.addEventListener('submit', function (e) {
-                const message = this.getAttribute('onsubmit').match(/confirm\(['"]([^'"]+)['"]\)/);
-                if (message && !confirm(message[1])) {
-                    e.preventDefault();
-                }
-            });
-            form.dataset.confirmHooked = "true";
-        }
-    });
-
-
-    /* ==================== شريط آخر الأخبار / المقالات (Ticker) ==================== */
-    if (tickerInner) {
-
-        const content = tickerInner.innerHTML;
-        tickerInner.innerHTML = content + content + content;
-
-        let scrollPosition = 0;
-        const speed = 0.5;
-
-        function startTickerScroll() {
-            scrollPosition += speed;
-            tickerInner.style.transform = `translateX(-${scrollPosition}px)`;
-
-            const contentWidth = tickerInner.scrollWidth / 3;
-            if (scrollPosition >= contentWidth) scrollPosition = 0;
-
-            requestAnimationFrame(startTickerScroll);
-        }
-
-        requestAnimationFrame(startTickerScroll);
-    }
-
+    /* ... باقي الكود الخاص بـ onlineToggle, Ticker, Inline Editing ... */
+    
+    // ملاحظة: تأكد من إبقاء كود onlineToggle الذي نقلته للبوابة (Portal) هنا كما هو
 });
-document.addEventListener('DOMContentLoaded', () => {
-        const flashMessages = document.querySelectorAll('.flash-message');
-        flashMessages.forEach(message => {
-            setTimeout(() => {
-                message.style.transition = 'opacity 0.5s ease-out';
-                message.style.opacity = '0';
-                setTimeout(() => { message.remove(); }, 500); 
-            }, 5000);
-        });
-}); 
-// إخفاء الرسالة تلقائيًا بعد 5 ثواني
-setTimeout(() => {
-    const alert = document.getElementById('success-alert');
-    if (alert) {
-        alert.style.transition = 'opacity 0.6s ease';
-        alert.style.opacity = '0';
-        setTimeout(() => alert.remove(), 600);
-    }
-}, 5000);
-

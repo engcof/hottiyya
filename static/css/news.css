@@ -250,4 +250,31 @@
     .news-thumb { height: 180px; }
 }
 
- 
+ /* تنسيق البحث */
+.search-form { display: flex; gap: 10px; max-width: 500px; margin: 0 auto; }
+.btn-search { padding: 10px 20px; background: var(--accent); color: white; border-radius: 12px; border: none; cursor: pointer; }
+
+/* تنسيق الترقيم */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-top: 40px;
+    padding: 20px;
+}
+
+.pagination a {
+    padding: 8px 20px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.pagination .current {
+    font-weight: bold;
+    color: #64748b;
+}

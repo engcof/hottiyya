@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, Form, HTTPException, Query, File, Upload
 from fastapi.responses import HTMLResponse, RedirectResponse
 from services.gallery_service import GalleryService
 from urllib.parse import urlparse
-from core.templates import templates
+from core.templates import templates,get_global_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
 from utils.has_permissions import can
@@ -42,10 +42,12 @@ async def get_video(
         "deleted": "✅ تم حذف الفيديو بنجاح."
     }
     
-    response = templates.TemplateResponse("video/index.html", {
-        "request": request,
-        "user": user,
-        "videos": videos,
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+      "videos": videos,
         "selected_category": category,
         "csrf_token": csrf_token,
         "current_page": page,
@@ -56,6 +58,8 @@ async def get_video(
         "can_delete": can(user, "delete_video"),
         "success": messages.get(success)
     })
+    
+    response = templates.TemplateResponse("video/index.html", context)
     set_cache_headers(response)
     return response
 

@@ -1,9 +1,9 @@
 /**
  * سكربت إدارة الأخبار - موقع الحوطية
- * يتولى وظيفة معاينة الصورة المرفوعة وإزالتها
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. إدارة ملفات الوسائط
     const newsImage = document.getElementById('newsImage');
     const previewContainer = document.getElementById('imagePreview');
     const previewImg = document.getElementById('previewImg');
@@ -14,33 +14,57 @@ document.addEventListener('DOMContentLoaded', () => {
     if (newsImage) {
         newsImage.addEventListener('change', function(e) {
             const file = e.target.files[0];
-
             if (file) {
-                // التحقق من نوع الملف (اختياري لزيادة الأمان)
-                if (!file.type.startsWith('image/')) {
-                    alert("يرجى اختيار ملف صورة فقط");
-                    this.value = "";
-                    return;
-                }
-
+                // ملاحظة: قمت بإزالة شرط (image/) لأنك تدعم الفيديو أيضاً في الـ HTML
                 const reader = new FileReader();
-                reader.onload = function(event) {
+                reader.onload = (event) => {
                     previewImg.src = event.target.result;
                     previewContainer.style.display = 'block';
                     uploadContent.style.display = 'none';
                     statusText.innerText = "تم اختيار: " + file.name;
-                }
+                };
                 reader.readAsDataURL(file);
             }
         });
     }
 
     if (removeBtn) {
-        removeBtn.addEventListener('click', function() {
+        removeBtn.addEventListener('click', () => {
             newsImage.value = "";
             previewContainer.style.display = 'none';
             uploadContent.style.display = 'block';
-            statusText.innerText = "اضغط هنا أو اسحب الصورة لرفعها";
+            statusText.innerText = "اضغط لتغيير الوسائط (اختياري)";
         });
     }
+
+    // 2. إدارة المحرر والنموذج
+    const form = document.getElementById('newsForm');
+    const editor = document.getElementById('editor');
+    const contentHidden = document.getElementById('content_hidden');
+
+    if (form && editor && contentHidden) {
+        form.addEventListener('submit', function(e) {
+            // نقل الـ HTML الناتج من المحرر إلى الحقل المخفي
+            contentHidden.value = editor.innerHTML;
+            
+            // التحقق من أن المقال ليس فارغاً
+            const textContent = editor.innerText.trim();
+            if (!textContent) {
+                alert("عذراً، لا يمكن نشر خبر فارغ!");
+                e.preventDefault(); // منع الإرسال
+            }
+        });
+
+        // 2. مسح النص الافتراضي عند بدء الكتابة
+        editor.addEventListener('focus', function() {
+            if (this.innerText.trim() === "اكتب تفاصيل الخبر هنا..." ) {
+                this.innerHTML = "";
+            }
+        }, { once: true });
+    }
 });
+
+// دالة أدوات التنسيق للمحرر
+function formatDoc(cmd, value = null) {
+    document.execCommand(cmd, false, value);
+}

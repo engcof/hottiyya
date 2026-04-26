@@ -19,7 +19,12 @@
             </a>
             {% endif %}
         </div>
-
+        <div class="search-bar" style="margin-bottom: 30px;">
+            <form action="/news/" method="GET" class="search-form">
+                <input type="text" name="q" placeholder="ابحث في الأخبار..." value="{{ q or '' }}">
+                <button type="submit" class="btn-search">بحث</button>
+            </form>
+        </div>
         {% if not news %}
         <div class="empty-state">
             <div class="empty-icon">Newspaper</div>
@@ -78,6 +83,19 @@
             </article>
             {% endfor %}
         </div>
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if current_page > 1 %}
+                <a href="/news/?page={{ current_page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="prev">السابق</a>
+            {% endif %}
+
+            <span class="current">صفحة {{ current_page }} من {{ total_pages }}</span>
+
+            {% if current_page < total_pages %}
+                <a href="/news/?page={{ current_page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="next">التالي</a>
+            {% endif %}
+        </div>
+        {% endif %}
         {% endif %}
     </div>
 </section>

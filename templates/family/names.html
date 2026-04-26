@@ -56,7 +56,8 @@
                         <a href="/names/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">تعديل</a>
                     {% endif %}
                     {% if can_delete %}
-                        <form method="post" action="/names/delete/{{ m.code }}?page={{ current_page }}&q={{ q }}" style="display:inline;">
+                        <form method="post" action="/names/delete/{{ m.code }}?page={{ current_page }}&q={{ q }}" style="display:inline;
+                            "onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <button type="submit" class="btn-f-action btn-f-delete">حذف</button>
                         </form>

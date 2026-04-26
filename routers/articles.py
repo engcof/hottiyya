@@ -9,7 +9,7 @@ from services.analytics import log_action
 from services.article_service import ArticleService
 import shutil
 import os
-from core.templates import templates
+from core.templates import templates, get_global_context
 import html 
 import re # تم إضافة استيراد المكتبة للتحقق من الصيغة
 
@@ -19,7 +19,7 @@ router = APIRouter(prefix="/articles", tags=["articles"])
 VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
     
 # Regex شامل يسمح بجميع رموز HTML وعلامات الترقيم والتشكيل العربي
-VALID_CONTENT_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)\n\r<>\/=\"\'\:\;\#\%\&\+\?\@\_\*\[\]\“\”\«\»\–\—]+"
+VALID_CONTENT_REGEX = r"[\s\S]*"
 
 # الحل الأفضل هو التأكد فقط من وجود محتوى وعدم وجود وسوم خبيثة (مثل <script>)
 def is_safe_html(content):
@@ -37,11 +37,12 @@ async def list_articles(request: Request, page: int = 1):
     request.session["csrf_token"] = csrf_token
     # استدعاء الخدمة لجلب البيانات والترقيم
     articles, total_pages = ArticleService.get_all_articles(page=page, per_page=12)
-
-    response = templates.TemplateResponse("articles/list.html", {
-        "request": request,
-        "user": user,
-        "articles": articles,
+     # 2. تجهيز السياق الموحد
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بهذه الصفحة
+    context.update({
+       "articles": articles,
         "can_add": can_add,
         "csrf_token": csrf_token,
         "page": page,
@@ -49,10 +50,12 @@ async def list_articles(request: Request, page: int = 1):
         "has_prev": page > 1,
         "has_next": page < total_pages
     })
+    
+    # 4. إرسال القالب (لاحظ تمرير context فقط)
+    response = templates.TemplateResponse("articles/list.html", context)
     set_cache_headers(response)
     return response
-
-
+    
 # === 🌟 التوجيه إلى أحدث مقال (مسار ثابت) 🌟 ===
 @router.get("/latest")
 async def latest_article_redirect():
@@ -244,20 +247,19 @@ async def update_article(
         csrf_token = generate_csrf_token()
         request.session["csrf_token"] = csrf_token
         
-        # جلب البيانات الأصلية للمقال لاستخدامها في القالب
-        with get_db_context() as conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM articles WHERE id = %s", (id,))
-                article = cur.fetchone()
-                if not article:
-                    raise HTTPException(404, "المقال غير موجود أثناء التعديل.")
+        # استخدام السيرفس بدلاً من الاستعلام المباشر
+        articl= ArticleService.get_article_by_id(id)
+        
+        if not articl:
+            raise HTTPException(404, "المقال غير موجود أثناء التعديل.")
+     
         
         # استبدال العنوان والمحتوى بالمدخلات الجديدة لعرض الخطأ
-        article['title'] = title
-        article['content'] = content
+        articl['title'] = title
+        articl['content'] = content
 
         return templates.TemplateResponse("articles/edit.html", {
-            "request": request, "user": user, "article": article,
+            "request": request, "user": user, "article": articl,
             "csrf_token": csrf_token, "error": error
         })
 

@@ -12,7 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from dotenv import load_dotenv
 
 # المكتبات المحلية (Local Imports)
-from core.templates import templates
+from core.templates import templates, get_global_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers
 from utils.has_permissions import can
@@ -36,7 +36,6 @@ def validate_parent_code(code_value, code_name):
         return f"كود {code_name} غير صحيح"
     return None
 # ====================== قائمة الأعضاء ======================
-
 @router.get("/", response_class=HTMLResponse)
 async def show_names(
     request: Request, 
@@ -87,16 +86,22 @@ async def show_names(
         if p > 1 and p < totals_pages:
             page_numbers.add(p)
     page_numbers = sorted(list(page_numbers))
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
     
-    response = templates.TemplateResponse("family/names.html", {
-        "request": request, "user": user, "members": members,
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "members": members,
         "current_page": current_page, "totals_pages": totals_pages,     
         "page_numbers": page_numbers, "q": q,
         "csrf_token": csrf_token, "can_add": can_add, "can_edit": can_edit,
         "can_delete": can_delete, "success": success_message
     })
+    
+    response = templates.TemplateResponse("family/names.html", context)
     set_cache_headers(response)
     return response
+   
 # ====================== تفاصيل العضو ======================
 @router.get("/details/{code}", response_class=HTMLResponse)
 async def name_details(

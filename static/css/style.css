@@ -131,11 +131,7 @@ nav {
   font-weight:600;
 }
 /*  منطقة المستخدم  */
-.user-area {
-    position: relative;
-    z-index: 9999;
-    right: 0;
-}
+
 .user-btn {
     display: flex;
     align-items: center;
@@ -266,30 +262,41 @@ nav {
 .mobile-menu-toggle.active span:nth-child(3) { 
     transform:rotate(-45deg) translate(7px,-6px); 
 }
+
+/* --- ثانياً: تحسين القائمة المنسدلة في الموبايل (.mobile-nav) --- */
 .mobile-nav {
-    position:fixed;
-    top:90px; left:50%; transform:translateX(-50%);
-    width:90%; max-width:400px;
-    background:white; border-radius:20px; padding:20px;
+    display: none;
+    flex-direction: column;
+    gap: 4px; /* تقليل التباعد بين الروابط من 8px إلى 4px */
+    padding: 15px;
+    border-radius:20px;
+    top: 80px; 
     box-shadow:0 20px 50px rgba(0,0,0,0.15);
-    display:none; flex-direction:column; gap:8px; z-index:999;
+    background:var(--glass-strong);
+    z-index:999;
 }
 .mobile-nav.active { 
     display:flex; 
     animation:slideDown 0.4s ease; 
+}
+
+.mobile-nav.active.show {
+    opacity: 1;
 }
 @keyframes slideDown { 
     from{opacity:0;transform:translateX(-50%) translateY(-20px)} 
     to{opacity:1;transform:translateX(-50%) translateY(0)} 
 }
 .mobile-nav a { 
-    padding:14px 20px; 
-    border-radius:12px; 
+   padding: 10px 15px; /* تقليل الحشوة العمودية */
+    font-size: 0.95rem;
+    border-radius: 8px;
     text-align:center; 
     font-weight:500; 
     color:var(--text); 
     transition:var(--transition); 
 }
+
 .mobile-nav a:hover { 
     background:#f1f5f9; 
     color:var(--accent); 
@@ -297,6 +304,11 @@ nav {
 .mobile-nav .logout { 
     color:var(--danger);
 }
+
+
+
+
+
 /* تنسيقات خاصة للجوال عند الرفع على Render */
 @media (max-width: 1024px) {
     /* 1. إخفاء زر تسجيل الدخول من الهيدر الرئيسي */
@@ -903,6 +915,7 @@ footer {
 .alert-close:hover {
     opacity: 1;
 }
+/* ========== 💡 تنسيقات الترقيم الأساسية 💡 ========== */
 /* ========== ترقيم الصفحات (Pagination) ========= */
 .pagination {
     display: flex; /* يجعل عناصر li تظهر أفقياً */
@@ -993,29 +1006,58 @@ footer {
    تنسيق الاستجابة الموحد (Unified Responsive Design)
    ============================================================ */
 
-/* 1. الشاشات المتوسطة والتابلت (أقل من 1024 بكسل) */
+
+/* 1. الشاشات المتوسطة والموبايل (أقل من 1024 بكسل) */
 @media (max-width: 1024px) {
     .container { padding: 0 15px; }
     
-    /* الهيدر والقائمة */
-    .nav-links { display: none; }
-    .mobile-menu-toggle { display: flex; }
-    header {
-        max-width: 95%;
-        left: 50%;
-        transform: translateX(-50%);
+    /* إخفاء القائمة الكبيرة */
+    .nav-links { display: none !important; }
+    
+    
+   /* اجعل الهيدر حاوية مرنة واحدة */
+    .header-container {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-direction: row-reverse; /* يضمن بقاء اللوجو يميناً والأزرار يساراً */
     }
 
-    /* إخفاء الإحصائيات لتوفير مساحة */
-    .royal-stats { display: none; }
+    /* تأكد أن حاوية الأزرار في جهة واحدة */
+    .mobile-header-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 15px !important;
+        flex-direction: row-reverse; /* ترتيب الأفاتار بجانب زر القائمة */
+    }
     
     .user-area {
-        position: absolute;
-        top: 50%;
-        transform: translateY(-50%);
-        right: 15px;
-        left: auto;
+        position: static !important;
+        margin: 0 !important;
     }
+
+    .user-btn {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+    }
+
+    .user-btn .chevron { display: none !important; }
+
+    .avatar {
+        width: 36px !important;
+        height: 36px !important;
+        font-size: 1rem !important;
+    }
+
+    /* إظهار زر القائمة */
+    .mobile-menu-toggle { display: flex !important; }
+}
+/* 1. الشاشات المتوسطة والتابلت (أقل من 1024 بكسل) */
+@media (max-width: 1024px) {
+
+   
+
 
     /* توزيع الهيرو والمعلومات */
     .hero-grid, .member-body {
@@ -1032,16 +1074,7 @@ footer {
 /* 2. شاشات الموبايل (أقل من 768 بكسل) - القسم الشامل */
 @media (max-width: 768px) {
     
-    /* الهيدر والعناصر العلوية */
-    header {
-        top: 8px;
-        width: calc(100% - 16px);
-        padding: 4px 12px;
-    }
-    .logo { font-size: 1.5rem; }
-    .user-btn span { display: none; } /* إخفاء اسم المستخدم والاكتفاء بالأيقونة */
-    .avatar { width: 36px; height: 36px; font-size: 1rem; }
-
+   
     /* العناوين والنصوص */
     .hero-title { font-size: 2.5rem; }
     .page-title { font-size: 1.8rem; }
@@ -1143,10 +1176,6 @@ footer {
     margin-top: -2px;
     margin-left: 10px;
 }
-/* تعديل بسيط لزر المستخدم ليكون موضعاً نسبياً للشارة */
-.user-btn {
-    position: relative; /* مهم لوضع .notification-badge بشكل صحيح */
-}
 
 /* زر الحذف يكون صغيراً وخفيفاً */
 .message-actions .btn-link {
@@ -1197,6 +1226,3 @@ footer {
         gap: 4px !important;
     }
 }
-
-
-/* ========== 💡 تنسيقات الترقيم الأساسية 💡 ========== */

@@ -13,7 +13,13 @@
             <h2 class="form-title">نشر خبر جديد</h2>
             <p class="form-subtitle">أطلع  على آخر المستجدات والفعاليات</p>
         </div>
-
+         {% if error %}
+<div class="alert error" style="margin-bottom: 20px;">
+    <i class="fas fa-exclamation-circle"></i>
+    <span>{{ error }}</span>
+    <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+</div>
+{% endif %}
         <form method="post" action="/news/add" enctype="multipart/form-data" class="news-form" id="newsForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             
@@ -24,9 +30,47 @@
 
             <div class="form-group">
                 <label>تفاصيل الخبر <span class="required">*</span></label>
-                <textarea name="content" class="input-field" rows="8" value="{{ form_data.get('content', '') }}"placeholder="اكتب تفاصيل الخبر هنا..." required></textarea>
-            </div>
+                 <div class="editor-container">
+                    <div class="editor-toolbar">
+                        <button type="button" onclick="formatDoc('formatBlock', 'h2')">عنوان رئيسي</button>
+                        <button type="button" onclick="formatDoc('formatBlock', 'h3')">فرعي</button>
+                        <button type="button" onclick="formatDoc('bold')" title="خط عريض"><b>B</b></button>
+                        <button type="button" onclick="formatDoc('italic')" title="خط مائل"><i>I</i></button>
+                        
+                        <select onchange="formatDoc('fontSize', this.value)" class="editor-select">
+                            <option value="3" selected>الحجم</option>
+                            <option value="4">متوسط</option>
+                            <option value="5">كبير</option>
+                            <option value="6">ضخم</option>
+                        </select>
 
+                        <div class="color-tool" title="لون الخط">
+                            <label><i class="fas fa-font"></i></label>
+                            <input type="color" onchange="formatDoc('foreColor', this.value)">
+                        </div>
+
+                        <div class="color-tool" title="تمييز النص (خلفية)">
+                            <label style="background: #ffff00; color: #000; padding: 0 4px; border-radius: 2px;">ab</label>
+                            <input type="color" onchange="formatDoc('backColor', this.value)" value="#ffff00">
+                        </div>
+
+                        <button type="button" onclick="formatDoc('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                        <button type="button" onclick="formatDoc('justifyRight')"><i class="fas fa-align-right"></i></button>
+                        <button type="button" onclick="formatDoc('justifyCenter')"><i class="fas fa-align-center"></i></button>
+                        
+                        <button type="button" onclick="formatDoc('removeFormat')" class="btn-clear-format" title="مسح التنسيق">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                    </div>
+
+                    <div id="editor" contenteditable="true" class="custom-editor">
+                        {{ form_data.get('content', 'اكتب تفاصيل الخبر هنا...') | safe }}
+                    </div>
+                </div>
+
+                <input type="hidden" name="content" id="content_hidden">
+            </div>
+             
             <div class="form-grid">
                 <div class="form-group">
                     <label>الناشر</label>

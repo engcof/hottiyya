@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from core.templates import templates
+from core.templates import templates, get_global_context
 from psycopg2.extras import RealDictCursor
 from postgresql import init_database, get_db_context
 
@@ -21,6 +21,7 @@ from utils.has_permissions import can
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
 from services.notification import get_unread_notification_count
+from utils.has_permissions import can
 from services.google_service import GoogleService
 from services.home_service import HomeService
 from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library
@@ -168,27 +169,23 @@ app.include_router(library.router)
 # =========================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    user = request.session.get("user")
-    
-    # استدعاء السيرفس الجديد
+    # لا نحتاج لتعريف user أو unread_count هنا، فالسياق الموحد سيتكفل بهما
     home_data = HomeService.get_homepage_data()
     
-    unread_count = 0
-    if user:
-        unread_count = get_unread_notification_count(user["id"])
-
-    response = templates.TemplateResponse("index.html", {
-        "request": request,
-        "user": user,
-        "unread_count": unread_count,
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "today_visitors": get_today_visitors(),
         "total_visitors": get_total_visitors(),
         "online_count": get_online_count(),
         "online_users": get_online_users()[:18],
-        # تمرير البيانات الجديدة
         "latest_article": home_data['latest_article'],
-        "latest_book": home_data['latest_book'],
+        "latest_book": home_data['latest_book']
     })
+    
+    response = templates.TemplateResponse("index.html", context)
     set_cache_headers(response)
     return response
 
@@ -233,7 +230,8 @@ async def debug_db_count():
 # =========================================
 @app.exception_handler(404)
 async def not_found(request: Request, exc):
-    return templates.TemplateResponse("404.html", {"request": request}, status_code=404)
+    context = get_global_context(request)
+    return templates.TemplateResponse("404.html", context, status_code=404)
 
 @app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)
 async def google_verification():

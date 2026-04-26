@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from core.templates import templates
+from core.templates import templates, get_global_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from security.session import set_cache_headers, get_current_user
 from services.analytics import get_logged_in_users_history, get_activity_logs_paginated, get_login_logs_paginated
@@ -23,14 +23,19 @@ async def admin_dashboard(request: Request):
     user, csrf_token = get_admin_context(request)
     if not user: return RedirectResponse("/auth/login", status_code=303)
 
-    return templates.TemplateResponse("/admin/admin.html", {
-        "request": request,
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "csrf_token": csrf_token,
-        "user": user,
         "success_message": request.session.pop("success_message", None),
         "error_message": request.session.pop("error_message", None)
     })
-
+    
+    response = templates.TemplateResponse("/admin/admin.html", context)
+    set_cache_headers(response)
+    return response
 # 2. صفحة إدارة المستخدمين (الجدول فقط)
 @router.get("/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request, page: int = 1):

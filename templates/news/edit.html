@@ -37,9 +37,45 @@
 
             <div class="form-group">
                 <label>تفاصيل الخبر <span class="required">*</span></label>
-                <textarea name="content" class="input-field" rows="10" required>{{ item.content }}</textarea>
-            </div>
+                 <div class="editor-container">
+                    <div class="editor-toolbar">
+                        <button type="button" onclick="formatDoc('formatBlock', 'h2')">عنوان رئيسي</button>
+                        <button type="button" onclick="formatDoc('formatBlock', 'h3')">فرعي</button>
+                        <button type="button" onclick="formatDoc('bold')" title="خط عريض"><b>B</b></button>
+                        <button type="button" onclick="formatDoc('italic')" title="خط مائل"><i>I</i></button>
+                        
+                        <select onchange="formatDoc('fontSize', this.value)" class="editor-select">
+                            <option value="3" selected>حجم الخط</option>
+                            <option value="4">متوسط</option>
+                            <option value="5">كبير</option>
+                            <option value="6">ضخم</option>
+                        </select>
 
+                        <div class="color-tool" title="لون الخط">
+                            <label><i class="fas fa-font"></i></label>
+                            <input type="color" onchange="formatDoc('foreColor', this.value)">
+                        </div>
+
+                        <div class="color-tool" title="تمييز النص (خلفية)">
+                            <label style="background: #ffff00; color: #000; padding: 0 4px; border-radius: 2px;">ab</label>
+                            <input type="color" onchange="formatDoc('backColor', this.value)" value="#ffff00">
+                        </div>
+
+                        <button type="button" onclick="formatDoc('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                        <button type="button" onclick="formatDoc('justifyRight')"><i class="fas fa-align-right"></i></button>
+                        <button type="button" onclick="formatDoc('justifyCenter')"><i class="fas fa-align-center"></i></button>
+                        
+                        <button type="button" onclick="formatDoc('removeFormat')" class="btn-clear-format" title="مسح التنسيق">
+                            <i class="fas fa-eraser"></i>
+                        </button>
+                    </div>
+
+                    <div id="editor" contenteditable="true" class="custom-editor">
+                        {{ item.content | safe }}
+                    </div>
+             
+                <input type="hidden" name="content" id="content_hidden">
+                </div>
             <div class="form-group">
                 <label>الوسائط (صورة أو فيديو)</label>
                 
@@ -84,4 +120,5 @@
 </section>
 
 <script src="{{ url_for('static', path='js/news-actions.js') }}"></script>
+<script src="{{ url_for('static', path='js/article-editor.js') }}"></script>
 {% endblock %}
