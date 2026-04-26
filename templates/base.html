@@ -52,13 +52,19 @@
                             <path fill="currentColor" d="M7 10l5 5 5-5z"/>
                         </svg>
                     </button>
-                </div>    
+                </div>  
+               
                 {% else %}
-                    <a href="/auth/login" class="desktop-only-login">تسجيل الدخول</a>
-                {% endif %}
-                <button class="mobile-menu-toggle" id="mobileToggle">
-                    القائمة
+                    <a href="/auth/login" class="desktop-only-login">دخول</a>
+                {% endif %} 
+               <button class="mobile-menu-toggle" id="mobileToggle" aria-label="القائمة">
+                    <div class="hamburger">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
                 </button>
+
             </div>
         </nav>
         <div class="dropdown" id="userDropdown">
@@ -98,12 +104,7 @@
             {% if user and user.role == "admin" %}
             <a href="/admin">الإدارة</a>
             {% endif %}
-            {% if user %}
-            <a href="/profile">صفحتي الشخصية</a>
-            <a href="/auth/logout" class="logout">تسجيل الخروج</a>
-            {% else %}
-                <a href="/auth/login">تسجيل الدخول</a>
-            {% endif %}
+       
         </div>
     </header>
 
