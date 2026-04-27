@@ -86,6 +86,7 @@ async def show_names(
         if p > 1 and p < totals_pages:
             page_numbers.add(p)
     page_numbers = sorted(list(page_numbers))
+    
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
     context = get_global_context(request)
     
@@ -126,9 +127,11 @@ async def name_details(
     if db_age is not None and str(db_age).isdigit():
         age_details["age_at_death"] = int(db_age)
 
-    response = templates.TemplateResponse("family/details.html", {
-        "request": request,
-        "user": user,
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "member": member_data,     # يحتوي على البيانات الأساسية (code, name, etc)
         "info": member_data,       # 💡 نمرر نفس القاموس باسم info لأن القالب يستخدمه
         "full_name": details["full_name"],
@@ -142,8 +145,10 @@ async def name_details(
         "current_page": page,
         "search_query": q
     })
+    response = templates.TemplateResponse("family/details.html", context)
     set_cache_headers(response)
     return response
+  
 
 # ====================== إضافة عضو جديد ======================
 @router.get("/add", response_class=HTMLResponse)
@@ -159,15 +164,20 @@ async def add_name_form(request: Request):
         "relation": "", "level": "", "nick_name": "", "gender": "", "d_o_b": "", 
         "d_o_d": "", "email": "", "phone": "", "address": "", "p_o_b": "", "status": ""
     }
-    response = templates.TemplateResponse("family/add_name.html", {
-        "request": request, 
-        "user": user, 
-        "csrf_token": csrf_token,
+
+   # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+         "csrf_token": csrf_token,
         "error": None,
         "form_data": empty_form_data
     })
+    response = templates.TemplateResponse("family/add_name.html", context)
     set_cache_headers(response)
     return response
+  
 
 @router.post("/add")
 async def add_name(
@@ -429,11 +439,16 @@ async def edit_name_form(request: Request, code: str):
     info = details["info"]
     picture_url = details["picture_url"]
 
-    response = templates.TemplateResponse("family/edit_name.html", {
-        "request": request, "user": user, "member": member, "info": info,
+     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+        "member": member, "info": info,
         "picture_url": picture_url, "code": code, 
         "csrf_token": csrf_token, "error": None
     })
+    response = templates.TemplateResponse("family/edit_name.html", context)
     set_cache_headers(response)
     return response
 

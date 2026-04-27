@@ -24,7 +24,7 @@ from services.notification import get_unread_notification_count
 from utils.has_permissions import can
 from services.google_service import GoogleService
 from services.home_service import HomeService
-from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library
+from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library,about
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -164,6 +164,7 @@ app.include_router(profile.router)
 app.include_router(gallery.router)
 app.include_router(video.router)
 app.include_router(library.router)
+app.include_router(about.router)
 # =========================================
 #         الصفحة الرئيسية
 # =========================================
@@ -189,15 +190,7 @@ async def home(request: Request):
     set_cache_headers(response)
     return response
 
-@app.get("/about", response_class=HTMLResponse)
-async def about_page(request: Request):
-    user = request.session.get("user")
-    response = templates.TemplateResponse("about.html", {
-        "request": request,
-        "user": user
-    })
-    set_cache_headers(response)
-    return response
+
 
 @app.get("/debug/db-count")
 async def debug_db_count():

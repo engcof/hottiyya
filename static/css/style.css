@@ -294,6 +294,7 @@ nav {
     box-shadow:0 20px 50px rgba(0,0,0,0.15);
     background:var(--glass-strong);
     z-index:999;
+   gap:8px; 
 }
 .mobile-nav.active { 
     display:flex; 
@@ -396,8 +397,8 @@ footer {
     background:#0f172a; 
     color:#94a3b8; 
     text-align:center; 
-    padding:60px 20px; 
-    margin-top:100px; 
+    padding:20px 20px; 
+    margin-top:30px; 
     border-top:1px solid #1e293b;
 }
 .footer-links a { 
@@ -1051,7 +1052,12 @@ footer {
         flex-direction: row-reverse; /* ترتيب الأفاتار بجانب زر القائمة */ 
          flex-shrink: 0; /* منع العناصر من الانضغاط */
     }
+    footer { 
+  
+    padding:10px 10px; 
+    margin-top:20px; 
     
+    }
     .user-area {
         position: static !important;
         margin: 0 !important;
@@ -1087,7 +1093,6 @@ footer {
     }
     .logo-card, .info-card { height: auto; padding: 30px; }
     .profile-picture { order: -1; }
-
     .about-hero { padding: 80px 15px 50px; }
     .page-title { font-size: 3rem; }
 }
