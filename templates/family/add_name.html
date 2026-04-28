@@ -46,7 +46,10 @@
                     </div>
                     <small id="codeFeedback" class="feedback-text"></small>
                 </div>
-
+                <div class="form-group">
+                    <label>المستوى (الجيل)<span class="required">*</span></label>
+                    <input type="number" name="level" min="1" class="input-field" value="{{ form_data.level or '' }}" placeholder="مثال: 5">
+                </div> 
                 <div class="form-group">
                     <label>الاسم <span class="required">*</span></label>
                     <input type="text" name="name" class="input-field" required value="{{ form_data.name or '' }}" placeholder="الاسم">
@@ -58,9 +61,28 @@
                 </div>
 
                 <div class="form-group">
-                    <label>المستوى (الجيل)</label>
-                    <input type="number" name="level" min="1" class="input-field" value="{{ form_data.level or '' }}" placeholder="مثال: 5">
-                </div> 
+                    <label>الجنس</label>
+                    <select name="gender" class="input-field">
+                        <option value="">-- اختر --</option>
+                        <option value="ذكر">ذكر</option>
+                        <option value="أنثى">أنثى</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>العلاقة<span class="required">*</span></label>
+                    <select name="relation" class="input-field">
+                        <option value="">-- اختر --</option>
+                        <option value="ابن">ابن</option>
+                        <option value="ابنة">ابنة</option>
+                        <option value="زوج">زوج</option>
+                        <option value="زوجة">زوجة</option>
+                        <option value="ابن زوج">ابن زوج</option>
+                        <option value="ابنة زوج">ابنة زوج</option>
+                        <option value="ابن زوجة">ابن زوجة</option>
+                        <option value="ابنة زوجة">ابنة زوجة</option>
+                    </select>
+                </div>
 
                 <div class="form-group">
                     <label>كود الأب</label>
@@ -82,29 +104,7 @@
                     <input type="text" name="w_code" class="input-field" placeholder="مثال: A0-001-001" value="{{ form_data.w_code or '' }}">
                 </div>
 
-                <div class="form-group">
-                    <label>الجنس</label>
-                    <select name="gender" class="input-field">
-                        <option value="">-- اختر --</option>
-                        <option value="ذكر">ذكر</option>
-                        <option value="أنثى">أنثى</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>العلاقة</label>
-                    <select name="relation" class="input-field">
-                        <option value="">-- اختر --</option>
-                        <option value="ابن">ابن</option>
-                        <option value="ابنة">ابنة</option>
-                        <option value="زوج">زوج</option>
-                        <option value="زوجة">زوجة</option>
-                        <option value="ابن زوج">ابن زوج</option>
-                        <option value="ابنة زوج">ابنة زوج</option>
-                        <option value="ابن زوجة">ابن زوجة</option>
-                        <option value="ابنة زوجة">ابنة زوجة</option>
-                    </select>
-                </div>
+               
 
                 <div class="form-group">
                     <label>تاريخ الميلاد</label>
@@ -116,7 +116,26 @@
                     <input type="date" name="d_o_d" class="input-field" value="{{ form_data.d_o_d or '' }}">
                 </div>
 
+              
                 <div class="form-group">
+                     <label>مكان الميلاد</label>
+                    <input type="text" name="p_o_b"  class="input-field" value="{{ form_data.p_o_b or '' }}" placeholder="المدينة...">
+                </div>
+              
+                <div class="form-group">
+                    <label>العنوان</label>
+                    <input type="text" name="address" class="input-field" value="{{ form_data.address or '' }}" placeholder="المدينة، الحي...">
+                </div>
+                  <div class="form-group">
+                    <label>رقم الهاتف</label>
+                    <input type="text" name="phone" class="input-field" value="{{ form_data.phone or '' }}" placeholder="05xxxxxxxx">
+                </div>
+                  <div class="form-group">
+                    <label>البريد الإلكتروني</label>
+                    <input type="email" name="email" class="input-field" value="{{ form_data.email or '' }}" placeholder="example@example.com">
+                </div>
+                
+                  <div class="form-group">
                     <label>الحالة</label>
                     <select name="status" class="input-field">
                         <option value="">-- اختر --</option>
@@ -125,16 +144,6 @@
                         <option value="متوفي">متوفي</option>
                         <option value="متوفية">متوفية</option>
                     </select>
-                </div>
-
-                <div class="form-group">
-                    <label>رقم الهاتف</label>
-                    <input type="text" name="phone" class="input-field" value="{{ form_data.phone or '' }}" placeholder="05xxxxxxxx">
-                </div>
-                
-                <div class="form-group">
-                    <label>العنوان السكني</label>
-                    <input type="text" name="address" class="input-field" value="{{ form_data.address or '' }}" placeholder="المدينة، الحي...">
                 </div>
             </div>
                 <div class="form-group" style="grid-column: span 2;">

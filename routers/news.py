@@ -187,12 +187,12 @@ async def edit_news_form(request: Request, id: int):
     if not can(user,  "edit_news"):
         return RedirectResponse("/news")
 
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM news WHERE id = %s", (id,))
-            item = cur.fetchone()
-            if not item:
-                raise HTTPException(404, "الخبر غير موجود")
+    # استخدام السيرفس بدلاً من الاستعلام المباشر
+    item = NewsService.get_news_by_id(id)
+    
+    if not item:
+        raise HTTPException(404, "الخبر غير موجود أثناء التعديل.")
+    
 
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token

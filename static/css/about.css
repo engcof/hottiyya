@@ -166,3 +166,10 @@
     background: var(--accent);
     transform: scale(1.05);
 }
+
+@media (max-width: 768px) {
+    .all-page .container {
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+}

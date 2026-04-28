@@ -189,12 +189,11 @@ async def edit_article_form(request: Request, id: int):
     if not can(user, "edit_article"):
         return RedirectResponse("/articles")
 
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM articles WHERE id = %s", (id,))
-            article = cur.fetchone()
-            if not article:
-                raise HTTPException(404, "المقال غير موجود")
+    articl= ArticleService.get_article_by_id(id)
+    
+    if not articl:
+        raise HTTPException(404, "المقال غير موجود أثناء التعديل.")
+               
 
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
@@ -202,7 +201,7 @@ async def edit_article_form(request: Request, id: int):
     return templates.TemplateResponse("articles/edit.html", {
         "request": request,
         "user": user,
-        "article": article,      
+        "article": articl,      
         "csrf_token": csrf_token
     })
 

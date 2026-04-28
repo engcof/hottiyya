@@ -40,7 +40,26 @@
                     <label>المستوى (الجيل)</label>
                     <input type="number" name="level" class="input-field" value="{{ member.level }}" min="0">
                 </div>
-
+                  <div class="form-group">
+                    <label>العلاقة</label>
+                    <select name="relation" class="input-field">
+                        <option value="">-- اختر --</option>
+                        {% set relations = ["ابن", "ابنة", "زوج", "زوجة", "ابن زوج", "ابنة زوج", "ابن زوجة", "ابنة زوجة"] %}
+                        {% for rel in relations %}
+                        <option value="{{ rel }}" {% if member.relation == rel %}selected{% endif %}>{{ rel }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>الحالة</label>
+                    <select name="status" class="input-field">
+                        <option value="">-- اختر --</option>
+                        {% set stats =  [ "حي" , "حية" , "متوفي" , "متوفية" ]  %}
+                        {% for sts in stats %}
+                        <option value="{{ sts }}" {% if info.status == sts %}selected{% endif %}>{{ sts }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="form-group">
                     <label>كود الأب</label>
                     <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" >
@@ -61,16 +80,7 @@
                     <input type="text" name="w_code" class="input-field" value="{{ member.w_code or '' }}" >
                 </div>
 
-                <div class="form-group">
-                    <label>العلاقة</label>
-                    <select name="relation" class="input-field">
-                        <option value="">-- اختر --</option>
-                        {% set relations = ["ابن", "ابنة", "زوج", "زوجة", "ابن زوج", "ابنة زوج", "ابن زوجة", "ابنة زوجة"] %}
-                        {% for rel in relations %}
-                        <option value="{{ rel }}" {% if member.relation == rel %}selected{% endif %}>{{ rel }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+              
 
                 <div class="form-group">
                     <label>تاريخ الميلاد</label>
@@ -84,7 +94,11 @@
                     <label>مكان الميلاد</label>
                     <input type="text" name="p_o_b" class="input-field" value="{{ info.p_o_b or '' }}" placeholder="المدينة/الدولة">
                 </div>
-
+                 <div class="form-group" >
+                    <label>العنوان الحالي</label>
+                    <input type="text" name="address" class="input-field" value="{{ info.address or '' }}">
+                </div>
+          
                 <div class="form-group">
                     <label>رقم الهاتف</label>
                     <input type="text" name="phone" class="input-field" value="{{ info.phone or '' }}">
@@ -95,21 +109,8 @@
                     <input type="email" name="email" class="input-field" value="{{ info.email or '' }}">
                 </div>
 
-                <div class="form-group" >
-                    <label>العنوان الحالي</label>
-                    <input type="text" name="address" class="input-field" value="{{ info.address or '' }}">
-                </div>
-          
-                <div class="form-group">
-                    <label>الحالة</label>
-                    <select name="status" class="input-field">
-                        <option value="">-- اختر --</option>
-                        {% set stats =  [ "حي" , "حية" , "متوفي" , "متوفية" ]  %}
-                        {% for sts in stats %}
-                        <option value="{{ sts }}" {% if info.status == sts %}selected{% endif %}>{{ sts }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+               
+                
            </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <div class="file-input-wrapper">

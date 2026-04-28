@@ -158,6 +158,7 @@ async def add_name_form(request: Request):
         return RedirectResponse("/names")
     csrf_token = generate_csrf_token()
     request.session["csrf_token"] = csrf_token
+    
     # 🟢 الحل هنا: تعريف قاموس فارغ لكي لا يظهر خطأ Undefined في القالب
     empty_form_data = {
         "code": "", "name": "", "f_code": "", "m_code": "", "w_code": "", "h_code": "", 
