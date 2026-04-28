@@ -36,6 +36,7 @@ async def admin_dashboard(request: Request):
     response = templates.TemplateResponse("/admin/admin.html", context)
     set_cache_headers(response)
     return response
+
 # 2. صفحة إدارة المستخدمين (الجدول فقط)
 @router.get("/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request, page: int = 1):
@@ -49,11 +50,13 @@ async def admin_users_page(request: Request, page: int = 1):
     if user["username"] != "admin":
         users = [u for u in users if u['username'] != "admin"]
 
-    return templates.TemplateResponse("/admin/admin_users.html", {
-        "request": request,
+   # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "csrf_token": csrf_token,
         "users": users,
-        "user": user,
         "permissions": dashboard_data['permissions'],
         "user_permissions": dashboard_data['user_permissions'],
         "current_page": page,
@@ -61,9 +64,11 @@ async def admin_users_page(request: Request, page: int = 1):
         "success_message": request.session.pop("success_message", None),
         "error_message": request.session.pop("error_message", None)
     })
+    response = templates.TemplateResponse("/admin/admin_users.html", context)
+    set_cache_headers(response)
+    return response
 
 # --- عمليات المستخدمين (توجيه دائماً لـ /admin/users) ---
-
 @router.post("/edit_user")
 async def edit_user(request: Request, user_id: int = Form(...), username: str = Form(...), 
                     role: str = Form(...), current_page: int = Form(1), csrf_token: str = Form(...)):
@@ -97,20 +102,22 @@ async def remove_permission(request: Request, user_id: int = Form(...), permissi
     return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
 
 # --- صفحات الإضافة والتغيير (توجيه لـ /admin عند النجاح) ---
-
 @router.get("/add_user")
 async def show_add_user_page(request: Request ):
     user, csrf_token = get_admin_context(request)
     if not user: return RedirectResponse("/403")
-    return templates.TemplateResponse(
-        "admin/add_user.html", 
-                                      {
-                                          "request": request, 
-                                          "csrf_token": csrf_token, 
-                                          "user": user, 
-                                          "error": request.session.pop("error", None)
-                                          })
-
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+        "csrf_token": csrf_token, 
+        "error": request.session.pop("error", None)
+    })
+    response = templates.TemplateResponse( "admin/add_user.html",   context)
+    set_cache_headers(response)
+    return response
+   
 @router.post("/add_user")
 async def process_add_user(request: Request, username: str = Form(...), password: str = Form(...), 
                           role: str = Form(...), csrf_token: str = Form(...)):
@@ -129,16 +136,20 @@ async def show_change_password_page(request: Request):
     if not user: return RedirectResponse("/403")
     data = AuthService.get_admin_dashboard_data(page=1, users_per_page=1000)
     users = [u for u in data['users'] if u['username'] != "admin"] if user["username"] != "admin" else data['users']
-    return templates.TemplateResponse(
-        "admin/change_password.html", 
-        {
-            "request": request, 
-            "users": users, 
-            "csrf_token": csrf_token, 
-            "user": user,
-            "error": request.session.pop("error", None)
-            })
-
+    
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "users": users, 
+        "csrf_token": csrf_token, 
+        "error": request.session.pop("error", None)
+    })
+    response = templates.TemplateResponse( "admin/change_password.html",   context)
+    set_cache_headers(response)
+    return response
+   
 @router.post("/change_password")
 async def process_change_password(request: Request, user_id: int = Form(...), new_password: str = Form(...), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
@@ -149,6 +160,8 @@ async def process_change_password(request: Request, user_id: int = Form(...), ne
     request.session["error"] = message
     return RedirectResponse(f"/admin/change_password?", status_code=303)
 
+   
+
 # --- السجلات ---
 
 @router.get("/logs")
@@ -156,8 +169,17 @@ async def view_logs(request: Request, page: int = 1):
     user = get_current_user(request)
     if not user or user.get("role") != "admin": return RedirectResponse("/403")
     logs, total_pages = get_activity_logs_paginated(page=page, per_page=30)
-    return templates.TemplateResponse("admin/logs.html", {"request": request, "logs": logs, "current_page": page, "total_pages": total_pages, "user": user})
-
+  
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "logs": logs, "current_page": page, "total_pages": total_pages
+    })
+    response = templates.TemplateResponse("admin/logs.html",  context)
+    set_cache_headers(response)
+    return response
 
 
 
@@ -171,10 +193,16 @@ async def view_login_logs(request: Request, page: int = 1):
     # نمرر رقم الصفحة (page) ونحدد العدد بـ 20 سجل
     login_history, total_pages = get_login_logs_paginated(page=page, per_page=20) 
     
-    return templates.TemplateResponse("admin/login_logs.html", {
-        "request": request, 
+    
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "login_history": login_history, # السجلات الخاصة بالصفحة الحالية فقط
         "current_page": page,           # رقم الصفحة الحالية للتحكم في أزرار التنقل
-        "total_pages": total_pages,     # إجمالي الصفحات لإظهارها في الـ Pagination
-        "user": user
+        "total_pages": total_pages,    
     })
+    response = templates.TemplateResponse("admin/login_logs.html", context)
+    set_cache_headers(response)
+    return response 

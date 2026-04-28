@@ -367,13 +367,19 @@ async def add_name(
             
             csrf_token = generate_csrf_token()
             request.session["csrf_token"] = csrf_token
-        
-            return templates.TemplateResponse("family/add_name.html", {
-                "request": request, "user": user, "csrf_token": csrf_token,
+            # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+            context = get_global_context(request)
+            
+            # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+            context.update({
+                "csrf_token": csrf_token,
                 "error": None, "success": success, 
                 "form_data": empty_form_data 
             })
-            
+            response = templates.TemplateResponse("family/add_name.html", context)
+            set_cache_headers(response)
+            return response
+           
         except Exception as e:
             # 💡 إذا حدث خطأ في قاعدة البيانات، يتم تعيين رسالة الخطأ والاستمرار في مسار الفشل أدناه
            print(f"DATABASE ERROR: {e}") # 👈 سيظهر لك في الـ Terminal سبب المشكلة بالضبط

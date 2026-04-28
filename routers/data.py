@@ -4,10 +4,11 @@ from datetime import datetime
 import shutil
 from fastapi import APIRouter, Request, Depends, HTTPException, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
-from core.templates import templates
+from core.templates import templates, get_global_context
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
 from starlette.background import BackgroundTask # **تم إضافة استيراد مهم هنا**
+from security.session import set_cache_headers
 
 # تحميل متغيرات البيئة من ملف .env
 load_dotenv()
@@ -61,7 +62,18 @@ async def import_page(request: Request):
     if not user or user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
         
-    return templates.TemplateResponse("data/import_data.html", {"request": request, "user": user, "message": None})
+  
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_global_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "message": None
+    })
+    response = templates.TemplateResponse("data/import_data.html",  context)
+    set_cache_headers(response)
+    return response
+   
 
 @router.post("/import-data")
 async def import_data(
