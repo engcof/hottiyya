@@ -57,6 +57,30 @@
                     </a>
                 </div>
             </div>
+            <div class="admin-section-card">
+    <h3>🌳 تصدير شجرة العائلة</h3>
+    <div class="input-group" style="margin-bottom: 15px;">
+        <input type="text" id="treeCodeInput" placeholder="أدخل كود الشخص (مثال: A-001)" 
+               style="padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px;">
+    </div>
+    <div class="grid-buttons">
+        <button onclick="exportTree()" class="card-btn blue" style="width: 100%; border: none; cursor: pointer;">
+            <i class="icon-download"></i> تصدير الشجرة (Excel/CSV)
+        </button>
+    </div>
+</div>
+
+<script>
+    function exportTree() {
+        const code = document.getElementById('treeCodeInput').value.trim();
+        if (!code) {
+            alert("يرجى إدخال كود الشخص أولاً!");
+            return;
+        }
+        // هذا الرابط يوجه الطلب للـ Router الذي قمنا ببرمجته
+        window.location.href = `/names/export/family-tree/${code}`;
+    }
+</script>
         </div>
     </div>
 </section>

@@ -4,11 +4,10 @@ import os
 import re
 from typing import Optional
 from datetime import date 
-from fastapi.responses import StreamingResponse
 
 # المكتبات الخارجية (Third-party)
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Query, Response
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse,StreamingResponse
 from dotenv import load_dotenv
 
 # المكتبات المحلية (Local Imports)
@@ -19,6 +18,10 @@ from utils.has_permissions import can
 from utils.time_utils import calculate_age_details
 from services.analytics import log_action
 from services.family_service import FamilyService
+import csv
+from io import StringIO
+import urllib.parse
+
 
 
 load_dotenv()
@@ -353,9 +356,12 @@ async def add_name(
                 "status": status
             }
             # 💡 استدعاء الدالة من الكلاس
-            # داخل دالة add_name بعد التحقق من الصورة
-            ext = os.path.splitext(picture.filename)[1].lower() if picture.filename else None
-            FamilyService.add_new_member(member_data, picture, ext) # أضف ext هنا
+            ext = None
+            if picture and picture.filename:
+                ext = os.path.splitext(picture.filename)[1].lower()
+
+            FamilyService.add_new_member(member_data, picture, ext)
+            
             log_action(user['id'], "إضافة فرد", f"تم إضافة {name}")
 
             success = f"تم حفظ {name} بنجاح!"
@@ -599,8 +605,12 @@ async def update_name(request: Request,
                 "p_o_b": p_o_b, "status": status
             }
             # استدعاء دالة الخدمة للتحديث
-            ext = os.path.splitext(picture.filename)[1].lower() if picture.filename else None
+            ext = None
+            if picture and picture.filename:
+                ext = os.path.splitext(picture.filename)[1].lower()
+
             FamilyService.update_member_data(code, member_data, picture, ext)
+            
 
             # 2. 🟢 هنا المكان الصحيح للسجل (بعد نجاح الحفظ فقط)
             log_action(
@@ -612,7 +622,6 @@ async def update_name(request: Request,
             # 🟢 التعديل المطلوب: العودة لصفحة القائمة مع الحفاظ على الفلتر والصفحة
             redirect_url = f"/names?page={page}"
             if q and q != "None":
-                import urllib.parse
                 redirect_url += f"&q={urllib.parse.quote(q)}"
             
             return RedirectResponse(url=redirect_url, status_code=303)
@@ -679,17 +688,37 @@ async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
     except Exception:
         raise HTTPException(status_code=500)
   
-@router.get("/export/table-backup-txt")
-async def export_table_backup():
-    content = FamilyService.get_family_table_backup_text()
+@router.get("/export/family-tree/{code}")
+async def export_family_tree(code: str):
+    data = FamilyService.get_full_family_tree_recursive(code)
     
-    if not content:
-        return Response(content="الجدول فارغ", media_type="text/plain")
-
-    return Response(
-        content=content,
-        media_type="text/plain; charset=utf-8",
+    if not data:
+        return {"error": "لم يتم العثور على بيانات"}
+    
+    output = StringIO()
+    # إضافة BOM لضمان قراءة UTF-8 بشكل صحيح في Excel
+    output.write('\ufeff') 
+    
+    writer = csv.writer(output)
+    writer.writerow(["sep=,"])
+    writer.writerow(["الكود", "الاسم الرباعي", "اللقب", "الصلة", "الفئة"])
+    
+    for row in data:
+        writer.writerow([
+            row.get('code', ''), 
+            row.get('full_name', ''), 
+            row.get('nick_name', ''), 
+            row.get('relation', 'غير محدد'), 
+            row.get('category', '')
+        ])
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8-sig",
         headers={
-            "Content-Disposition": "attachment; filename=family_name_backup.txt"
+            "Content-Disposition": f"attachment; filename=family_tree_{code}.csv",
+            "Content-Type": "text/csv; charset=utf-8-sig"
         }
-    )  
+    )

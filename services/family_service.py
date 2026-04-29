@@ -6,6 +6,8 @@ import re
 from typing import List, Dict, Optional, Tuple, Any
 from psycopg2.extras import RealDictCursor # 💡 تم اعتماد RealDictCursor للكل
 from datetime import date
+
+from rich.pretty import traverse
 from utils.normalize import normalize_arabic
 from postgresql import get_db_context
 
@@ -413,3 +415,78 @@ class FamilyService:
                     lines.append(line)
                 
                 return "\n".join(lines)               
+
+    @staticmethod
+    def get_full_family_tree_recursive(code: str) -> List[Dict[str, Any]]:
+        tree_data = {}
+
+        def traverse(c, category="الشخص الأساسي", depth=0):
+            with get_db_context() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    # 1. جلب بيانات العضو الحالي
+                    cur.execute("""
+                        SELECT n.code, public.get_full_name(n.code, 4, FALSE) as full_name, 
+                               n.nick_name, i.gender, n.relation 
+                        FROM family_name n
+                        LEFT JOIN family_info i ON n.code = i.code_info
+                        WHERE n.code = %s
+                    """, (c,))
+                    member = cur.fetchone()
+                    if not member or member['code'] in tree_data: return
+                    
+                    tree_data[member['code']] = {**member, "category": category}
+                    
+                    # 2. جلب الأزواج (تم تعديله ليجلب الاسم الرباعي)
+                    cur.execute("""
+                        SELECT n.code, public.get_full_name(n.code, 4, FALSE) as full_name, 
+                               n.nick_name, i.gender, n.relation 
+                        FROM family_name n
+                        LEFT JOIN family_info i ON n.code = i.code_info
+                        WHERE n.w_code = %s OR n.h_code = %s
+                    """, (c, c))
+                    spouses = cur.fetchall()
+                    for s in spouses:
+                        if s['code'] not in tree_data:
+                            spouse_gender = s.get('gender', 'ذكر')
+                            # تحديد المسمى
+                            if depth == 0:
+                                cat = "زوجة" if spouse_gender == "أنثى" else "زوج"
+                            elif depth == 1:
+                                parent_gender = member.get('gender')
+                                base = "ابن" if parent_gender == "ذكر" else "ابنة"
+                                cat = (f"زوجة {base}") if spouse_gender == "أنثى" else (f"زوج {base}")
+                            else:
+                                parent_gender = member.get('gender')
+                                base = "حفيد" if parent_gender == "ذكر" else "حفيدة"
+                                cat = (f"زوجة {base}") if spouse_gender == "أنثى" else (f"زوج {base}")
+                            tree_data[s['code']] = {**s, "category": cat}
+                        
+                    # 3. جلب الأبناء (تم تصحيح الهيكل)
+                    cur.execute("""
+                        SELECT n.code, i.gender 
+                        FROM family_name n
+                        LEFT JOIN family_info i ON n.code = i.code_info
+                        WHERE n.f_code = %s OR n.m_code = %s
+                    """, (c, c))
+                    children = cur.fetchall()
+                    
+                    for child in children:
+                        gender = child['gender'] or "ذكر"
+                        
+                        # تحديد المسمى بدقة حسب الجيل والجنس
+                        if depth == 0:
+                            base = "ابن" if gender == "ذكر" else "ابنة"
+                        elif depth == 1:
+                            base = "حفيد" if gender == "ذكر" else "حفيدة"
+                        else:
+                            # التمييز بين حفيد وحفيدة
+                            is_granddaughter = (member.get('gender') == "أنثى")
+                            if is_granddaughter:
+                                base = "ابن حفيدة" if gender == "ذكر" else "ابنة حفيدة"
+                            else:
+                                base = "ابن حفيد" if gender == "ذكر" else "ابنة حفيد"
+                        
+                        traverse(child['code'], category=base, depth=depth + 1)
+
+        traverse(code)
+        return list(tree_data.values())
