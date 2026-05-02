@@ -687,7 +687,8 @@ async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
         return RedirectResponse("/names?success=member_deleted", status_code=303)
     except Exception:
         raise HTTPException(status_code=500)
-  
+
+# ====================== family tree by code ====================== 
 @router.get("/export/family-tree/{code}")
 async def export_family_tree(code: str):
     data = FamilyService.get_full_family_tree_recursive(code)
@@ -696,7 +697,6 @@ async def export_family_tree(code: str):
         return {"error": "لم يتم العثور على بيانات"}
     
     output = StringIO()
-    # إضافة BOM لضمان قراءة UTF-8 بشكل صحيح في Excel
     output.write('\ufeff') 
     
     writer = csv.writer(output)
@@ -704,12 +704,31 @@ async def export_family_tree(code: str):
     writer.writerow(["الكود", "الاسم الرباعي", "اللقب", "الصلة", "الفئة"])
     
     for row in data:
+        # جلب العلاقة المسجلة في قاعدة البيانات لهذا الشخص
+        db_relation = row.get('relation', '')
+        # جلب النوع (ذكر/أنثى) للمساعدة في التسمية
+        gender = row.get('gender', '')
+
+        # التحديد بناءً على قيمة "العلاقة" (relation) فقط
+        if db_relation in ["ابن", "ابنة"]:
+            if gender == "أنثى":
+                relation_label = "حوطاوية"
+            else:
+                relation_label = "حوطاوي"
+        else:
+            # أي علاقة أخرى (زوج، زوجة، ابن زوج، إلخ) تعتبر خارج الأسرة
+            relation_label = "ليس حوطاوي"
+
+        # استثناء للشخص الأساسي (صاحب الكود المطلوب) ليكون دائماً داخل الأسرة
+        if row.get('code') == code:
+            relation_label = "حوطاوي (داخل الأسرة)" if gender != "أنثى" else "حوطاوية (داخل الأسرة)"
+
         writer.writerow([
             row.get('code', ''), 
             row.get('full_name', ''), 
             row.get('nick_name', ''), 
-            row.get('relation', 'غير محدد'), 
-            row.get('category', '')
+            relation_label, 
+            row.get('category', '') # الفئة (حفيد/حفيدة) تظهر هنا للتوضيح فقط
         ])
     
     output.seek(0)
@@ -722,3 +741,18 @@ async def export_family_tree(code: str):
             "Content-Type": "text/csv; charset=utf-8-sig"
         }
     )
+# ====================== backup-txt======================
+@router.get("/export/table-backup-txt")
+async def export_table_backup():
+    content = FamilyService.get_family_table_backup_text()
+    
+    if not content:
+        return Response(content="الجدول فارغ", media_type="text/plain")
+
+    return Response(
+        content=content,
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=family_name_backup.txt"
+        }
+    )  

@@ -420,7 +420,7 @@ class FamilyService:
     def get_full_family_tree_recursive(code: str) -> List[Dict[str, Any]]:
         tree_data = {}
 
-        def traverse(c, category="الشخص الأساسي", depth=0):
+        def traverse(c, category="الشخص", depth=0):
             with get_db_context() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
                     # 1. جلب بيانات العضو الحالي
