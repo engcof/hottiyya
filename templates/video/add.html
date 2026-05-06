@@ -51,7 +51,17 @@
                     </div>
                 </div>
             </div>
-
+            <!-- شريط التقدم (مخفي افتراضياً) -->
+            <div id="progressContainer" style="display: none; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="font-size: 0.9rem; color: var(--primary);">جاري الرفع...</span>
+                    <span id="percentText" style="font-size: 0.9rem; font-weight: bold; color: var(--accent);">0%</span>
+                </div>
+                <div style="width: 100%; background: #e2e8f0; height: 10px; border-radius: 10px; overflow: hidden;">
+                    <div id="progressBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+                </div>
+                <p id="uploadStatus" style="font-size: 0.8rem; color: #64748b; margin-top: 5px; text-align: center;">يرجى عدم إغلاق الصفحة حتى اكتمال العملية</p>
+            </div>
             <div class="form-actions" style="margin-top: 35px;">
                 <button type="submit" class="btn-submit-main" id="uploadBtn">
                     <i class="fas fa-cloud-upload-alt"></i> بدء رفع الفيديو

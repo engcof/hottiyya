@@ -11,18 +11,15 @@ from fastapi.responses import HTMLResponse, RedirectResponse,StreamingResponse
 from dotenv import load_dotenv
 
 # المكتبات المحلية (Local Imports)
-from core.templates import templates, get_global_context
-from security.csrf import generate_csrf_token, verify_csrf_token
-from security.session import set_cache_headers
-from utils.has_permissions import can
+from core.templates import templates
+from security.csrf import  verify_csrf_token
+from security.session import set_cache_headers,get_admin_context,get_page_context
 from utils.time_utils import calculate_age_details
 from services.analytics import log_action
 from services.family_service import FamilyService
 import csv
 from io import StringIO
 import urllib.parse
-
-
 
 load_dotenv()
 IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
@@ -46,23 +43,19 @@ async def show_names(
     q: str = Query(None),
     success: Optional[str] = Query(None)
 ):
-    user = request.session.get("user")
-    if not user or not can(user, "view_tree"):
-        return RedirectResponse("/?error=no_permission")
-
-    can_add    = can(user, "add_member")
-    can_edit   = can(user, "edit_member")
-    can_delete = can(user, "delete_member")
-
-    csrf_token = generate_csrf_token() 
-    request.session["csrf_token"] = csrf_token
-
-    # معالجة رسائل النجاح
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_member", "edit_member", "delete_member"])
+    
+    if not cxt or not cxt.get("user"):
+        return RedirectResponse("/auth/login?error=unauthorized")
+   
+   # 2. معالجة رسائل النجاح (التي تظهر بعد الحذف أو التعديل)
     success_message = None
     if success == "member_deleted":
         success_message = "✅ تم حذف العضو بنجاح."
     elif success == "member_updated":
         success_message = "✅ تم تحديث بيانات العضو بنجاح."
+    elif success == "member_added":
+        success_message = "✅ تم إضافة العضو بنجاح."
 
     # 💡 استدعاء الكلاس FamilyService
     search_query = q.strip() if q else None
@@ -91,17 +84,15 @@ async def show_names(
     page_numbers = sorted(list(page_numbers))
     
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context =   {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
        "members": members,
         "current_page": current_page, "totals_pages": totals_pages,     
         "page_numbers": page_numbers, "q": q,
-        "csrf_token": csrf_token, "can_add": can_add, "can_edit": can_edit,
-        "can_delete": can_delete, "success": success_message
+        "success": success_message
     })
-    
     response = templates.TemplateResponse("family/names.html", context)
     set_cache_headers(response)
     return response
@@ -114,9 +105,15 @@ async def name_details(
     page: int = Query(1), # 💡 استقبال رقم الصفحة من الرابط
     q: str = Query("")    # 💡 استقبال نص البحث من الرابط
     ):
-    user = request.session.get("user")
+    
+    cxt = get_page_context(request,additional_perms=["view_tree", "edit_member", ])
+    user = cxt["user"]
     if not user: return RedirectResponse("/auth/login")
 
+    edited = cxt.get("perms", {}).get("view_tree", False)
+    if not edited:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الاطلاع")
+   
     details = FamilyService.get_member_details(code)
     if not details:
         raise HTTPException(status_code=404, detail="العضو غير موجود")
@@ -131,7 +128,7 @@ async def name_details(
         age_details["age_at_death"] = int(db_age)
 
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
@@ -156,11 +153,14 @@ async def name_details(
 # ====================== إضافة عضو جديد ======================
 @router.get("/add", response_class=HTMLResponse)
 async def add_name_form(request: Request):
-    user = request.session.get("user")
-    if not user or not can(user, "add_member"):
-        return RedirectResponse("/names")
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_member"])
+    if not cxt:
+        return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
+
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_member", False)
+    if not added:
+         return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
     
     # 🟢 الحل هنا: تعريف قاموس فارغ لكي لا يظهر خطأ Undefined في القالب
     empty_form_data = {
@@ -170,11 +170,10 @@ async def add_name_form(request: Request):
     }
 
    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context =   {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-         "csrf_token": csrf_token,
         "error": None,
         "form_data": empty_form_data
     })
@@ -197,10 +196,15 @@ async def add_name(
     status: Optional[str] = Form(None),
     picture: Optional[UploadFile] = File(None)
 ):
-    user = request.session.get("user")
-    if not user or not can(user, "add_member"):
+    cxt = get_page_context(request,additional_perms=[ "add_member"])
+    user = cxt["user"]
+    if not user :
         return RedirectResponse("/names")
-
+   
+    added = cxt.get("perms", {}).get("add_member", False)
+    if not added:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
+    
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
@@ -371,14 +375,12 @@ async def add_name(
                                                 "relation", "level", "nick_name", "gender", "d_o_b", 
                                                 "d_o_d", "email", "phone", "address", "p_o_b", "status"]}
             
-            csrf_token = generate_csrf_token()
-            request.session["csrf_token"] = csrf_token
+           
             # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-            context = get_global_context(request)
+            context =   {**cxt}
             
             # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
             context.update({
-                "csrf_token": csrf_token,
                 "error": None, "success": success, 
                 "form_data": empty_form_data 
             })
@@ -395,11 +397,11 @@ async def add_name(
     # 💡 مسار الفشل الموحد (Failure Path)
     # يتم تنفيذه إذا كان هناك خطأ في التحقق أو فشل في قاعدة البيانات
     # ----------------------------------------------------
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-
-    return templates.TemplateResponse("family/add_name.html", {
-        "request": request, "user": user, "csrf_token": csrf_token,
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context =   {**cxt}
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "error": error, 
         "success": None, # لضمان عدم ظهور رسالة نجاح في حال الخطأ
         "form_data": { # إعادة تعبئة النموذج بالبيانات المدخلة
@@ -410,10 +412,13 @@ async def add_name(
             "d_o_b": d_o_b or "", "d_o_d": d_o_d or "",
             "email": email or "", "phone": phone or "",
             "address": address or "", "p_o_b": p_o_b or "",
-            "status": status or "",
-        }
+            "status": status or ""}
     })
+    response = templates.TemplateResponse("family/add_name.html", context)
+    set_cache_headers(response)
+    return response
 
+   
 @router.get("/get-next-code")
 async def suggest_code(prefix: str): # نستخدم prefix بدلاً من letter
     if not prefix:
@@ -431,20 +436,24 @@ async def check_code(code: str):
 # ====================== تعديل عضو ======================
 @router.get("/edit/{code}", response_class=HTMLResponse)
 async def edit_name_form(request: Request, code: str):
-    user = request.session.get("user")
-    if not user or not can(user, "edit_member"):
-        return RedirectResponse("/names")
+    cxt = get_page_context(request, additional_perms=["view_tree", "edit_member"])
+    if not cxt:
+        return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
 
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-
+    # التحقق من الصلاحية
+    edited = cxt.get("perms", {}).get("edit_member", False)
+    if not edited:
+         return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
+  
+    
     # 1. استدعاء دالة الخدمة لجلب البيانات
     details = FamilyService.get_member_for_edit(code)
 
     if not details:
         return templates.TemplateResponse("family/edit_name.html", {
-            "request": request, "user": user, "code": code,
-            "csrf_token": csrf_token, "error": "العضو غير موجود أو تم حذفه"
+            **cxt,
+            "code": code,
+            "error": "العضو غير موجود أو تم حذفه"
         })
 
     # 2. تفريغ البيانات
@@ -452,14 +461,14 @@ async def edit_name_form(request: Request, code: str):
     info = details["info"]
     picture_url = details["picture_url"]
 
-     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = { **cxt,}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
         "member": member, "info": info,
         "picture_url": picture_url, "code": code, 
-        "csrf_token": csrf_token, "error": None
+        "error": None
     })
     response = templates.TemplateResponse("family/edit_name.html", context)
     set_cache_headers(response)
@@ -481,9 +490,11 @@ async def update_name(request: Request,
                       page: int = Form(1),    # 💡 استلام رقم الصفحة
                       q: str = Form("")):
     
-    user = request.session.get("user")
-    if not user or not can(user, "edit_member"):
-        return RedirectResponse("/names")
+    cxt = get_page_context(request,additional_perms=[ "edit_member"])
+    user = cxt["user"]
+    edited = cxt.get("perms", {}).get("edit_member", False)
+    if not edited:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية التعديل")
 
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -636,7 +647,6 @@ async def update_name(request: Request,
     # 💡 مسار الفشل (Failure Path)
     # يتم تنفيذه فقط إذا فشل التحقق الأولي أو فشل تحديث قاعدة البيانات
     # ------------------------------------------------------------------
-    
     details = FamilyService.get_member_for_edit(code) # استدعاء دالة الخدمة مرة واحدة
 
     # 💡 يتم تعيين المتغيرات هنا لضمان أن القالب يجدها
@@ -660,37 +670,56 @@ async def update_name(request: Request,
 
 
     # إرجاع الصفحة مع رسالة الخطأ
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    return templates.TemplateResponse("family/edit_name.html", {
-        "request": request, "user": user, "member": member, "info": info,
-        "picture_url": picture_url, "code": code,
-        "csrf_token": csrf_token, "error": error
+    context =   {**cxt}
+    
+    context.update({
+        "member": member,
+        "info": info,
+        "picture_url": picture_url,
+        "code": code,
+        "error": error
     })
+    return templates.TemplateResponse("family/edit_name.html", context)
 
 # ====================== حذف عضو ======================
 @router.post("/delete/{code}")
-async def delete_name(request: Request, code: str, csrf_token: str = Form(...)):
-    user = request.session.get("user")
+async def delete_name(
+    request: Request, 
+    code: str,  
+    current_page: int = Form(1) # سيعود للقيمة 1 إذا لم يجدها في الفورم
+):
+    cxt = get_page_context(request, additional_perms=["delete_member"])
     
-    # 1. التحقق من الصلاحيات
-    if not user or not can(user, "delete_member"):
-        raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف الأعضاء")
+    # 1. التحقق من الصلاحية
+    if not cxt.get("perms", {}).get("delete_member", False):
+        raise HTTPException(status_code=403, detail="لا تملك الصلاحية")
 
     # 2. التحقق من CSRF
-    form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
     try:
-        # 💡 الحذف عبر الكلاس
-        FamilyService.delete_member(code)
-        log_action(user['id'], "حذف فرد", f"الكود: {code}")
-        return RedirectResponse("/names?success=member_deleted", status_code=303)
+        form = await request.form()
+        verify_csrf_token(request, form.get("csrf_token"))
     except Exception:
-        raise HTTPException(status_code=500)
+        raise HTTPException(status_code=400, detail="خطأ في تحقق CSRF")
+
+    try:
+        # 3. الحذف والتسجيل
+        FamilyService.delete_member(code)
+        log_action(cxt["user"]['id'], "حذف فرد", f"الكود: {code}")
+        
+        # 4. إعادة التوجيه مع استخدام & بدلاً من الفاصلة
+        return RedirectResponse(f"/names?page={current_page}&success=member_deleted", status_code=303)
+        
+    except Exception as e:
+        print(f"❌ Error during deletion: {e}") # سيظهر لك الخطأ الحقيقي في الـ Terminal
+        raise HTTPException(status_code=500, detail="فشل في عملية الحذف من قاعدة البيانات")
 
 # ====================== family tree by code ====================== 
 @router.get("/export/family-tree/{code}")
-async def export_family_tree(code: str):
+async def export_family_tree(request: Request, code: str):
+    # استخدام الدالة المساعدة
+    user, _ = get_admin_context(request)
+    if not user:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
     data = FamilyService.get_full_family_tree_recursive(code)
     
     if not data:
@@ -717,7 +746,7 @@ async def export_family_tree(code: str):
                 relation_label = "حوطاوي"
         else:
             # أي علاقة أخرى (زوج، زوجة، ابن زوج، إلخ) تعتبر خارج الأسرة
-            relation_label = "ليس حوطاوي"
+            relation_label = "ليست حوطاوية" if gender == "أنثى" else "ليس حوطاوي"
 
         # استثناء للشخص الأساسي (صاحب الكود المطلوب) ليكون دائماً داخل الأسرة
         if row.get('code') == code:
@@ -743,7 +772,11 @@ async def export_family_tree(code: str):
     )
 # ====================== backup-txt======================
 @router.get("/export/table-backup-txt")
-async def export_table_backup():
+async def export_table_backup(request: Request, ):
+    # استخدام الدالة المساعدة
+    user, _ = get_admin_context(request)
+    if not user:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
     content = FamilyService.get_family_table_backup_text()
     
     if not content:

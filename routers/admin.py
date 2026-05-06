@@ -1,34 +1,27 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from core.templates import templates, get_global_context
-from security.csrf import generate_csrf_token, verify_csrf_token
-from security.session import set_cache_headers, get_current_user
-from services.analytics import get_logged_in_users_history, get_activity_logs_paginated, get_login_logs_paginated
+from core.templates import templates
+from security.csrf import  verify_csrf_token
+from security.session import set_cache_headers, get_admin_context,get_page_context
+from services.analytics import  get_activity_logs_paginated, get_login_logs_paginated
 from services.auth_service import AuthService
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-# --- Helper Function لمنع التكرار في التحقق وجلب التوكن ---
-def get_admin_context(request: Request):
-    user = get_current_user(request)
-    if not user or user.get("role") != "admin":
-        return None, None
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    return user, csrf_token
 
 # 1. لوحة التحكم الرئيسية (الأزرار فقط)
 @router.get("/", response_class=HTMLResponse)
 async def admin_dashboard(request: Request):
-    user, csrf_token = get_admin_context(request)
-    if not user: return RedirectResponse("/auth/login", status_code=303)
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]      
+    if not isad: return RedirectResponse("/auth/login", status_code=303)
 
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context =   {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-        "csrf_token": csrf_token,
         "success_message": request.session.pop("success_message", None),
         "error_message": request.session.pop("error_message", None)
     })
@@ -40,8 +33,10 @@ async def admin_dashboard(request: Request):
 # 2. صفحة إدارة المستخدمين (الجدول فقط)
 @router.get("/users", response_class=HTMLResponse)
 async def admin_users_page(request: Request, page: int = 1):
-    user, csrf_token = get_admin_context(request)
-    if not user: return RedirectResponse("/auth/login", status_code=303)
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad: return RedirectResponse("/auth/login", status_code=303)
     
     dashboard_data = AuthService.get_admin_dashboard_data(page)
     users = dashboard_data['users']
@@ -51,11 +46,10 @@ async def admin_users_page(request: Request, page: int = 1):
         users = [u for u in users if u['username'] != "admin"]
 
    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-        "csrf_token": csrf_token,
         "users": users,
         "permissions": dashboard_data['permissions'],
         "user_permissions": dashboard_data['user_permissions'],
@@ -69,10 +63,18 @@ async def admin_users_page(request: Request, page: int = 1):
     return response
 
 # --- عمليات المستخدمين (توجيه دائماً لـ /admin/users) ---
+
 @router.post("/edit_user")
 async def edit_user(request: Request, user_id: int = Form(...), username: str = Form(...), 
                     role: str = Form(...), current_page: int = Form(1), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
+    
+    # حماية إضافية: منع تعديل حساب الأدمن الرئيسي من هذه الواجهة
+    target_user = AuthService.get_user_by_id(user_id)
+    if target_user and target_user['username'] == "admin":
+        request.session["error_message"] = "لا يمكن تعديل بيانات الحساب الرئيسي من هنا!"
+        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+
     success, message = AuthService.update_user(user_id, username, role)
     request.session["success_message" if success else "error_message"] = message
     return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
@@ -81,6 +83,21 @@ async def edit_user(request: Request, user_id: int = Form(...), username: str = 
 async def delete_user(request: Request, user_id: int = Form(...), 
                       current_page: int = Form(1), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
+    
+    # جلب بيانات المستخدم المستهدف للتحقق
+    target_user = AuthService.get_user_by_id(user_id)
+    
+    # 1. منع حذف حساب الأدمن الرئيسي (admin)
+    if target_user and target_user['username'] == "admin":
+        request.session["error_message"] = "خطأ أمني: لا يمكن حذف الحساب الرئيسي للمنظمة!"
+        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        
+    # 2. منع المستخدم من حذف حسابه الشخصي بنفسه (اختياري ولكن ينصح به)
+    current_admin = request.session.get("user")
+    if current_admin and current_admin.get("id") == user_id:
+        request.session["error_message"] = "لا يمكنك حذف حسابك الشخصي وأنت متصل!"
+        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+
     success, message = AuthService.delete_user(user_id)
     request.session["success_message" if success else "error_message"] = message
     return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
@@ -97,6 +114,12 @@ async def give_permission(request: Request, user_id: int = Form(...), permission
 async def remove_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), 
                            current_page: int = Form(1), csrf_token: str = Form(...)):
     verify_csrf_token(request, csrf_token)
+    # 🔒 حماية إضافية لحساب الأدمن الرئيسي
+    target_user = AuthService.get_user_by_id(user_id)
+    if target_user and target_user['username'] == "admin":
+        request.session["error_message"] = "لا يمكن تعديل أو إزالة صلاحيات الحساب الرئيسي."
+        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+    
     success, message = AuthService.remove_permission(user_id, permission_id)
     request.session["success_message" if success else "error_message"] = message
     return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
@@ -104,14 +127,15 @@ async def remove_permission(request: Request, user_id: int = Form(...), permissi
 # --- صفحات الإضافة والتغيير (توجيه لـ /admin عند النجاح) ---
 @router.get("/add_user")
 async def show_add_user_page(request: Request ):
-    user, csrf_token = get_admin_context(request)
-    if not user: return RedirectResponse("/403")
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad: return RedirectResponse("/403")
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-        "csrf_token": csrf_token, 
         "error": request.session.pop("error", None)
     })
     response = templates.TemplateResponse( "admin/add_user.html",   context)
@@ -132,18 +156,21 @@ async def process_add_user(request: Request, username: str = Form(...), password
 
 @router.get("/change_password")
 async def show_change_password_page(request: Request):
-    user, csrf_token = get_admin_context(request)
-    if not user: return RedirectResponse("/403")
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad: return RedirectResponse("/403")
+    
+    
     data = AuthService.get_admin_dashboard_data(page=1, users_per_page=1000)
     users = [u for u in data['users'] if u['username'] != "admin"] if user["username"] != "admin" else data['users']
     
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
        "users": users, 
-        "csrf_token": csrf_token, 
         "error": request.session.pop("error", None)
     })
     response = templates.TemplateResponse( "admin/change_password.html",   context)
@@ -166,13 +193,14 @@ async def process_change_password(request: Request, user_id: int = Form(...), ne
 
 @router.get("/logs")
 async def view_logs(request: Request, page: int = 1):
-    user = get_current_user(request)
-    if not user or user.get("role") != "admin": return RedirectResponse("/403")
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad: return RedirectResponse("/403")
     logs, total_pages = get_activity_logs_paginated(page=page, per_page=30)
   
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
-    
+    context = {**cxt}
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
        "logs": logs, "current_page": page, "total_pages": total_pages
@@ -185,9 +213,10 @@ async def view_logs(request: Request, page: int = 1):
 
 @router.get("/login-logs")
 async def view_login_logs(request: Request, page: int = 1):
-    user = get_current_user(request)
-    if not user or user.get("role") != "admin": 
-        return RedirectResponse("/403")
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad: return RedirectResponse("/403")
     
     # استدعاء الدالة الجديدة التي تدعم الترقيم (Paginated)
     # نمرر رقم الصفحة (page) ونحدد العدد بـ 20 سجل
@@ -195,7 +224,7 @@ async def view_login_logs(request: Request, page: int = 1):
     
     
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({

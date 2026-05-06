@@ -58,13 +58,20 @@
     font-weight: 800;
 }
 
-/* --- صندوق الوارد (Inbox) --- */
+/* --- تحسين حاوي الرسالة --- */
 .message-item {
     padding: 25px;
     border-bottom: 1px solid var(--border);
-    transition: var(--transition);
+    transition: all 0.3s ease;
+    border-radius: var(--radius-sm); /* إضافة حواف ناعمة لكل رسالة */
+    margin-bottom: 10px;
 }
 
+.message-item:hover {
+    background-color: #ffffff;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05); /* تأثير ارتفاع عند التمرير */
+    transform: translateY(-2px);
+}
 .message-item:last-child { border-bottom: none; }
 
 .unread-msg {
@@ -82,25 +89,33 @@
 
 .sender-name { font-weight: 700; color: var(--text); }
 
-/* --- الأزرار (Buttons) --- */
-.action-btn-msg {
-    padding: 10px 18px;
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-    cursor: pointer;
-    font-weight: 600;
-    border: 1px solid transparent;
-    transition: var(--transition);
+
+/* --- تنسيق الأزرار في خط واحد --- */
+.msg-controls {
+    display: flex;
+    gap: 12px; /* مسافة بين الأزرار */
+    margin-top: 15px;
+    align-items: center;
 }
 
-.btn-read-msg { 
-    background: rgba(16, 185, 129, 0.1); 
-    color: var(--accent); 
-    border-color: rgba(16, 185, 129, 0.2); 
+.msg-controls form {
+    margin: 0; /* إلغاء الهوامش التلقائية للفورم */
 }
-.btn-read:hover { 
-    background: var(--accent); 
-    color: white; 
+
+/* --- الأزرار (Buttons) --- */
+/* --- تصميم الأزرار المطور --- */
+.action-btn-msg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    height: 38px; /* توحيد الطول */
 }
 
 .btn-delete-msg { 
@@ -220,17 +235,16 @@
         font-size: 0.8rem;
     }
 
-    .msg-controls {
-        flex-direction: column; /* جعل الأزرار تحت بعضها لسهولة الضغط */
-        gap: 10px;
+    
+.msg-controls {
+        flex-direction: row; /* الحفاظ على الأزرار بجانب بعضها حتى في الجوال */
+        width: 100%;
     }
-
     .action-btn-msg {
-        width: 100%; /* الأزرار تأخذ العرض الكامل */
-        text-align: center;
-        padding: 12px;
+        flex: 1; /* الأزرار تأخذ مساحة متساوية */
+        padding: 8px 5px;
+        font-size: 0.8rem;
     }
-
     /* ضبط الفورم (النماذج) */
     .form-group-custom {
         padding: 0 15px; /* تقليل المسافة داخل الكرت */

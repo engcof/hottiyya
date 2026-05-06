@@ -54,9 +54,9 @@
                 {{ item.content | safe }}
             </div>
 
-            {% if can_edit or can_delete %}
+            {% if perms.edit_news or perms.delete_news %}
             <div class="news-article-actions">
-                {% if can_edit %}
+                {% if perms.edit_news %}
                 <a href="/news/edit/{{ item.id }}" class="btn-edit">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -66,7 +66,7 @@
                 </a>
                 {% endif %}
 
-                {% if can_delete %}
+                {% if perms.delete_news %}
                 <form action="/news/delete/{{ item.id }}" method="post" onsubmit="return confirm('هل أنت متأكد من حذف هذا الخبر نهائيًا؟');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn-delete">

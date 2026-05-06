@@ -40,8 +40,10 @@
                         </tr>
                     </thead>
                     <tbody>
+                      
                         {% for u in users %}
                         <tr>
+                          
                             <td><strong>{{ u.username }}</strong></td>
                             <td>
                                 <span class="role-badge {{ u.role }}">{{ u.role | title }}</span>
@@ -88,17 +90,28 @@
                                     <button type="submit" class="btn-small edit">إضافة</button>
                                 </form>
                             </td>
-                            <td>
+                          <td>
                                 <form method="post" action="/admin/remove_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    
                                     <select name="permission_id" class="small-select">
-                                        {% for perm in permissions %}
-                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
-                                        {% endfor %}
+                                        {# نتحقق أولاً إذا كان لدى المستخدم أي صلاحيات في القائمة الممررة من السيرفس #}
+                                        {% if user_permissions[u.id] %}
+                                            {% for perm in permissions %}
+                                                {% if perm.name in user_permissions[u.id] %}
+                                                    <option value="{{ perm.id }}">{{ perm.name }}</option>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <option disabled selected>لا توجد صلاحيات</option>
+                                        {% endif %}
                                     </select>
-                                    <button type="submit" class="btn-small remove">إزالة</button>
+                                    
+                                    <button type="submit" class="btn-small remove" {% if not user_permissions[u.id] %}disabled style="opacity:0.5;"{% endif %}>
+                                        إزالة
+                                    </button>
                                 </form>
                             </td>
                             <td>
@@ -106,7 +119,9 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <button type="submit" class="btn-small delete">حذف</button>
+                                    <button type="submit" class="btn-small delete"
+                                        onclick="return confirm('هل أنت متأكد من حذف هذا المستخدم نهائياً؟');">
+                                        حذف</button>
                                 </form>
                             </td>
                         </tr>

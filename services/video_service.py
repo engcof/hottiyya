@@ -13,6 +13,7 @@ cloudinary.config(
     api_secret = os.getenv("CLOUDINARY_SECRET"),
     secure = True
 )
+
 def upload_video_to_cloudinary(file):
     try:
         # لاحظ استخدام resource_type="video" وهو ضروري جداً هنا
@@ -20,7 +21,8 @@ def upload_video_to_cloudinary(file):
             file, 
             folder="hottiyya_videos",
             resource_type="video",
-            chunk_size=6000000  # يدعم رفع الملفات الكبيرة تدريجياً
+            chunk_size=6000000 ,
+             timeout=120 
         )
         return result.get("secure_url")
     except Exception as e:

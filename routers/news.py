@@ -1,18 +1,15 @@
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException,Query
 from fastapi.responses import HTMLResponse, RedirectResponse
-from psycopg2.extras import RealDictCursor
+
 from services.news_service import NewsService
 from services.analytics import log_action
-from postgresql import get_db_context
+from security.csrf import verify_csrf_token
+from security.session import set_cache_headers,get_page_context
+from core.templates import templates
 
-from security.csrf import generate_csrf_token, verify_csrf_token
-from utils.has_permissions import can
-from security.session import set_cache_headers
-from core.templates import templates, get_global_context
-import shutil
 import os
-import html # تم إضافة استيراد html
-import re   # تم إضافة استيراد re
+import html 
+import re   
 
 router = APIRouter(prefix="/news", tags=["news"])
 
@@ -33,8 +30,7 @@ def is_safe_html(content):
 # === عرض الأخبار (القائمة) ===
 @router.get("/", response_class=HTMLResponse)
 async def list_news(request: Request, page: int = Query(1, ge=1), q: str = Query(None)):
-    user = request.session.get("user")
-    can_add = can(user, "add_news")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_news", "delete_news", "edit_news"])
     
     # 1. جلب البيانات من السيرفس
     limit = 10
@@ -42,12 +38,11 @@ async def list_news(request: Request, page: int = Query(1, ge=1), q: str = Query
     total_pages = (total + limit - 1) // limit
 
     # 2. تجهيز السياق الموحد
-    context = get_global_context(request)
+    context = {**cxt}  # نبدأ بنسخة من السياق الأساسي الذي يحتوي على بيانات المستخدم والصلاحيات العامة
     
     # 3. تحديث السياق بالبيانات الخاصة بهذه الصفحة
     context.update({
         "news": news,         
-        "can_add": can_add,
         "current_page": page,
         "total_pages": total_pages,
         "q": q
@@ -61,47 +56,44 @@ async def list_news(request: Request, page: int = Query(1, ge=1), q: str = Query
 # === عرض تفاصيل الخبر ===
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_news(request: Request, id: int):
-    user = request.session.get("user")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_news", "delete_news", "edit_news"])
     
     # جلب الخبر من السيرفس
     item = NewsService.get_news_by_id(id)
     if not item:
         raise HTTPException(404, "الخبر غير موجود")
             
-    # تحديد صلاحيات التعديل والحذف لهذا المستخدم
-    can_edit = can(user, "edit_news")
-    can_delete = can(user,  "delete_news")
-
-    # إدارة توكن CSRF للحذف الآمن
-    csrf_token = request.session.get("csrf_token") or generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-
-    response = templates.TemplateResponse("news/detail.html", {
-        "request": request,
-        "user": user,
-        "item": item,
-        "can_edit": can_edit,      
-        "can_delete": can_delete,  
-        "csrf_token": csrf_token
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context =   {**cxt}
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "item": item,
     })
+    response = templates.TemplateResponse("news/detail.html", context)
     set_cache_headers(response)
     return response
 
 # === إضافة خبر ===
 @router.get("/add", response_class=HTMLResponse)
 async def add_news_form(request: Request):
-    user = request.session.get("user")
-    if not can(user, "add_news"):
-        return RedirectResponse("/auth/login", status_code=303)
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_news"])
+    user = cxt["user"]
+    if not user:
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
 
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    response = templates.TemplateResponse("news/add.html", {
-        "request": request,
-        "user": request.session.get("user"),
-        "csrf_token": csrf_token,
-        "form_data": {} # إضافة form_data فارغة
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_news", False)
+    if not added:
+        return RedirectResponse(url=f"/news?error=unauthorized", status_code=303)
+    
+    context =   {**cxt}
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+          "form_data": {} # إضافة form_data فارغة
     })
+    response = templates.TemplateResponse("news/add.html", context)
     set_cache_headers(response)
     return response
 
@@ -113,10 +105,15 @@ async def add_news(
     author: str = Form(...),
     image: UploadFile = File(None) # هذا الحقل سيستقبل الصورة أو الفيديو
 ):
-    user = request.session.get("user")
-    if not can(user,  "add_news"):
-        return RedirectResponse("/auth/login")
+    cxt = get_page_context(request,additional_perms=[ "add_news"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
 
+    added = cxt.get("perms", {}).get("add_news", False)
+    if not added:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
+    
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
@@ -127,7 +124,6 @@ async def add_news(
     
     error = None
     
-   
     # 1. التحقق من الأخطاء (التصحيح)
     if not title_stripped:
         error ="عنوان الخبر مطلوب."
@@ -144,21 +140,24 @@ async def add_news(
     # التحقق من نظافة الكاتب
     elif not re.fullmatch(VALID_REGEX, author_stripped):
         error = "اسم الكاتب يحتوي على رموز غير مسموح بها."
- 
-
 
     # في حال وجود خطأ، نعيد المستخدم إلى نموذج الإضافة مع رسالة الخطأ وبياناته
     if error:
-        csrf_token = generate_csrf_token()
-        request.session["csrf_token"] = csrf_token
-        return templates.TemplateResponse("news/add.html", {
-            "request": request,
-            "user": request.session.get("user"),
-            "csrf_token": csrf_token,
+        context =   {**cxt}
+    
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
             "error": error,
-            "form_data": {"title": title, "content": content, "author": author}
+            "form_data": {
+                "title": html.escape(title), 
+                "content": content, # المحتوى نتركه كما هو لأننا نستخدم دالة safe_html
+                "author": html.escape(author)
+            }
         })
-
+        response = templates.TemplateResponse("news/add.html", context)
+        set_cache_headers(response)
+        return response
+      
     try:
         # استخدام السيرفس للحفظ والرفع للسحابة
         news_id = NewsService.create_news(
@@ -183,26 +182,28 @@ async def add_news(
 # === تعديل الخبر ===
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_news_form(request: Request, id: int):
-    user = request.session.get("user")
-    if not can(user,  "edit_news"):
-        return RedirectResponse("/news")
-
+    cxt = get_page_context(request,additional_perms=["edit_news"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+    # التحقق من الصلاحية
+    edited = cxt.get("perms", {}).get("edit_news", False)
+    if not edited:
+        return RedirectResponse(url=f"/news?error=unauthorized", status_code=303)
+    
     # استخدام السيرفس بدلاً من الاستعلام المباشر
     item = NewsService.get_news_by_id(id)
     
     if not item:
         raise HTTPException(404, "الخبر غير موجود أثناء التعديل.")
     
-
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-
-    response = templates.TemplateResponse("news/edit.html", {
-        "request": request,
-        "user": user,
-        "item": item,
-        "csrf_token": csrf_token
+    context =   {**cxt}
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+          "item": item,
     })
+    response = templates.TemplateResponse("news/edit.html", context)
     set_cache_headers(response)
     return response
 
@@ -216,9 +217,15 @@ async def update_news(
     image: UploadFile = File(None),
     page: int = Form(1)
 ):
-    user = request.session.get("user")
-    if not can(user, "edit_news"):
-        return RedirectResponse("/news")
+    cxt = get_page_context(request,additional_perms=[ "edit_news"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+    
+    # 🛡️ خط الدفاع الأخير: إذا حاول شخص تجاوز الـ GET وإرسال الطلب مباشرة
+    is_allowed = cxt.get("perms", {}).get("edit_news", False)
+    if not is_allowed:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية التعديل")
 
     # تحقق من CSRF
     form = await request.form()
@@ -247,13 +254,10 @@ async def update_news(
     # التحقق من نظافة الكاتب
     elif not re.fullmatch(VALID_REGEX, author_stripped):
         error = "اسم الكاتب يحتوي على رموز غير مسموح بها."
- 
 
     # في حال وجود خطأ، نعيد المستخدم إلى نموذج التعديل مع رسالة الخطأ وبياناته
     if error:
-        csrf_token = generate_csrf_token()
-        request.session["csrf_token"] = csrf_token
-        
+            
       # استخدام السيرفس بدلاً من الاستعلام المباشر
         item = NewsService.get_news_by_id(id)
         
@@ -264,14 +268,16 @@ async def update_news(
         item['title'] = title
         item['content'] = content
         item['author'] = author
-
-        return templates.TemplateResponse("news/edit.html", {
-            "request": request,
-            "user": request.session.get("user"),
-            "item": item,
-            "csrf_token": csrf_token,
+        context =   {**cxt}
+    
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+             "item": item,
             "error": error
         })
+        response = templates.TemplateResponse("news/edit.html", context)
+        set_cache_headers(response)
+        return response
 
     try:
         # استخدام السيرفس المحدث
@@ -290,7 +296,6 @@ async def update_news(
                 action="تعديل خبر",
                 details=f"قام {user['username']} بتعديل الخبر رقم ({id}) بعنوان: {title_stripped[:30]}..."
             ) 
-            #return RedirectResponse(f"/news/{id}", status_code=303)
             return RedirectResponse(f"/news?page={page}", status_code=303)
         raise HTTPException(404, "الخبر غير موجود")
     except Exception as e:
@@ -299,9 +304,15 @@ async def update_news(
 
 @router.post("/delete/{id:int}")
 async def delete_news(request: Request, id: int):
-    user = request.session.get("user")
-    if not can(user, "delete_news"):
-        return RedirectResponse("/news")
+    cxt = get_page_context(request,additional_perms=["delete_news"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+    
+    # 🛡️ خط الدفاع الأخير: إذا حاول شخص تجاوز الـ GET وإرسال الطلب مباشرة
+    is_allowed = cxt.get("perms", {}).get("delete_news", False)
+    if not is_allowed:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الحذف")
 
     # التحقق من CSRF
     form = await request.form()

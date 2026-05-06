@@ -2,12 +2,12 @@
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from security.hash import check_password
-from security.session import set_cache_headers
-from security.csrf import generate_csrf_token, verify_csrf_token
+from security.session import set_cache_headers,get_page_context
+from security.csrf import  verify_csrf_token
 from services.auth_service import AuthService
 from core.templates import templates
-import re  # 💡 تم استيراد مكتبة re
-from security.rate_limit import rate_limit_attempt, reset_attempts # 💡 استيراد جديد
+import re  
+from security.rate_limit import rate_limit_attempt, reset_attempts 
 router = APIRouter(prefix="/auth")
 
 # التعبير النمطي: لا تبدأ بـ: مسافة، أو أحد الرموز [ - _ . @ # ! $ % ^ & * ( ) ]
@@ -18,18 +18,19 @@ SYMBOL_START_PATTERN = r"^[-\s_\.\@\#\!\$\%\^\&\*\(\)]"
 # GET /login
 # ------------------------------
 @router.get("/login")
-async def login_page(request: Request, error: str = None):
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    response = templates.TemplateResponse(
-        "auth/login.html", 
-        {"request": request, 
-         "csrf_token": csrf_token,
-         "error": error
-        }
-    )
+async def login_page(request: Request, error: str = None, success: str = None):
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_page_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+          "error": error,
+           "success": success
+    })
+    response = templates.TemplateResponse("auth/login.html",context)
     set_cache_headers(response)
     return response
+  
 
 # ------------------------------
 # POST /login
@@ -58,8 +59,8 @@ async def login(
         error = "اسم المستخدم لا يمكن أن يبدأ برمز أو مسافة"
 
     ### التحقق من كلمة المرور (Password Validation) ###
-    elif len(password) < 4:
-        error = "كلمة المرور قصيرة جدًا (الحد الأدنى 4 أحرف)"
+    elif len(password) < 6:
+        error = "كلمة المرور قصيرة جدًا (الحد الأدنى 6 أحرف)"
     elif re.match(SYMBOL_START_PATTERN, password):
         error = "كلمة المرور لا يمكن أن تبدأ برمز أو مسافة"
         
@@ -70,14 +71,16 @@ async def login(
             error=error
         )
     # ----------------------------------------
+      # 4. محاولة تسجيل الدخول (بعد نجاح التحقق الأولي)
+    username_input = username.strip().lower()
 
-    # 4. محاولة تسجيل الدخول (بعد نجاح التحقق الأولي)
-    user_data = AuthService.get_user("username = %s", (username,))
-    
+    # نطلب من قاعدة البيانات تحويل الحقل المخزن مؤقتاً لحروف صغيرة للمقارنة فقط
+    user_data = AuthService.get_user("LOWER(username) = %s", (username_input,))
+  
     if user_data and check_password(password, user_data["password"]):
         # 💡 إعادة تعيين العداد عند النجاح
         reset_attempts(request)
-         # تسجيل الدخول الصحيح
+        # تسجيل الدخول الصحيح
         request.session["user"] = {
             "username": user_data["username"],
             "role": user_data["role"],
@@ -108,20 +111,18 @@ async def logout(request: Request):
 # ------------------------------
 @router.get("/register")
 async def register_page(request: Request, error: str = None, success: str = None):
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    response = templates.TemplateResponse(
-        "auth/register.html", 
-        {
-            "request": request, 
-            "csrf_token": csrf_token,
-            "error": error,
-            "success": success
-        }
-    )
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_page_context(request)
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+        "error": error,
+        "success": success
+    })
+    response = templates.TemplateResponse( "auth/register.html", context)
     set_cache_headers(response)
     return response
-
+    
 # ------------------------------
 # POST /register
 # ------------------------------
@@ -148,4 +149,4 @@ async def register(
         return await register_page(request, error=message)
     
     # 4. في حال النجاح، يمكن توجيهه لصفحة اللوجن مع رسالة نجاح
-    return await login_page(request, error=f"تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول.")
+    return await login_page(request, success="تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول.")

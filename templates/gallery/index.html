@@ -13,7 +13,7 @@
                 <h1 class="page-title">معرض الصور</h1>
                 <p class="page-subtitle">توثيق لحظات ومناسبات</p>
             </div>
-            {% if can_add %}
+            {% if perms.add_gallery %}
             <a href="/gallery/add" class="btn-f-action btn-f-view" style="text-decoration: none;">
                 <i class="fas fa-plus-circle ms-2"></i> إضافة صورة
             </a>
@@ -35,7 +35,7 @@
             {% for image in images %}
             <div class="gallery-item">
             
-                {% if can_delete %}
+                {% if perms.delete_gallery %}
                     <form action="/gallery/delete/{{ image.id }}?page={{ current_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}" 
                         method="POST" 
                         onsubmit="return confirm('هل أنت متأكد من الحذف؟')">

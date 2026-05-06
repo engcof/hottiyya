@@ -4,11 +4,11 @@ from datetime import datetime
 import shutil
 from fastapi import APIRouter, Request, Depends, HTTPException, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
-from core.templates import templates, get_global_context
+from core.templates import templates
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
-from starlette.background import BackgroundTask # **تم إضافة استيراد مهم هنا**
-from security.session import set_cache_headers
+from starlette.background import BackgroundTask 
+from security.session import set_cache_headers,get_admin_context,get_page_context
 
 # تحميل متغيرات البيئة من ملف .env
 load_dotenv()
@@ -58,14 +58,15 @@ def get_database_url():
 # ====================== استيراد البيانات (GET لعرض النموذج) ======================
 @router.get("/import-data", response_class=HTMLResponse)
 async def import_page(request: Request):
-    user = request.session.get("user")
-    if not user or user.get("role") != "admin":
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad:
         raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
         
   
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
-    
+    context = {**cxt}
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
        "message": None
@@ -81,19 +82,35 @@ async def import_data(
     dump_file: UploadFile = File(...),
     password: str = Form(...),
 ):
-    user = request.session.get("user")
-    if not user or user.get("role") != "admin" or password != IMPORT_PASSWORD:
-        return templates.TemplateResponse("data/import_data.html", {
-            "request": request, "user": user,
-            "message": "كلمة المرور غير صحيحة أو ليس لديك صلاحية"
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad or password != IMPORT_PASSWORD:
+        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+        context =   {**cxt}
+        
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+          "message": "كلمة المرور غير صحيحة أو ليس لديك صلاحية"
         })
-
+        
+        response = templates.TemplateResponse("data/import_data.html",  context)
+        set_cache_headers(response)
+        return response
+      
     if not dump_file.filename.lower().endswith(('.dump', '.sql')):
-        return templates.TemplateResponse("data/import_data.html", {
-            "request": request, "user": user,
-            "message": "الملف لازم يكون بصيغة .dump أو .sql"
+        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+        context =   {**cxt}
+        
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+           "message": "الملف لازم يكون بصيغة .dump أو .sql"
         })
-
+        
+        response = templates.TemplateResponse("data/import_data.html",  context)
+        set_cache_headers(response)
+        return response
+       
     file_path = f"/tmp/{dump_file.filename}_{datetime.now().timestamp()}" 
     message = None
     
@@ -137,34 +154,55 @@ async def import_data(
             except Exception as clean_e:
                 print(f"Failed to remove temp file {file_path}: {clean_e}")
         
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context =   {**cxt}
     
-    return templates.TemplateResponse("data/import_data.html", {
-        "request": request,
-        "user": user,
-        "message": message
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+         "message": message
     })
+    
+    response = templates.TemplateResponse("data/import_data.html",  context)
+    set_cache_headers(response)
+    return response
+   
 
 # ====================== تصدير البيانات (POST لمعالجة طلب التصدير) ======================
 @router.post("/export-data")
 async def export_data_post(request: Request, password: str = Form(...)):
-    user = request.session.get("user")
     export_path = None # تعريف مسار التصدير في نطاق الدالة
-
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
     # 1. التحقق من الصلاحية
-    if not user or user.get("role") != "admin" or password != IMPORT_PASSWORD:
-        return templates.TemplateResponse("data/import_data.html", {
-            "request": request, "user": user,
-            "message": "فشل التصدير: كلمة المرور غير صحيحة أو ليس لديك صلاحية."
+    if not isad or password != IMPORT_PASSWORD:
+        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+        context =   {**cxt}
+        
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+           "message": "فشل التصدير: كلمة المرور غير صحيحة أو ليس لديك صلاحية."
         })
-
+        
+        response = templates.TemplateResponse("data/import_data.html",  context)
+        set_cache_headers(response)
+        return response
+ 
     # 2. بناء سلسلة الاتصال
     database_url = get_database_url()
     if not database_url:
-        return templates.TemplateResponse("data/import_data.html", {
-            "request": request, "user": user,
+         # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+        context =   {**cxt}
+        
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
             "message": "فشل التصدير: DATABASE_URL غير معرّف أو متغيرات القاعدة مفقودة."
         })
-
+        
+        response = templates.TemplateResponse("data/import_data.html",  context)
+        set_cache_headers(response)
+        return response
+       
     # 3. تحديد مسار الملف
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"عائلة_حطية_كاملة_{timestamp}.dump"
@@ -199,23 +237,35 @@ async def export_data_post(request: Request, password: str = Form(...)):
             
             # محاولة تنظيف الملف في حالة الفشل الفوري
             cleanup_file(export_path)
-
-            return templates.TemplateResponse("data/import_data.html", {
-                "request": request, "user": user,
-                "message": f"فشل التصدير (Code {result.returncode}):<br><pre dir='ltr'>{error_details[-1500:]}</pre>"
+            # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+            context =   {**cxt}
+            
+            # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+            context.update({
+               "message": f"فشل التصدير (Code {result.returncode}):<br><pre dir='ltr'>{error_details[-1500:]}</pre>"
             })
-
+            
+            response = templates.TemplateResponse("data/import_data.html",  context)
+            set_cache_headers(response)
+            return response
+         
         # 6. التحقق من وجود الملف فعلاً بعد انتهاء العملية
         if not os.path.exists(export_path) or os.path.getsize(export_path) < 100:
             print(f"PG_DUMP returned 0 but file {export_path} is missing or too small.")
             
             # لا حاجة لـ cleanup_file هنا، الملف غير موجود
+            # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+            context =   {**cxt}
             
-            return templates.TemplateResponse("data/import_data.html", {
-                "request": request, "user": user,
-                "message": "فشل التصدير: pg_dump لم يقم بإنشاء ملف النسخة الاحتياطية بشكل صحيح أو الملف صغير جداً."
+            # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+            context.update({
+               "message": "فشل التصدير: pg_dump لم يقم بإنشاء ملف النسخة الاحتياطية بشكل صحيح أو الملف صغير جداً."
             })
-
+            
+            response = templates.TemplateResponse("data/import_data.html",  context)
+            set_cache_headers(response)
+            return response
+          
         # 7. إرجاع الملف وتعيين مهمة حذف في الخلفية (الحل الجذري)
         response = FileResponse(
             path=export_path,
@@ -228,10 +278,19 @@ async def export_data_post(request: Request, password: str = Form(...)):
     except Exception as e:
         # في حالة حدوث خطأ غير متوقع
         cleanup_file(export_path) # تنظيف الملف في حالة فشل غير متوقع
-        return templates.TemplateResponse("data/import_data.html", {
-            "request": request, "user": user,
-            "message": f"فشل التصدير (خطأ غير متوقع): {str(e)}"
+         # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+        context =   {**cxt}
+        
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+          "message": f"فشل التصدير (خطأ غير متوقع): {str(e)}"
         })
+        
+        response = templates.TemplateResponse("data/import_data.html",  context)
+        set_cache_headers(response)
+        return response
+       
+       
     finally:
         # **ملاحظة هامة**: تم حذف منطق الحذف من هنا
         # عملية الحذف تتم الآن في الخلفية بواسطة BackgroundTask فقط

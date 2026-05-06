@@ -20,10 +20,26 @@ class AuthService:
     @classmethod
     def get_user_by_username(cls, username: str):
         return cls.get_user("username = %s", (username,))
+    
+    @classmethod
+    def get_user_by_id(cls, user_id: int):
+        return cls.get_user("id = %s", (user_id,))
 
     @classmethod
     def add_new_user(cls, username: str, password: str, role: str) -> Tuple[bool, str]:
-        username_stripped = username.strip()
+        username_stripped = username.strip().lower() # تحويل لصغير لضمان عدم التسجيل بـ Admin
+        
+        # قائمة الأسماء المحظورة
+        forbidden_names = ["admin", "root", "support", "system", "mod", "editor"]
+        if username_stripped in forbidden_names:
+            return False, "اسم المستخدم هذا غير متاح."
+        
+        # 1. ابحث عن الاسم أولاً كما هو (بالحروف الصغيرة)
+        if cls.get_user_by_username(username_stripped):
+            return False, "المستخدم موجود بالفعل."
+
+        # 2. الآن قم بتعقيمه قبل الإدخال في قاعدة البيانات
+        username_safe = html.escape(username_stripped)
         
         # استخدام cls. للوصول للمتغيرات الثابتة
         if not re.fullmatch(cls.VALID_USERNAME_REGEX, username_stripped):
@@ -32,10 +48,6 @@ class AuthService:
         if len(password) < cls.PASSWORD_MIN_LENGTH:
             return False, f"كلمة المرور يجب ألا تقل عن {cls.PASSWORD_MIN_LENGTH} أحرف."
 
-        username_safe = html.escape(username_stripped)
-        
-        if cls.get_user_by_username(username_safe):
-            return False, "المستخدم موجود بالفعل."
 
         try:
             hashed_pwd = hash_password(password)

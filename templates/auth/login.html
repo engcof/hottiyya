@@ -11,7 +11,13 @@
             <h2 class="form-title">مرحباً بعودتك</h2>
             <p class="form-subtitle">سجّل دخولك للوصول إلى موقع الحوطية</p>
         </div>
-
+        {% if success %}
+        <div class="alert success" id="success-alert">
+            <i class="fas fa-check-circle"></i>
+            <span><strong>تم بنجاح!</strong> {{ success }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endif %}
         {% if error %}
         <div class="alert error">
             <i class="fas fa-exclamation-circle"></i>
@@ -32,7 +38,7 @@
             <div class="form-group">
                 <label for="password">كلمة المرور</label>
                 <input type="password" name="password" id="password" class="input-field" 
-                       placeholder="••••••••" required autocomplete="current-password">
+                        required autocomplete="current-password">
             </div>
 
             <div style="margin-top: 30px;">

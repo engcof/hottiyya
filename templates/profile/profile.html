@@ -41,7 +41,8 @@
                             </p>
                         </div>
 
-                        <div class="msg-controls">
+                      <div class="msg-controls">
+                            <!-- زر القراءة -->
                             <button type="button" 
                                     class="action-btn-msg btn-read-msg" 
                                     data-id="{{ message.id }}"
@@ -49,12 +50,16 @@
                                     data-message="{{ message.message }}"
                                     data-is-read="{{ 'true' if message.is_read else 'false' }}"
                                     onclick="handleOpenMessage(this)">
-                                اقرأ الرسالة
+                                <span style="margin-left: 5px;">👁️</span> اقرأ الرسالة
                             </button>
                             
-                            <form method="post" action="/profile/delete-message/{{ message.id }}" onsubmit="return confirm('حذف هذه الرسالة؟')">
+                            <form method="post" action="/profile/delete-message/{{ message.id }}" 
+                                onsubmit="return confirm('هل أنت متأكد من حذف هذه الرسالة؟')"
+                                style="flex: 1;"> <!-- مضاف لضمان التنسيق -->
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}"> 
-                                <button type="submit" class="action-btn-msg btn-delete-msg">حذف</button>
+                                <button type="submit" class="action-btn-msg btn-delete-msg" style="width: 100%;">
+                                    <span style="margin-left: 5px;">🗑️</span> حذف
+                                </button>
                             </form>
                         </div>
                     </div>

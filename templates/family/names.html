@@ -11,7 +11,7 @@
         {% endif %}
         <div class="page-header">
             <h1 class="page-title">شجرة الحوطية</h1>
-            {% if can_add %}
+            {% if perms.add_member%}
             <a href="/names/add" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -52,13 +52,16 @@
                 
                 <div class="member-actions">
                     <a href="/names/details/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-view">التفاصيل</a>
-                    {% if can_edit %}
+                    {% if perms.edit_member %}
                         <a href="/names/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">تعديل</a>
                     {% endif %}
-                    {% if can_delete %}
-                        <form method="post" action="/names/delete/{{ m.code }}?page={{ current_page }}&q={{ q }}" style="display:inline;
-                            "onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
+                    {% if perms.delete_member %}
+                        <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;" 
+                              onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <!-- إرسال الصفحة الحالية والبحث لضمان العودة الصحيحة -->
+                            <input type="hidden" name="current_page" value="{{ current_page }}">
+                            <input type="hidden" name="q" value="{{ q or '' }}">
                             <button type="submit" class="btn-f-action btn-f-delete">حذف</button>
                         </form>
                     {% endif %}

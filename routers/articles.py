@@ -1,15 +1,13 @@
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
-from psycopg2.extras import RealDictCursor
-from security.session import set_cache_headers
-from postgresql import get_db_context
-from security.csrf import generate_csrf_token, verify_csrf_token
+
+from security.session import set_cache_headers,get_page_context
+from security.csrf import verify_csrf_token
 from utils.has_permissions import can
 from services.analytics import log_action
 from services.article_service import ArticleService
-import shutil
 import os
-from core.templates import templates, get_global_context
+from core.templates import templates
 import html 
 import re # تم إضافة استيراد المكتبة للتحقق من الصيغة
 
@@ -29,29 +27,21 @@ def is_safe_html(content):
 # === عرض قائمة المقالات (باستخدام الخدمة) ===
 @router.get("/", response_class=HTMLResponse)
 async def list_articles(request: Request, page: int = 1):
-    user = request.session.get("user")
-    can_add = can(user, "add_article")
-    can_delete = can(user, "delete_article") 
-
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_article", "delete_article"])
+    
     # استدعاء الخدمة لجلب البيانات والترقيم
     articles, total_pages = ArticleService.get_all_articles(page=page, per_page=12)
      # 2. تجهيز السياق الموحد
-    context = get_global_context(request)
+    context =  {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بهذه الصفحة
     context.update({
        "articles": articles,
-        "can_add": can_add,
-        "csrf_token": csrf_token,
         "page": page,
         "total_pages": total_pages,
         "has_prev": page > 1,
         "has_next": page < total_pages
     })
-    
-    # 4. إرسال القالب (لاحظ تمرير context فقط)
     response = templates.TemplateResponse("articles/list.html", context)
     set_cache_headers(response)
     return response
@@ -59,66 +49,66 @@ async def list_articles(request: Request, page: int = 1):
 # === 🌟 التوجيه إلى أحدث مقال (مسار ثابت) 🌟 ===
 @router.get("/latest")
 async def latest_article_redirect():
-    with get_db_context() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # 1. جلب ID أحدث مقال فقط
-            cur.execute("""
-                SELECT id 
-                FROM articles 
-                ORDER BY created_at DESC 
-                LIMIT 1
-            """)
-            latest = cur.fetchone()
-            
-            if not latest:
-                # إذا لم يكن هناك مقالات، وجههم إلى صفحة قائمة المقالات
-                # نستخدم 303 Redirect لضمان أن المتصفح سيستخدم GET
-                return RedirectResponse("/articles", status_code=303)
+    latest_id = ArticleService.get_latest_article_id()
+    
+    if not latest_id:
+        # إذا لم يكن هناك مقالات، وجههم إلى صفحة قائمة المقالات
+        return RedirectResponse("/articles", status_code=303)
+    
+    # التوجيه إلى رابط المقال المكتشف
+    return RedirectResponse(f"/articles/view/{latest_id}", status_code=303)
                 
-            # 2. التوجيه إلى صفحة المقال الفعلي باستخدام ID
-            return RedirectResponse(f"/articles/{latest['id']}", status_code=303)
-
 # === عرض مقال + التعليقات ===
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_article(request: Request, id: int):
-    user = request.session.get("user")
+    cxt = get_page_context(request,additional_perms=["view_tree", "edit_article", "delete_article", "add_comment", "delete_comment"])
+    
     article, comments = ArticleService.get_article_details(id)
     
     if not article: raise HTTPException(404, "المقال غير موجود")
 
-    csrf_token = request.session.get("csrf_token") or generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-
-    return templates.TemplateResponse("articles/detail.html", {
-        "request": request, "user": user, "article": article, "comments": comments,
-        "csrf_token": csrf_token,
-        "can_edit": can(user, "edit_article"),
-        "can_delete": can(user, "delete_article"),
-        "can_comment": user is not None,
-        "can_delete_any_comment": can(user, "delete_comment")
+   # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context =   {**cxt}
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "article": article, "comments": comments,
     })
-
+    response = templates.TemplateResponse("articles/detail.html", context)
+    set_cache_headers(response)
+    return response
 
 # === إضافة مقال ===
 @router.get("/add", response_class=HTMLResponse)
 async def add_article_form(request: Request):
-    user = request.session.get("user")
-    if not can(user, "add_article"):
-        return RedirectResponse("/articles")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_article"])
+    user = cxt["user"]
+    if not user:
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_article", False)
+    if not added:
+        return RedirectResponse(url="/articles/?error=unauthorized", status_code=303)
+  
     
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    # تمرير form_data فارغة مبدئيا لتجنب الأخطاء في القالب
-    return templates.TemplateResponse("articles/add.html", {
-        "request": request, "user": user, "csrf_token": csrf_token, "form_data": {}
+    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context =   {**cxt}
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+       "form_data": {}
     })
+    response = templates.TemplateResponse("articles/add.html", context)
+    set_cache_headers(response)
+    return response
 
 @router.post("/add")
 async def add_article(request: Request, title: str = Form(...),content: str = Form(...), image: UploadFile = File(None)):
-    user = request.session.get("user")
-    if not can(user, "add_article"):
-        return RedirectResponse("/articles")
-
+    cxt = get_page_context(request,additional_perms=["add_article"])
+    user = cxt["user"]
+    edited = cxt.get("perms", {}).get("add_article", False)
+    if not edited:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية النشر")
     # التحقق من CSRF والنظافة (كما في كودك)
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -150,13 +140,16 @@ async def add_article(request: Request, title: str = Form(...),content: str = Fo
         
     if error:
         print(f"⚠️ Validation Error: {error}") # أضف هذا السطر للتشخيص
-        csrf_token = generate_csrf_token()
-        request.session["csrf_token"] = csrf_token
-        return templates.TemplateResponse("articles/add.html", {
-            "request": request, "user": user, "csrf_token": csrf_token,
+        context =   {**cxt}
+    
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
             "error": error,
-            "form_data": {"title": title, "content": content} # تمرير البيانات غير النظيفة ليراها المستخدم
+            "form_data": {"title": title, "content": content} 
         })
+        response = templates.TemplateResponse("articles/add.html", context)
+        set_cache_headers(response)
+        return response
     try:
         # في حالة أردت التأكد من إغلاق الملف يدوياً (اختياري لأن FastAPI يقوم بذلك أحياناً)
      
@@ -185,26 +178,31 @@ async def add_article(request: Request, title: str = Form(...),content: str = Fo
 # === تعديل مقال ===
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_article_form(request: Request, id: int):
-    user = request.session.get("user")
-    if not can(user, "edit_article"):
-        return RedirectResponse("/articles")
+    cxt = get_page_context(request,additional_perms=["view_tree", "edit_article"])
+    if not cxt:
+        return RedirectResponse(url="/articles/?error=unauthorized", status_code=303)
+
+    # التحقق من الصلاحية
+    edited = cxt.get("perms", {}).get("edit_article", False)
+    if not edited:
+        return RedirectResponse(url="/articles/?error=unauthorized", status_code=303)
 
     articl= ArticleService.get_article_by_id(id)
     
     if not articl:
         raise HTTPException(404, "المقال غير موجود أثناء التعديل.")
                
-
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-
-    return templates.TemplateResponse("articles/edit.html", {
-        "request": request,
-        "user": user,
+    context =   {**cxt}
+    
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "article": articl,      
-        "csrf_token": csrf_token
     })
-
+    response = templates.TemplateResponse("articles/edit.html", context)
+    set_cache_headers(response)
+    return response
+    
+  
 # === حفظ التعديلات ===
 @router.post("/edit/{id:int}")
 async def update_article(
@@ -214,8 +212,12 @@ async def update_article(
     content: str = Form(...), 
     image: UploadFile = File(None)
 ):
-    user = request.session.get("user")
-    if not can(user, "edit_article"): return RedirectResponse("/articles")
+    cxt = get_page_context(request,additional_perms=[ "edit_article"])
+    user = cxt["user"]
+    # 🛡️ خط الدفاع الأخير: إذا حاول شخص تجاوز الـ GET وإرسال الطلب مباشرة
+    is_allowed = cxt.get("perms", {}).get("edit_article", False)
+    if not is_allowed:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية التعديل")
 
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -243,8 +245,6 @@ async def update_article(
 
     # في حالة وجود خطأ، يجب إعادة تحميل النموذج مع البيانات المدخلة
     if error:
-        csrf_token = generate_csrf_token()
-        request.session["csrf_token"] = csrf_token
         
         # استخدام السيرفس بدلاً من الاستعلام المباشر
         articl= ArticleService.get_article_by_id(id)
@@ -256,12 +256,17 @@ async def update_article(
         # استبدال العنوان والمحتوى بالمدخلات الجديدة لعرض الخطأ
         articl['title'] = title
         articl['content'] = content
-
-        return templates.TemplateResponse("articles/edit.html", {
-            "request": request, "user": user, "article": articl,
-            "csrf_token": csrf_token, "error": error
+        context =   {**cxt}
+    
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+            "article": articl,
+           "error": error
         })
-
+        response = templates.TemplateResponse("articles/edit.html", context)
+        set_cache_headers(response)
+        return response
+       
     # استكمال عملية حفظ التعديلات
     await ArticleService.update_article(
         article_id=id, 
@@ -280,9 +285,12 @@ async def update_article(
 # === حذف مقال ===
 @router.post("/delete/{id:int}")
 async def delete_article(request: Request, id: int):
-    user = request.session.get("user")
-    if not can(user, "delete_article"): 
-        return RedirectResponse("/articles")
+    cxt = get_page_context(request,additional_perms=["view_tree", "delete_article"])
+    user = cxt["user"]
+    perms = cxt.get("perms", {})
+    deleted = perms.get("delete_article", False)
+    if not deleted :
+        raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف المقال.")
 
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -306,13 +314,16 @@ async def delete_article(request: Request, id: int):
 # === إضافة تعليق ===
 @router.post("/{id:int}/comment")
 async def add_comment(request: Request, id: int, content: str = Form(...)):
-    user = request.session.get("user")
-    if not user: return RedirectResponse("/auth/login")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_comment"])
+    if not cxt:
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
 
-    # 🌟 التحقق من الصلاحية: يجب أن يكون مسجلاً ويمتلك صلاحية إضافة تعليق
-    if not user or not can(user, "add_comment"):
-        return RedirectResponse(f"/articles/{id}", status_code=303)
-    
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_comment", False)
+    if not added:
+        return RedirectResponse(url=f"/articles/{id}?error=unauthorized", status_code=303)
+    user = cxt["user"]
+   
 
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -334,8 +345,13 @@ async def add_comment(request: Request, id: int, content: str = Form(...)):
 # === حذف تعليق ===
 @router.post("/{article_id:int}/comment/{comment_id:int}/delete")
 async def delete_comment(request: Request, article_id: int, comment_id: int):
-    user = request.session.get("user")
-    if not user: return RedirectResponse("/auth/login")
+    cxt = get_page_context(request,additional_perms=["view_tree", "delete_comment"])
+    user = cxt["user"]
+    perms = cxt.get("perms", {})
+    deleted = perms.get("delete_comment", False)
+    if not deleted :
+        raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف التعليق.")
+
 
     verify_csrf_token(request, (await request.form()).get("csrf_token"))
 

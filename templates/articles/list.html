@@ -8,7 +8,7 @@
     <div class="container">
         <div class="page-header">
             <h1 class="page-title">المقالات</h1>
-            {% if can_add %}
+            {% if perms.add_article %}
             <a href="/articles/add" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -29,7 +29,7 @@
             </div>
             <h3>لا توجد مقالات بعد</h3>
             <p>كن أول من يشارك قصة أو خبر أو فكرة مع العائلة</p>
-            {% if can_add %}
+            {% if perms.add_article %}
             <a href="/articles/add" class="btn-primary large">ابدأ الكتابة الآن</a>
             {% endif %}
         </div>

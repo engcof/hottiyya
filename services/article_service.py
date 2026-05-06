@@ -2,16 +2,18 @@
 import cloudinary.uploader
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
+import asyncio
 
 class ArticleService:
    
     @staticmethod
     async def upload_article_image(image_file, article_id):
         try:
-            # ✅ الإصلاح: استخدام await لقراءة محتوى الملف
+            # قراءة المحتوى بشكل غير متزامن
             file_content = await image_file.read()
             
-            # رفع الملف إلى Cloudinary
+            # ملاحظة: مكتبة Cloudinary الأصلية متزامنة، لذا يفضل تشغيلها في thread منفصل 
+            # أو استدعاؤها مباشرة كما فعلت وهي ستعمل لكن await هنا للملف ضرورية
             upload_result = cloudinary.uploader.upload(
                 file_content,
                 folder="hottiyya_articles",
@@ -24,27 +26,46 @@ class ArticleService:
             print(f"❌ خطأ في الرفع: {e}")
             return None
       
-          
     @staticmethod
-    def create_article(title, content, author_id, image_file=None):
+    async def create_article(title, content, author_id, image_file=None): # تحويل إلى async
         with get_db_context() as conn:
             with conn.cursor() as cur:
-                # 1. حفظ المقال أولاً بدون صورة
                 cur.execute("""
                     INSERT INTO articles (title, content, author_id)
                     VALUES (%s, %s, %s) RETURNING id
                 """, (title, content, author_id))
                 article_id = cur.fetchone()[0]
                 
-                # 2. إذا وجد ملف صورة، ارفعه وحدث الرابط
                 image_url = None
-                if image_file:
-                    image_url = ArticleService.upload_article_image(image_file, article_id)
+                if image_file and image_file.filename:
+                    # الآن يمكنك استخدام await لأن الدالة أصبحت async
+                    image_url = await ArticleService.upload_article_image(image_file, article_id)
                     if image_url:
                         cur.execute("UPDATE articles SET image_url = %s WHERE id = %s", (image_url, article_id))
                 
                 conn.commit()
                 return article_id
+
+    @staticmethod
+    async def update_article(article_id, title, content, image_file=None): # تحويل إلى async
+        with get_db_context() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT image_url FROM articles WHERE id = %s", (article_id,))
+                row = cur.fetchone()
+                image_url = row[0] if row else None
+
+                if image_file and image_file.filename:
+                    new_url = await ArticleService.upload_article_image(image_file, article_id)
+                    if new_url:
+                        image_url = new_url
+
+                cur.execute("""
+                    UPDATE articles 
+                    SET title = %s, content = %s, image_url = %s 
+                    WHERE id = %s
+                """, (title, content, image_url, article_id))
+                conn.commit()
+                return True
     
     @staticmethod
     def get_all_articles(page=1, per_page=12):
@@ -105,31 +126,7 @@ class ArticleService:
                 cur.execute("SELECT * FROM articles WHERE id = %s", (article_id,))
                 return cur.fetchone()
 
-    @staticmethod
-    async def update_article(article_id, title, content, image_file=None):
-        with get_db_context() as conn:
-            with conn.cursor() as cur:
-                # 1. جلب الرابط الحالي للقاعدة (للحفاظ عليه إذا لم يتم رفع جديد)
-                cur.execute("SELECT image_url FROM articles WHERE id = %s", (article_id,))
-                row = cur.fetchone()
-                image_url = row[0] if row else None
-
-                # 2. إذا وجد ملف جديد، نرفعه فقط
-                if image_file and image_file.filename:
-                    # الرفع مع Overwrite يغنينا عن دالة destroy اليدوية
-                    new_url = await ArticleService.upload_article_image(image_file, article_id)
-                    if new_url:
-                        image_url = new_url
-                        print(f"✅ تم استبدال الصورة بنجاح في السحابة")
-
-                # 3. تحديث البيانات في القاعدة
-                cur.execute("""
-                    UPDATE articles 
-                    SET title = %s, content = %s, image_url = %s 
-                    WHERE id = %s
-                """, (title, content, image_url, article_id))
-                conn.commit()
-                return True
+    
     
     @staticmethod
     def delete_article(article_id):
@@ -188,3 +185,16 @@ class ArticleService:
             with conn.cursor() as cur:
                 cur.execute("DELETE FROM comments WHERE id = %s", (comment_id,))
                 conn.commit()
+
+    @staticmethod
+    def get_latest_article_id():
+        with get_db_context() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT id 
+                    FROM articles 
+                    ORDER BY created_at DESC 
+                    LIMIT 1
+                """)
+                latest = cur.fetchone()
+                return latest['id'] if latest else None            

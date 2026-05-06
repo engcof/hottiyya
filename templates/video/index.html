@@ -8,7 +8,7 @@
     <div class="container">    
         <div class="page-header">
             <h2 class="page-title"><i class="fas fa-film text-accent me-2"></i>معرض الفيديوهات</h2>
-            {% if can_add %}
+            {% if perms.add_video %}
             <a href="/video/add" class="btn-add" style="text-decoration: none;">
                 <i class="fas fa-plus-circle me-1"></i> إضافة فيديو جديد
             </a>
@@ -41,7 +41,7 @@
                         <small class="text-muted">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '' }}</small>
                     </div>
                     
-                    {% if can_delete %}
+                    {% if perms.delete_video %}
                     <div class="mt-3 pt-2 border-top">
                         <form action="/video/delete/{{ video.id }}" method="POST" onsubmit="return confirm('حذف الفيديو؟');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

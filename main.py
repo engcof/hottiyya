@@ -9,18 +9,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from core.templates import templates, get_global_context
+from core.templates import templates
 from psycopg2.extras import RealDictCursor
 from postgresql import init_database, get_db_context
 
 # استيراد الدوال الأمنية والمساعدة
-from security.session import set_cache_headers
+from security.session import set_cache_headers,get_page_context
 from security.rate_limit import initialize_rate_limiter
 from utils.has_permissions import can
 
 # استيراد الخدمات والراوترات
 from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
-from services.notification import get_unread_notification_count
 from utils.has_permissions import can
 from services.google_service import GoogleService
 from services.home_service import HomeService
@@ -170,13 +169,13 @@ app.include_router(about.router)
 # =========================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+    # 1. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+    context = get_page_context(request)
+    
     # لا نحتاج لتعريف user أو unread_count هنا، فالسياق الموحد سيتكفل بهما
     home_data = HomeService.get_homepage_data()
-    
-    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
-    
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    
     context.update({
         "today_visitors": get_today_visitors(),
         "total_visitors": get_total_visitors(),
@@ -185,12 +184,9 @@ async def home(request: Request):
         "latest_article": home_data['latest_article'],
         "latest_book": home_data['latest_book']
     })
-    
     response = templates.TemplateResponse("index.html", context)
     set_cache_headers(response)
     return response
-
-
 
 @app.get("/debug/db-count")
 async def debug_db_count():
@@ -223,7 +219,7 @@ async def debug_db_count():
 # =========================================
 @app.exception_handler(404)
 async def not_found(request: Request, exc):
-    context = get_global_context(request)
+    context = get_page_context(request)
     return templates.TemplateResponse("404.html", context, status_code=404)
 
 @app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)

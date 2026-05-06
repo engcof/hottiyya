@@ -4,9 +4,9 @@ from fastapi import APIRouter, Request, Form, HTTPException, Query, File, Upload
 from fastapi.responses import HTMLResponse, RedirectResponse
 from services.gallery_service import GalleryService
 from urllib.parse import urlparse
-from core.templates import templates,get_global_context
+from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
-from security.session import set_cache_headers
+from security.session import set_cache_headers,get_page_context
 from utils.has_permissions import can
 from services.video_service import upload_video_to_cloudinary, VideoService
 from services.analytics import log_action
@@ -21,7 +21,7 @@ async def get_video(
     page: int = Query(1, ge=1),
     success: Optional[str] = Query(None)
 ):
-    user = request.session.get("user")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_video", "delete_video"])
     per_page = 18
     
     # جلب الفيديوهات والعدد الإجمالي
@@ -32,9 +32,7 @@ async def get_video(
     import math
     total_pages = math.ceil(total_videos / per_page)
 
-    # توليد توكن الأمان لكل جلسة
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+   
 
     # تجهيز رسائل النجاح
     messages = {
@@ -43,44 +41,36 @@ async def get_video(
     }
     
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
       "videos": videos,
         "selected_category": category,
-        "csrf_token": csrf_token,
         "current_page": page,
         "total_pages": total_pages,
         "total_videos": total_videos,
-        "can_add": can(user, "add_video"),
-        "can_edit": can(user, "edit_video"),
-        "can_delete": can(user, "delete_video"),
         "success": messages.get(success)
     })
-    
     response = templates.TemplateResponse("video/index.html", context)
     set_cache_headers(response)
     return response
 
 @router.get("/add", response_class=HTMLResponse)
 async def add_video_page(request: Request):
-    user = request.session.get("user")
-    
-    # التحقق من الصلاحية قبل عرض الصفحة
-    if not can(user, "add_video"):
+    cxt = get_page_context(request, additional_perms=["view_tree", "add_video"])
+    if not cxt:
         return RedirectResponse(url="/video/?error=unauthorized", status_code=303)
 
-    # توليد توكن الأمان للنموذج
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_video", False)
+    if not added:
+         return RedirectResponse(url="/video/?error=unauthorized", status_code=303)
 
-    return templates.TemplateResponse("video/add.html", {
-        "request": request,
-        "user": user,
-        "csrf_token": csrf_token,
-        "title": "إضافة فيديو جديد"
-    })
+    response = templates.TemplateResponse("video/add.html", cxt) # نمرر cxt مباشرة لأنه يحتوي على csrf_token
+    set_cache_headers(response)
+    return response
+
 
 @router.post("/add")
 async def add_video_action(
@@ -88,17 +78,17 @@ async def add_video_action(
     title: str = Form(...),
     category: str = Form(...),
     video_file: UploadFile = File(...),
-    csrf_token: str = Form(...)
+    
 ):
-    user = request.session.get("user")
+    cxt = get_page_context(request,additional_perms=[ "add_video"])
+    user = cxt["user"]
+    added = cxt.get("perms", {}).get("add_video", False)
+    if not added:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة ")
     
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
     
-    if not can(user, "add_video"):
-        raise HTTPException(status_code=403, detail="غير مسموح لك بإجراء هذه العملية.")
-    
-     
     title = title.strip()
     if not title or len(title) < 3:
         raise HTTPException(status_code=400, detail="العنوان قصير جداً")
@@ -138,9 +128,12 @@ async def add_video_action(
 
 @router.post("/delete/{video_id}")
 async def delete_video_action(request: Request, video_id: int):
-    user = request.session.get("user")
-    
-    if not can(user, "delete_video"):
+    cxt = get_page_context(request,additional_perms=["view_tree", "delete_video"])
+    user = cxt["user"]
+    perms = cxt.get("perms", {})
+    deleted = perms.get("delete_video", False)
+
+    if not deleted:
         raise HTTPException(status_code=403, detail="غير مسموح لك.")
     
     form = await request.form()

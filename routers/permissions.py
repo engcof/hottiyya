@@ -1,30 +1,27 @@
-from fastapi import APIRouter, Request, Depends, HTTPException, Form
+from fastapi import APIRouter, Request,  HTTPException, Form
 from services.permission_service import PermissionService
-from security.csrf import generate_csrf_token, verify_csrf_token
+from security.csrf import  verify_csrf_token
 from fastapi.responses import HTMLResponse, RedirectResponse
-from security.session import set_cache_headers,get_current_user
-from core.templates import templates, get_global_context
+from security.session import set_cache_headers,get_page_context
+from core.templates import templates
 import html # تم إضافة هذه المكتبة لتنقية المدخلات (Sanitization)
 
 router = APIRouter(prefix="/permissions", tags=["permissions"])
 @router.get("/", response_class=HTMLResponse)
 async def permissions_page(request: Request, page: int = 1):
-    user = get_current_user(request)
-    if not user or user.get("role") != "admin":
-        return RedirectResponse("/auth/login", status_code=303)
+    cxt = get_page_context(request)
+    isad = cxt["is_admin"]
+    if not isad:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
 
     # جلب كل البيانات من السيرفس بضغطة واحدة
     data = PermissionService.get_permissions_data(page)
     
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    
+   
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
-    
+    context = {**cxt} # فك القاموس لتمرير user, perms, unread_count, etc. بشكل مباشر للسياق
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-        "csrf_token": csrf_token, 
         "current_page": page,
         "error_message": request.session.pop("error_message", None),
         "success_message": request.session.pop("success_message", None),
@@ -38,6 +35,11 @@ async def permissions_page(request: Request, page: int = 1):
 @router.post("/add_permission")
 async def add_permission(request: Request, name: str = Form(...), category: str = Form(...), 
                          current_page: int = Form(1), csrf_token: str = Form(...)):
+    cxt = get_page_context(request)
+    isad = cxt["is_admin"]
+    if not isad:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
+    
     verify_csrf_token(request, csrf_token)
     
     success, message = PermissionService.add_permission(html.escape(name.strip()), html.escape(category.strip()))
@@ -55,6 +57,11 @@ async def edit_permission(
     current_page: int = Form(1),
     csrf_token: str = Form(...)
 ):
+    cxt = get_page_context(request)
+    isad = cxt["is_admin"]
+    if not isad:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
+    
     verify_csrf_token(request, csrf_token)
     
     try:
@@ -75,6 +82,11 @@ async def delete_permission(
     current_page: int = Form(1),
     csrf_token: str = Form(...)
 ):
+    cxt = get_page_context(request)
+    isad = cxt["is_admin"]
+    if not isad:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
+
     verify_csrf_token(request, csrf_token)
 
     try:

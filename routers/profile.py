@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request, HTTPException, status, Form, Query 
 from fastapi.responses import HTMLResponse, RedirectResponse
-from core.templates import templates, get_global_context
+from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
-from security.session import set_cache_headers
+from security.session import set_cache_headers,get_page_context
 from services.profile_service import ProfileService
 from dotenv import load_dotenv
 import os
@@ -15,13 +15,12 @@ PRIMARY_ADMIN_ID = os.getenv("PRIMARY_ADMIN_ID")
 
 @router.get("", response_class=HTMLResponse)
 async def profile_page(request: Request, page: int = Query(1, ge=1)):
-    user = request.session.get("user")
+    cxt = get_page_context(request)
+    user = cxt["user"]
     if not user:
-        return RedirectResponse("/auth/login", status_code=status.HTTP_302_FOUND)
-        
-    # توليد توكن CSRF جديد
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+
+    
     
     PAGE_SIZE = 10
     
@@ -46,11 +45,11 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)):
 
     
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt} # فك القاموس لتمرير user, perms, unread_count, etc. بشكل مباشر للسياق
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-        "csrf_token": csrf_token,
+     
         "notifications": inbox_data["unread_count"],
         "inbox_messages": inbox_data["messages"],
         "all_users": all_users,
@@ -67,8 +66,10 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)):
 
 @router.post("/change-password")
 async def change_password(request: Request):
-    user = request.session.get("user")
-    if not user: return RedirectResponse("/auth/login", status_code=303)
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    if not user:
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
 
     form = await request.form()
     try:
@@ -93,9 +94,11 @@ async def send_message_route(
     message: str = Form(...), 
     csrf_token: str = Form(...)
 ):
-    user = request.session.get("user")
-    if not user: return RedirectResponse("/auth/login", status_code=303)
-        
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    if not user:
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+
     try:
         verify_csrf_token(request, csrf_token)
         success = ProfileService.send_message(user["id"], recipient_id, message)
@@ -112,16 +115,19 @@ async def send_message_route(
 
 @router.post("/mark-read/{notification_id}")
 async def mark_read(request: Request, notification_id: int):
-    user = request.session.get("user")
+    cxt = get_page_context(request)
+    user = cxt["user"]
     if user:
         ProfileService.mark_as_read(notification_id, user["id"])
     return RedirectResponse("/profile", status_code=303)
 
 @router.post("/delete-message/{notification_id}")
 async def delete_msg(request: Request, notification_id: int, csrf_token: str = Form(...)):
-    user = request.session.get("user")
-    if not user: return RedirectResponse("/auth/login", status_code=303)
-    
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    if not user:
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+
     try:
         verify_csrf_token(request, csrf_token)
         if ProfileService.delete_message(notification_id, user["id"]):

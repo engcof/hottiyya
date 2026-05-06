@@ -202,19 +202,17 @@ class FamilyService:
     def delete_member(code: str) -> None:
         with get_db_context() as conn:
             with conn.cursor() as cur:
-                # الحذف المتسلسل (يفضل وجود CASCADE في الـ DB ولكن هذا أضمن برمجياً)
+                # 1. فك ارتباط الأبناء (إزالة هذا الشخص كأب أو أم من السجلات الأخرى)
+                cur.execute("UPDATE family_name SET f_code = NULL WHERE f_code = %s", (code,))
+                cur.execute("UPDATE family_name SET m_code = NULL WHERE m_code = %s", (code,))
+                
+                # 2. الحذف من الجداول الفرعية (كما فعلت سابقاً)
                 cur.execute("DELETE FROM family_picture WHERE code_pic = %s", (code,))
-            
-                # الحذف من جدول family_age_search
                 cur.execute("DELETE FROM family_age_search WHERE code = %s", (code,))
-                
-                # الحذف من جدول family_info
                 cur.execute("DELETE FROM family_info WHERE code_info = %s", (code,))
+                cur.execute("DELETE FROM family_search WHERE code = %s", (code,))
                 
-                # الحذف من جدول family_search
-                cur.execute("DELETE FROM family_search WHERE code = %s", (code,)) 
-                
-                # الحذف من جدول family_name (يجب أن يكون هذا آخر شيء أو يتم التعامل معه بـ CASCADE)
+                # 3. الحذف النهائي من جدول الأسماء الأساسي
                 cur.execute("DELETE FROM family_name WHERE code = %s", (code,))
                 
                 conn.commit()
@@ -426,7 +424,8 @@ class FamilyService:
                     # 1. جلب بيانات العضو الحالي
                     cur.execute("""
                         SELECT n.code, public.get_full_name(n.code, 4, FALSE) as full_name, 
-                               n.nick_name, i.gender, n.relation 
+                               n.nick_name, i.gender, n.relation, i.status,
+                               n.f_code, n.m_code, n.w_code, n.h_code
                         FROM family_name n
                         LEFT JOIN family_info i ON n.code = i.code_info
                         WHERE n.code = %s
@@ -434,36 +433,71 @@ class FamilyService:
                     member = cur.fetchone()
                     if not member or member['code'] in tree_data: return
                     
+                    # استنتاج الجنس
+                    current_gender = member['gender']
+                    if not current_gender and member['relation']:
+                        rel = member['relation']
+                        if rel in ("ابن", "زوج", "ابن زوج", "ابن زوجة"):
+                            current_gender = "ذكر"
+                        elif rel in ("ابنة", "زوجة", "ابنة زوج", "ابنة زوجة"):
+                            current_gender = "أنثى"
+                    
+                    member['gender'] = current_gender
                     tree_data[member['code']] = {**member, "category": category}
                     
-                    # 2. جلب الأزواج (تم تعديله ليجلب الاسم الرباعي)
-                    cur.execute("""
-                        SELECT n.code, public.get_full_name(n.code, 4, FALSE) as full_name, 
-                               n.nick_name, i.gender, n.relation 
-                        FROM family_name n
-                        LEFT JOIN family_info i ON n.code = i.code_info
-                        WHERE n.w_code = %s OR n.h_code = %s
-                    """, (c, c))
-                    spouses = cur.fetchall()
-                    for s in spouses:
-                        if s['code'] not in tree_data:
-                            spouse_gender = s.get('gender', 'ذكر')
-                            # تحديد المسمى
-                            if depth == 0:
-                                cat = "زوجة" if spouse_gender == "أنثى" else "زوج"
-                            elif depth == 1:
-                                parent_gender = member.get('gender')
-                                base = "ابن" if parent_gender == "ذكر" else "ابنة"
-                                cat = (f"زوجة {base}") if spouse_gender == "أنثى" else (f"زوج {base}")
-                            else:
-                                parent_gender = member.get('gender')
-                                base = "حفيد" if parent_gender == "ذكر" else "حفيدة"
-                                cat = (f"زوجة {base}") if spouse_gender == "أنثى" else (f"زوج {base}")
-                            tree_data[s['code']] = {**s, "category": cat}
+                    # 2. منطق تجميع أكواد الأزواج (المنطق الذي اقترحته)
+                    spouse_ids = set()
+                    
+                    # أ- من حقول الزوج/الزوجة المباشرة في سجل الشخص
+                    if member.get("w_code"): spouse_ids.add(member["w_code"])
+                    if member.get("h_code"): spouse_ids.add(member["h_code"])
+                    
+                    # ب- البحث عن الطرف الآخر من خلال سجلات الأبناء
+                    if current_gender == "ذكر":
+                        cur.execute("SELECT DISTINCT m_code FROM family_name WHERE f_code = %s AND m_code IS NOT NULL", (c,))
+                    else:
+                        cur.execute("SELECT DISTINCT f_code FROM family_name WHERE m_code = %s AND f_code IS NOT NULL", (c,))
+                    
+                    for r in cur.fetchall():
+                        # إضافة الكود المكتشف (سواء m_code إذا كان الأب ذكراً، أو f_code إذا كانت الأم أنثى)
+                        val = r['m_code'] if current_gender == "ذكر" else r['f_code']
+                        spouse_ids.add(val)
+                    
+                    # ج- البحث عن أي شخص مسجل "هذا الشخص" كزوج له
+                    cur.execute("SELECT code FROM family_name WHERE w_code = %s OR h_code = %s", (c, c))
+                    for r in cur.fetchall():
+                        spouse_ids.add(r["code"])
+
+                    # معالجة قائمة الأزواج المجمعة
+                    for s_id in spouse_ids:
+                        if s_id not in tree_data:
+                            cur.execute("""
+                                SELECT n.code, public.get_full_name(n.code, 4, FALSE) as full_name, 
+                                       n.nick_name, i.gender, n.relation 
+                                FROM family_name n
+                                LEFT JOIN family_info i ON n.code = i.code_info
+                                WHERE n.code = %s
+                            """, (s_id,))
+                            s_data = cur.fetchone()
+                            
+                            if s_data:
+                                s_gender = s_data.get('gender') or ("أنثى" if current_gender == "ذكر" else "ذكر")
+                                
+                                # تحديد المسمى
+                                if depth == 0:
+                                    cat = "زوجة" if s_gender == "أنثى" else "زوج"
+                                elif depth == 1:
+                                    base = "ابن" if current_gender == "ذكر" else "ابنة"
+                                    cat = (f"زوجة {base}") if s_gender == "أنثى" else (f"زوج {base}")
+                                else:
+                                    base = "حفيد" if current_gender == "ذكر" else "حفيدة"
+                                    cat = (f"زوجة {base}") if s_gender == "أنثى" else (f"زوج {base}")
+                                
+                                tree_data[s_id] = {**s_data, "category": cat, "gender": s_gender}
                         
-                    # 3. جلب الأبناء (تم تصحيح الهيكل)
+                    # 3. جلب الأبناء لمواصلة الشجرة
                     cur.execute("""
-                        SELECT n.code, i.gender 
+                        SELECT n.code, i.gender, n.relation
                         FROM family_name n
                         LEFT JOIN family_info i ON n.code = i.code_info
                         WHERE n.f_code = %s OR n.m_code = %s
@@ -471,20 +505,18 @@ class FamilyService:
                     children = cur.fetchall()
                     
                     for child in children:
-                        gender = child['gender'] or "ذكر"
+                        ch_gender = child['gender']
+                        if not ch_gender and child['relation']:
+                            ch_gender = "ذكر" if child['relation'] == "ابن" else "أنثى"
+                        ch_gender = ch_gender or "ذكر"
                         
-                        # تحديد المسمى بدقة حسب الجيل والجنس
                         if depth == 0:
-                            base = "ابن" if gender == "ذكر" else "ابنة"
+                            base = "ابن" if ch_gender == "ذكر" else "ابنة"
                         elif depth == 1:
-                            base = "حفيد" if gender == "ذكر" else "حفيدة"
+                            base = "حفيد" if ch_gender == "ذكر" else "حفيدة"
                         else:
-                            # التمييز بين حفيد وحفيدة
-                            is_granddaughter = (member.get('gender') == "أنثى")
-                            if is_granddaughter:
-                                base = "ابن حفيدة" if gender == "ذكر" else "ابنة حفيدة"
-                            else:
-                                base = "ابن حفيد" if gender == "ذكر" else "ابنة حفيد"
+                            is_from_female = (current_gender == "أنثى")
+                            base = (f"ابن {'حفيدة' if is_from_female else 'حفيد'}") if ch_gender == "ذكر" else (f"ابنة {'حفيدة' if is_from_female else 'حفيد'}")
                         
                         traverse(child['code'], category=base, depth=depth + 1)
 

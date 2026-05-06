@@ -161,7 +161,7 @@
 
         <!-- الأزرار السفلية -->
         <div class="action-buttons">
-            {% if user.role == "admin" %}
+            {% if user.role == "admin" or perms.edit_member %}
             <a href="/names/edit/{{ member.code }}?page={{ current_page }}&q={{ search_query }}" class="btn-edit">
                 تعديل البيانات
             </a>

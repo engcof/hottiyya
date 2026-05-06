@@ -5,9 +5,9 @@ from fastapi import APIRouter, Request, Form, HTTPException, Query, File, Upload
 from fastapi.responses import HTMLResponse, RedirectResponse
 from services.gallery_service import GalleryService
 from urllib.parse import urlparse
-from core.templates import templates,get_global_context
+from core.templates import templates
 from security.csrf import generate_csrf_token, verify_csrf_token
-from security.session import set_cache_headers
+from security.session import set_cache_headers,get_page_context
 from utils.has_permissions import can
 from services.gallery_service import upload_to_cloudinary, GalleryService
 from services.analytics import log_action
@@ -23,7 +23,7 @@ async def get_gallery(
     page: int = Query(1, ge=1), # استقبال رقم الصفحة
     success: Optional[str] = Query(None)
 ):
-    user = request.session.get("user")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_gallery", "delete_gallery"])
     per_page = 12
     
     # جلب الصور والإجمالي من السيرفس
@@ -35,48 +35,41 @@ async def get_gallery(
     # جلب التصنيفات
     categories = GalleryService.get_categories()
 
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-
     messages = {"added": "✅ تم إضافة الصورة بنجاح.", "deleted": "✅ تم حذف الصورة بنجاح."}
     
-   
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context = {**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-      "images": images,
+       "images": images,
         "selected_category": category,
         "categories": categories,
         "current_page": page,
         "total_pages": total_pages,
         "page_numbers": range(1, total_pages + 1),
-        "csrf_token": csrf_token,
-        "can_add": can(user, "add_gallery"),
-        "can_delete": can(user, "delete_gallery"),
         "success": messages.get(success)
     })
-    
     response = templates.TemplateResponse("gallery/index.html", context)
     set_cache_headers(response)
     return response
 
 @router.get("/add", response_class=HTMLResponse)
 async def add_image_page(request: Request):
-    user = request.session.get("user")
-    if not user:
-        return RedirectResponse("/login")
+    cxt = get_page_context(request, additional_perms=["view_tree", "add_gallery"])
+    if not cxt:
+        return RedirectResponse(url="/gallery/?error=unauthorized", status_code=303)
 
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_gallery", False)
+    if not added:
+         return RedirectResponse(url="/gallery/?error=unauthorized", status_code=303)
 
-    return templates.TemplateResponse("gallery/add.html", {
-        "request": request,
-        "user": user,
-        "csrf_token": csrf_token  # إرساله للقالب ليتم وضعه في الـ hidden input
-    })
+    response = templates.TemplateResponse("gallery/add.html", cxt) # نمرر cxt مباشرة لأنه يحتوي على csrf_token
+    set_cache_headers(response)
+    return response
 
+   
 @router.post("/add")
 async def add_new_image(
     request: Request,
@@ -85,28 +78,33 @@ async def add_new_image(
     category: str = Form(None),
     csrf_token: str = Form(...)
 ):
-    user = request.session.get("user")
+    cxt = get_page_context(request,additional_perms=[ "add_gallery"])
+    user = cxt["user"]
+    edited = cxt.get("perms", {}).get("add_gallery", False)
+    if not edited:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
     
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
 
-    # 1. فحص الصلاحية والـ CSRF
-    if not user or not can(user, "add_gallery"):
-        raise HTTPException(status_code=403, detail="ليس لديك صلاحية")
-   
     # 2. تنظيف العنوان والتحقق منه
     title = title.strip()
     if not title or len(title) < 3:
-        return templates.TemplateResponse("gallery/add.html", {
-            "request": request, "user": user, "error": "العنوان قصير جداً", "csrf_token": generate_csrf_token()
+         # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+        context =   {**cxt}
+        
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+          "error": "العنوان قصير جداً", 
         })
         
-   
+        response = templates.TemplateResponse("gallery/add.html",  context)
+        set_cache_headers(response)
+        return response
+      
     if title[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", title):
         raise HTTPException(status_code=400, detail="العنوان لا يجب أن يبدأ برمز أو رقم (ابدأ بوصف واضح)")
     
-
-   
 
     # 3. الرفع إلى Cloudinary أولاً
     # نمرر ملف الصورة المرفوع إلى الدالة التي أنشأناها في gallery_service
@@ -119,13 +117,18 @@ async def add_new_image(
         
         if not cloudinary_url:
             # في حال فشل الرفع، نرجع المستخدم لصفحة الإضافة مع رسالة واضحة
-            return templates.TemplateResponse("gallery/add.html", {
-                "request": request, 
-                "user": request.session.get("user"), 
-                "error": "فشل الاتصال بـ Cloudinary، يرجى المحاولة مرة أخرى",
-                "csrf_token": generate_csrf_token()
+            # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+            context =   {**cxt}
+            
+            # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+            context.update({
+              "error": "فشل الاتصال بـ Cloudinary، يرجى المحاولة مرة أخرى",
             })
-
+            
+            response = templates.TemplateResponse("gallery/add.html",  context)
+            set_cache_headers(response)
+            return response
+          
         # 4. الحفظ في قاعدة البيانات باستخدام الرابط الناتج
         GalleryService.add_image(
             title=title, 
@@ -145,10 +148,18 @@ async def add_new_image(
 
     except Exception as e:
         print(f"Server Internal Error: {e}")
-        return templates.TemplateResponse("gallery/add.html", {
-            "request": request, "user": user, "error": "حدث خطأ فني غير متوقع", "csrf_token": generate_csrf_token()
+        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
+        context =   {**cxt}
+        
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+           "error": "حدث خطأ فني غير متوقع"
         })
-    
+        
+        response = templates.TemplateResponse("gallery/add.html",  context)
+        set_cache_headers(response)
+        return response
+       
 
 @router.post("/delete/{image_id}")
 async def delete_photo(
@@ -157,11 +168,13 @@ async def delete_photo(
     page: int = Query(1), # استقبال رقم الصفحة الحالية
     category: str = Query(None) # استقبال التصنيف الحالي إن وجد
 ):
-    user = request.session.get("user")
-    
+    cxt = get_page_context(request,additional_perms=[ "delete_gallery"])
+    user = cxt["user"]
+    perms = cxt.get("perms", {})
+    deleted = perms.get("delete_gallery", False)
     # 1. فحص الصلاحية
-    if not can(user, "delete_gallery"):
-        raise HTTPException(status_code=403)
+    if not deleted :
+        raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف الصورة.")
     
     # 2. التحقق من CSRF
     form = await request.form()

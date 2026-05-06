@@ -19,6 +19,7 @@
             <div class="form-card" style="padding: 25px;">
                 <h3 style="margin-bottom: 20px;"><i class="fas fa-plus-circle"></i> استيراد البيانات</h3>
                 <form method="post" enctype="multipart/form-data" action="/data/import-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="form-group">
                         <label>ملف النسخة الاحتياطية (.dump أو .sql) <span class="required">*</span></label>
                         <div class="file-input-wrapper">
@@ -42,6 +43,7 @@
          <div class="form-card" style="padding: 25px;">
                 <h3 style="margin-bottom: 20px;"><i class="fas fa-plus-circle"></i>تصدير البيانات</h3>
                 <form method="post" action="/data/export-data" class="export-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="form-group">
                         <!-- هذا الإدخال هو كلمة المرور التي ترسل إلى دالة @router.post("/export-data") -->
                         <input type="password" name="password" placeholder="كلمة مرور الأدمن" required>

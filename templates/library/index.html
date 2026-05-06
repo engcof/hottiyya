@@ -87,11 +87,13 @@
                             <i class="fas fa-exclamation-circle"></i> فشل الرفع
                         </div>
                         {# أزرار الإدارة في حالة الخطأ لإصلاح البيانات أو الحذف #}
-                        {% if user.role == 'admin' or can_add %}
                         <div class="admin-actions-row">
+                            {% if user.role == 'admin' or perms.edit_book %}
                             <a href="/library/edit/{{ book.id }}" class="btn-edit-full">
                                 <i class="fas fa-edit"></i> تعديل
                             </a>
+                            {% endif %}
+                            {% if user.role == 'admin' or perms.delete_book %}
                             <form action="/library/delete/{{ book.id }}" method="POST" 
                                 onsubmit="return confirm('هل أنت متأكد من حذف هذا السجل؟');" style="flex: 1;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -99,9 +101,8 @@
                                     <i class="fas fa-trash-alt"></i> حذف
                                 </button>
                             </form>
+                            {% endif %}
                         </div>
-                        {% endif %}
-
                     {% else %}
                        {# الحالة الطبيعية: الرفع ناجح #}
                         <div class="action-buttons-row">
@@ -129,20 +130,21 @@
                                 </button>
                             {% endif %}
                         </div>
-
-                        {% if user.role == 'admin' or can_add %}
                         <div class="admin-actions-row">
+                             {% if user.role == 'admin' or perms.edit_book %}
                             <a href="/library/edit/{{ book.id }}" class="btn-edit-full">
                                 <i class="fas fa-edit"></i> تعديل
                             </a>
+                            {% endif %}
+                            {% if user.role == 'admin' or perms.delete_book %}
                             <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('حذف نهائي؟');" style="flex: 1;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button type="submit" class="btn-delete-full" style="width: 100%;">
                                     <i class="fas fa-trash-alt"></i> حذف
                                 </button>
                             </form>
+                                {% endif %}
                         </div>
-                        {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -186,7 +188,7 @@
         {% endif %}
     </div>
 </section>
-{% if can_add %}
+{% if perms.add_book %}
 <a href="/library/add" class="add-btn-fixed"id="floatingAddBtn" title="إضافة كتاب جديد" >
     <i class="fas fa-plus">اضافة</i>
 </a>

@@ -3,14 +3,14 @@ from fastapi import BackgroundTasks
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 from urllib.parse import quote
-from security.session import set_cache_headers
+from security.session import set_cache_headers,get_page_context
 from security.csrf import generate_csrf_token, verify_csrf_token
 from utils.has_permissions import can
 from services.analytics import log_action
 from services.library_service import LibraryService
 import shutil
 import os
-from core.templates import templates, get_global_context
+from core.templates import templates
 import html 
 
 router = APIRouter(prefix="/library", tags=["Library"])
@@ -22,23 +22,18 @@ VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
 
 @router.get("/", response_class=HTMLResponse)
 async def list_library(request: Request, category: str = "الكل", page: int = 1, q: str = None):
-    user = request.session.get("user")
-    can_add = can(user, "add_book")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_book", "edit_book", "delete_book"])
     
     PER_PAGE = 10
     # تمرير نص البحث للسيرفس
     books, total_pages , page_numbers= LibraryService.get_books_paginated(category, page, PER_PAGE, q)
    
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
 
    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_global_context(request)
+    context ={**cxt}
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-       "can_add": can_add,
-        "csrf_token": csrf_token,
         "books": books, 
         "categories": CATEGORIES,
         "selected_category": category,
@@ -54,18 +49,28 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     
 @router.get("/add", response_class=HTMLResponse)
 async def add_book_page(request: Request):
-    user = request.session.get("user")
-    if not can(user, "add_book"): 
-        return RedirectResponse("/library")
+    cxt = get_page_context(request,additional_perms=["view_tree", "add_book"])
+    user = cxt["user"]
+    if not user:
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_book", False)
+    if not added:
+        return RedirectResponse(url=f"/library?error=unauthorized", status_code=303)
+   
+   
+    context =   {**cxt}
     
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
-    return templates.TemplateResponse("library/add.html", {
-        "request": request, 
-        "user": user, 
-        "csrf_token": csrf_token,
-        "categories": CATEGORIES}
-        )
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
+         "categories": CATEGORIES  
+    })
+    response = templates.TemplateResponse("library/add.html", context)
+    set_cache_headers(response)
+    return response
+    
+   
 
 @router.post("/add")
 async def add_book(
@@ -78,9 +83,15 @@ async def add_book(
     book_file: UploadFile = File(...),
     cover_image: UploadFile = File(None)
 ):
-    user = request.session.get("user")
-    if not can(user, "add_book"):
-        raise HTTPException(403, "غير مصرح لك بإضافة كتب")
+    cxt = get_page_context(request,additional_perms=[ "add_book"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+
+    added = cxt.get("perms", {}).get("add_book", False)
+    if not added:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
+
     
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -96,11 +107,18 @@ async def add_book(
         error = "العنوان يحتوي على رموز غير مسموح بها."
     
     if error:
-        return templates.TemplateResponse("library/add.html", {
-            "request": request, "user": user, "error": error, 
-            "categories": CATEGORIES, "csrf_token": generate_csrf_token(),
+        context =   {**cxt}
+    
+        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+        context.update({
+            "categories": CATEGORIES, 
+             "error": error, 
             "title": title, "author": author
-        })    
+        })
+        response = templates.TemplateResponse("library/add.html", context)
+        set_cache_headers(response)
+        return response
+     
 
     try:
         # 1. المرحلة السريعة: ضغط الملف واستخراج الغلاف (تعيد المسار المحلي للملف)
@@ -151,9 +169,14 @@ async def add_book(
 
 @router.get("/edit/{book_id}", response_class=HTMLResponse)
 async def edit_book_page(request: Request, book_id: int):
-    user = request.session.get("user")
-    if not can(user, "add_book"): # نفترض أن من يملك حق الإضافة يملك حق التعديل
-        return RedirectResponse("/library")
+    cxt = get_page_context(request,additional_perms=["edit_book"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+    # التحقق من الصلاحية
+    edited = cxt.get("perms", {}).get("edit_book", False)
+    if not edited:
+        return RedirectResponse(url=f"/library?error=unauthorized", status_code=303)
     
     # جلب بيانات الكتاب الحالية من قاعدة البيانات
     book = LibraryService.get_book_by_id(book_id)
@@ -161,16 +184,17 @@ async def edit_book_page(request: Request, book_id: int):
     if not book:
         raise HTTPException(status_code=404, detail="الكتاب غير موجود")
 
-    csrf_token = generate_csrf_token()
-    request.session["csrf_token"] = csrf_token
+    context =   {**cxt}
     
-    return templates.TemplateResponse("library/edit.html", {
-        "request": request,
-        "user": user,
+    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context.update({
         "book": book,
-        "csrf_token": csrf_token,
-        "categories": CATEGORIES
+        "categories": CATEGORIES 
     })
+    response = templates.TemplateResponse("library/edit.html", context)
+    set_cache_headers(response)
+    return response
+    
 
 @router.post("/edit/{book_id}")
 async def edit_book(
@@ -181,9 +205,15 @@ async def edit_book(
     category: str = Form(...),
     allow_download: bool = Form(False)
 ):
-    user = request.session.get("user")
-    if not can(user, "add_book"):
-        raise HTTPException(403, "غير مصرح لك بتعديل الكتب")
+    cxt = get_page_context(request,additional_perms=[ "edit_book"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+    # 🛡️ خط الدفاع الأخير: إذا حاول شخص تجاوز الـ GET وإرسال الطلب مباشرة
+    is_allowed = cxt.get("perms", {}).get("edit_book", False)
+    if not is_allowed:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية التعديل")
+
     
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token"))
@@ -203,10 +233,15 @@ async def edit_book(
 
 @router.post("/delete/{book_id}")
 async def delete_book(request: Request, book_id: int):
-    user = request.session.get("user")
-    if not can(user, "delete_book"):
-        raise HTTPException(403, "غير مصرح لك بالحذف")
-    
+    cxt = get_page_context(request,additional_perms=["delete_book"])
+    user = cxt["user"]
+    if not user :
+        return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
+    # 🛡️ خط الدفاع الأخير: إذا حاول شخص تجاوز الـ GET وإرسال الطلب مباشرة
+    is_allowed = cxt.get("perms", {}).get("delete_book", False)
+    if not is_allowed:
+        raise HTTPException(status_code=403, detail="لا تملك صلاحية الحذف")
+
     form = await request.form()
     verify_csrf_token(request, form.get("csrf_token")) 
     # تنفيذ الحذف واسترجاع بيانات الكتاب للسجل
@@ -224,8 +259,10 @@ async def delete_book(request: Request, book_id: int):
 @router.get("/admin/system-cleanup")
 async def admin_system_cleanup(request: Request):
     # التأكد من الصلاحيات
-    user = request.session.get("user")
-    if not user or user.get("role") != "admin":
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad:
         raise HTTPException(status_code=403, detail="غير مصرح لك")
 
     # استدعاء الخدمة
@@ -300,8 +337,10 @@ async def download_book(book_id: int):
 @router.get("/admin/fix-errors")
 async def admin_fix_errors(request: Request):
     """حذف كل سجلات الكتب التي فشل رفعها (status: error)"""
-    user = request.session.get("user")
-    if not user or user.get("role") != "admin":
+    cxt = get_page_context(request)
+    user = cxt["user"]
+    isad = cxt["is_admin"]
+    if not isad:
         raise HTTPException(status_code=403, detail="غير مصرح لك")
 
     # استدعاء الدالة الجديدة التي أضفناها في LibraryService
