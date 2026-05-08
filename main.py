@@ -164,7 +164,7 @@ app.include_router(gallery.router)
 app.include_router(video.router)
 app.include_router(library.router)
 app.include_router(about.router)
-app.include_router(test.router)
+#app.include_router(test.router)
 # =========================================
 #         الصفحة الرئيسية
 # =========================================
