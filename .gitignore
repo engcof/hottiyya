@@ -26,7 +26,10 @@ logs/*
 # Uploads (اختياري - لو مش عايز ترفع الصور على Git)
 static/uploads/*
 !static/uploads/default-avatar.png    # احتفظ بالافتراضي لو حابب
-
+templates/test
+routers/test.py
+static/css/test.css
+static/js/test.js
 # IDE & OS
 .vscode/
 .idea/

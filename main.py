@@ -23,7 +23,7 @@ from services.analytics import log_visit, get_total_visitors, get_today_visitors
 from utils.has_permissions import can
 from services.google_service import GoogleService
 from services.home_service import HomeService
-from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library,about
+from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library,about,test
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -164,6 +164,7 @@ app.include_router(gallery.router)
 app.include_router(video.router)
 app.include_router(library.router)
 app.include_router(about.router)
+app.include_router(test.router)
 # =========================================
 #         الصفحة الرئيسية
 # =========================================

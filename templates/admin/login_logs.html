@@ -41,13 +41,13 @@
         {% if total_pages > 1 %}
         <div class="pagination" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px; padding: 15px;">
             {% if current_page > 1 %}
-            <a href="/admin/login-logs?page={{ current_page - 1 }}" class="page-btn">السابق</a>
+            <a href="/admin/login-logs?page={{ current_page - 1 }}" class="page-link">السابق</a>
             {% endif %}
             
-            <span class="page-info">صفحة {{ current_page }} من {{ total_pages }}</span>
+            <span class="page-item">صفحة {{ current_page }} من {{ total_pages }}</span>
             
             {% if current_page < total_pages %}
-            <a href="/admin/login-logs?page={{ current_page + 1 }}" class="page-btn">التالي</a>
+            <a href="/admin/login-logs?page={{ current_page + 1 }}" class="page-link">التالي</a>
             {% endif %}
         </div>
         {% endif %}

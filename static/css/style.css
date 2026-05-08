@@ -1,4 +1,6 @@
+/*test.css*/
 @charset "utf-8";
+
 /* ==========  الإعدادات العامة ✅ ========== */
 *,
 *::before,
@@ -6,8 +8,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* تطبيق الخط على كل العناصر لضمان التناسق */
-  font-family: 'Cairo', 'Noto Sans Arabic', sans-serif;
+  /* الاعتماد على خطوط النظام الافتراضية الداعمة للعربية لمنع الاعتماد على روابط خارجية */
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 html {
   scroll-behavior: smooth;
@@ -26,7 +28,6 @@ body {
 
 /* تعديل العناوين لتكون أكثر بروزاً وفخامة */
 h1, h2, h3, .logo, .page-title {
-  font-family: 'Cairo', sans-serif;
   font-weight: 800; /* الوزن العريض يعطي هيبة للموقع */
   letter-spacing: -0.5px;
 }
@@ -43,8 +44,8 @@ h1, h2, h3, .logo, .page-title {
   --primary-hover: #059669;
   --accent: #10b981;        
   --accent-hover: #059669;
-  --edit: #fcd34d;
-  --edit-hover: #f59e0b;
+  --edit: #f59e0b; /* لون التعديل */
+ --edit-hover: #d97706;
   --danger:#ef4444;
   --danger-hover:#dc2626;
   --shadow:   0 4px 12px rgba(0,0,0,0.05);
@@ -84,7 +85,7 @@ header {
     border:1px solid var(--border);
     border-radius:20px;
     box-shadow:var(--shadow);
-    z-index:2000;
+    z-index: 9999 !important; /* الهيدر فوق كل شيء دائماً وبأعلى قيمة */
     transition:var(--transition);
 }
 .header-container {
@@ -97,6 +98,7 @@ header.scrolled {
   padding: 12px 28px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
+
 nav {
   display: flex;
   align-items: center;
@@ -131,8 +133,8 @@ nav {
   font-weight:600;
 }
 /*  منطقة المستخدم  */
-
 .user-btn {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -149,11 +151,11 @@ nav {
     border-color: var(--accent);
     transform: translateY(-1px);
 }
-.avatar {
+.user-avatar {
     width: 42px;
     height: 42px;
-    background: var(--accent);
-    color: white;
+    background: rgba(16, 185, 129, 0.12);
+   color: var(--accent);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -162,22 +164,23 @@ nav {
     font-size: 1.1rem;
     box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
-.chevron {
+.user-chevron {
     width: 18px;
     height: 18px;
     transition: transform 0.4s ease;
     color: #6b7280;
 }
-.user-btn:hover .chevron {
+.user-btn:hover .user-chevron {
     transform: rotate(180deg);
     color: var(--accent);
 }
-.dropdown {
+.user-dropdown {
     position: absolute;
    top: calc(100% + 15px);
-    right: 0;
+    left: 0; 
+    right: auto;
     pointer-events: none;
-    width: 260px;
+    width: 200px;
     background: white;
     border-radius: 18px;
     box-shadow: 0 20px 50px rgba(0,0,0,0.15);
@@ -188,13 +191,13 @@ nav {
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     overflow: hidden;
 }
-.dropdown.show {
+.user-dropdown.show {
     pointer-events: auto;
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
 }
-.dropdown-header {
+.user-dropdown-header {
     padding: 18px;
     background: linear-gradient(135deg, #f0fdf4, #dcfce7);
     border-bottom: 1px solid #bbf7d0;
@@ -202,45 +205,88 @@ nav {
     align-items: center;
     gap: 14px;
 }
-.avatar.big {
+.user-avatar.big {
     width: 56px;
     height: 56px;
     font-size: 1.4rem;
     box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
-.name {
+.user-name {
     font-weight: 700;
     font-size: 1.1rem;
     color: #166534;
 }
-.role {
+.user-role {
     font-size: 0.9rem;
     color: #16a34a;
     font-weight: 600;
     margin-top: 4px;
 }
-.dropdown-link {
+.user-dropdown-link {
     display: block;
     padding: 14px 20px;
     color: #374151;
     font-weight: 500;
     transition: var(--transition);
 }
-.dropdown-link:hover {
+.user-dropdown-link:hover {
     background: #f8fafc;
     color: var(--accent);
     padding-right: 28px;
 }
-.dropdown-link.logout {
+.user-dropdown-link.logout {
     color: #dc2626;
     border-top: 1px solid #fee2e2;
 }
-.dropdown-link.logout:hover {
+.user-dropdown-link.logout:hover {
     background: #fee2e2;
     color: #991b1b;
 }
-/*  Mobile Menu  */
+/* الشارة الظاهرة فوق زر المستخدم (Avatar) */
+.notification-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    background-color: var(--danger); /* أحمر */
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 50%;
+    
+    /* وضعها أعلى يمين الصورة الرمزية */
+    position: absolute;
+    top: 2px; 
+    right: 8px;
+    z-index: 1;
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+    pointer-events: none; /* لمنعها من اعتراض النقرات على الزر */
+}
 
+/* الشارة الظاهرة داخل القائمة المنسدلة (Inline) */
+.notification-badge-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    background-color: var(--danger);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border-radius: 12px;
+    float: left; /* دفعها إلى أقصى اليسار */
+    margin-top: -2px;
+    margin-left: 10px;
+}
+.mobile-header-actions {
+    display: flex !important;
+    align-items: center !important; /* هذا السطر يضمن التوسيط العمودي لكل الأزرار */
+    gap: 12px !important;
+}
+/*  Mobile Menu  */
 /* تصغير وتنسيق زر تسجيل الدخول في الموبايل */
 .desktop-only-login {
     font-size: 0.8rem; /* تصغير الخط */
@@ -253,7 +299,6 @@ nav {
 }
 
 /* تصغير زر القائمة */
-
 .mobile-menu-toggle {
     background: none;
     border: none;
@@ -285,83 +330,78 @@ nav {
 
 /* --- ثانياً: تحسين القائمة المنسدلة في الموبايل (.mobile-nav) --- */
 .mobile-nav {
+    position: absolute;
+    /* يظهر تحت الهيدر بمسافة مناسبة */
+    top: calc(100% + 12px); 
+    
+    /* جعل القائمة في المنتصف */
+    left: 50%;
+    transform: translateX(-50%) translateY(-15px); /* الإزاحة لليسار مع تأثير حركة بسيط */
+    
+    /* عرض القائمة (يمكنك تعديله حسب الرغبة) */
+    width: 90%; 
+    max-width: 350px; 
+    
     display: none;
     flex-direction: column;
-    gap: 4px; /* تقليل التباعد بين الروابط من 8px إلى 4px */
-    padding: 15px;
-    border-radius:20px;
-    top: 80px; 
-    box-shadow:0 20px 50px rgba(0,0,0,0.15);
-    background:var(--glass-strong);
-    z-index:999;
-   gap:8px; 
+    gap: 4px; 
+    padding: 12px;
+    border-radius: 24px; /* زوايا أكثر نعومة */
+    
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+    background: var(--glass-strong);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    z-index: 999;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-.mobile-nav.active { 
-    display:flex; 
-    animation:slideDown 0.4s ease; 
+/* تنسيق الرابط النشط في الموبايل ليطابق الهيدر الكبير */
+.mobile-nav a.active {
+    background: rgba(16, 185, 129, 0.12) !important; /* نفس لون خلفية الهيدر الكبير */
+    color: var(--accent) !important; /* اللون الأخضر الأساسي */
+    font-weight: 700;
+    border: 1px solid rgba(16, 185, 129, 0.2); /* إطار خفيف جداً لتمييزه */
 }
 
-.mobile-nav.active.show {
+/* لضمان عدم تغير اللون عند تمرير الماوس فوق الرابط النشط */
+.mobile-nav a.active:hover {
+    background: rgba(16, 185, 129, 0.2) !important;
+    transform: none; /* إلغاء تأثير التصغير للرابط النشط لثباته */
+}
+.mobile-nav.active { 
+    display: flex; 
     opacity: 1;
+    /* الحفاظ على التوسيط الأفقي مع إلغاء الإزاحة الرأسية */
+    transform: translateX(-50%) translateY(0); 
 }
-@keyframes slideDown { 
-    from{opacity:0;transform:translateX(-50%) translateY(-20px)} 
-    to{opacity:1;transform:translateX(-50%) translateY(0)} 
-}
+
+/* تحسين شكل الروابط داخل القائمة */
 .mobile-nav a { 
-   padding: 10px 15px; /* تقليل الحشوة العمودية */
-    font-size: 0.95rem;
-    border-radius: 8px;
-    text-align:center; 
-    font-weight:500; 
-    color:var(--text); 
-    transition:var(--transition); 
+    padding: 14px 20px; 
+    font-size: 1rem;
+    border-radius: 14px;
+    text-align: center; 
+    font-weight: 600; 
+    color: var(--text); 
+    text-decoration: none;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.5); /* خلفية خفيفة لكل عنصر */
+    margin-bottom: 2px;
 }
 
 .mobile-nav a:hover { 
-    background:#f1f5f9; 
-    color:var(--accent); 
+    background: var(--primary); 
+    color: white;
+    transform: scale(0.98); /* تأثير ضغط خفيف عند اللمس */
 }
+
 .mobile-nav .logout { 
-    color:var(--danger);
-}
-
-
-
-
-
-/* تنسيقات خاصة للجوال عند الرفع على Render */
-@media (max-width: 1024px) {
-    /* 1. إخفاء زر تسجيل الدخول من الهيدر الرئيسي */
-    .user-area .desktop-only-login, 
-    .user-area a[href="/auth/login"]:not(.mobile-nav a) {
-        display: none !important;
-    }
-
-    /* 2. ضمان بقاء اللوجو (الحوطية) ظاهراً يميناً */
-    .logo {
-        display: block !important;
-        font-size: 1.4rem !important;
-        order: 1 !important;
-    }
-
-    /* 3. جعل زر القائمة المنسدلة في أقصى اليسار */
-    .mobile-menu-toggle {
-        display: flex !important;
-        order: 3 !important;
-        margin-right: auto; /* لدفعه لليسار */
-    }
-
-    /* 4. تنسيق زر تسجيل الدخول داخل القائمة المنسدلة */
-    .mobile-nav a[href="/auth/login"] {
-        background-color: var(--accent) !important;
-        color: white !important;
-        font-weight: 700 !important;
-        padding: 15px !important;
-        margin-top: 10px !important;
-        border-radius: var(--radius-sm) !important;
-        text-align: center !important;
-    }
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.05); /* خلفية محمرة خفيفة لزر الخروج */
+    margin-top: 8px;
+    border-top: 1px solid rgba(239, 68, 68, 0.1);
 }
 .all-page {
     margin: 0 auto;
@@ -370,421 +410,81 @@ nav {
     margin: 40px auto 80px auto;
     padding: 0 20px;   
 }
-.page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 20px;
-    margin-bottom: 32px;
-    border-bottom: 2px solid var(--border-light);
-}
-.page-header .page-title {
-    font-size: 2.2rem;
-    font-weight: 800;
-    color: var(--text-dark);
-}
-.page-header .page-subtitle {
-    font-size: 1.1rem;
-    color: var(--text-medium);
-}
 main { 
     padding-top:100px; 
     min-height:100vh; 
 }
-/*  Footer  */
-footer { 
-    background:#0f172a; 
-    color:#94a3b8; 
-    text-align:center; 
-    padding:20px 20px; 
-    margin-top:30px; 
-    border-top:1px solid #1e293b;
-}
-.footer-links a { 
-    color:#cbd5e1; 
-    margin:0 12px; 
-    font-weight:500; 
-}
-.footer-links a:hover { 
-    color:var(--accent); 
-}
-.footer-copyright { 
-    margin-top:16px; 
-    font-size:0.9rem; 
-    color:#64748b; 
-}
-/* ==========  نهاية الاعدادات العامة  ========== */
-
-
-/*  التنسيقات الجديدة للـ Hero Section  */
-.hero-section {
-    position: relative; /* مهم لتمكين وضع الصورة كخلفية مطلقة */
-    max-width: 1200px;
-    margin: 40px auto;
-    padding: 60px 20px;
-    text-align: center;
-    overflow: hidden; /* لمنع الصورة من تجاوز الحدود */
-}
-/* إضافة الشعار كصورة خلفية خفيفة */
-.hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    /* ✅ مسار الصورة: يجب التأكد من صحة هذا المسار! */
-    background-image: url('/static/uploads/Hottiyya1.jpg'); 
-    background-size: contain; /* لتناسب الصورة دون قص */
-    background-repeat: no-repeat;
-    background-position: center 30%; /* وضع الصورة في الثلث العلوي */
-    
-    /* ✅ الشفافية (Opacity): لتكون خفيفة جداً ولا تؤثر على القراءة */
-    opacity: 0.05; 
-    z-index: 1; /* يجب أن تكون خلف النص */
-}
-/* لضمان أن النص يظهر فوق الشعار */
-.hero-content {
-    position: relative;
-    z-index: 2; 
-}
-.hero-title {
-    font-size: 4.5rem; /* خط كبير جداً */
-    font-weight: 900;
-    color: var(--primary-color); /* لون غامق أو لون أساسي */
-    margin-bottom: 10px;
-}
-.basmala {
-    font-size: 1.2rem;
-    color: var(--text-light);
-    font-weight: 300;
-    margin-bottom: 20px;
-}
-.hero-description {
-    max-width: 700px;
-    margin: 0 auto 30px auto;
-    font-size: 1.15rem;
-    line-height: 1.7;
-    color: var(--text-medium);
-}
-.cta-button {
-    display: inline-block;
-    background-color: var(--accent);
-    color: #ffffff;
-    padding: 14px 30px;
-    border-radius: 50px; /* شكل بيضوي */
-    font-size: 1.1rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: background-color 0.3s;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
-}
-.cta-button:hover {
-    background-color: var(--accent-hover);
-}
-/* إخفاء القائمة في الموبايل */
-@media (max-width: 1024px) {
-    .online-list {
-        display: none !important;
-    }
-}
-/* ==================== تنسيقات شكل النوتة اللاصقة (الجديدة) ==================== */
-/* إعداد التوزيع الجديد: Flexbox للتوزيع الأفقي */
-.stats-section.stats-grid {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    gap: 30px;
-    max-width: 900px;
-    margin: 30px auto 50px auto;
-}
-/* تنسيق بطاقة النوتة اللاصقة (العام) */
-.stat-card.note-style {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 15px 15px; /* تم تعديل الـ padding الأفقي ليتناسب مع العرض الجديد */
-    
-    /* === التثبيت الارتفاع والعرض === */
-    width: 120px; 
-    height: 95px;
-    
-    /* شكل النوتة اللاصقة */
-    background: #fff9e5; 
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
-    transform: rotate(0.5deg); 
-    transition: transform 0.2s ease;
-    
-    position: relative; 
-    z-index: 10;
-}
-.stat-card.note-style:hover {
-    /* 1. رفع النوتة قليلاً للأعلى (لإعطاء إحساس "الالتقاط") */
-    transform: rotate(0deg) translateY(-5px); 
-    
-    /* 2. زيادة وتغميق الظل */
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); 
-    
-    /* 3. تغيير لون الخلفية قليلاً لإضافة تميز */
-    background: #fff5d8; /* لون أغمق قليلاً من #fff9e5 */
-    
-    /* زيادة الـ z-index لضمان أنها فوق النوتات المجاورة عند الرفع */
-    z-index: 12; 
-}
-/* الأرقام والتسميات داخل البطاقة */
-.stat-card .num {
-    font-size: 1.5rem;
-    font-weight: 800;
-    line-height: 1.2;
-}
-.stat-card .label {
-    font-size: 0.9rem;
-    color: var(--text-light);
-    font-weight: 500;
-}
-/* تخصيص بسيط للأونلاين */
-.stat-card.online-stat {
-    transform: rotate(-1.5deg); 
-}
-/* تنسيق السطر الذي يحتوي على الرقم وزر الدروب داون */
-.online-top-line {
-    display: flex;
-    align-items: center; 
-    justify-content: center;
-    line-height: 1.0;
-    position: relative;
-    top: -2px; /* تصحيح لمرور السطر بالكامل */
-}
-/* تنسيق زر السهم (الآن يعمل بشكل ثابت) */
-.online-toggle {
-    margin-right: 2px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1; 
-    display: flex;
-    align-items: center;
-    position: unset; 
-    top: unset;
-}
-.online-toggle svg {
-    display: block;
-    width: 16px;
-    height: 16px;
-    stroke: var(--text-light);
-    transition: transform 0.25s ease;
-    transform: rotate(90deg); /* يشير للأعلى عند الإغلاق */
-}
-.online-toggle:hover svg {
-    stroke: #f59e0b; 
-}
-.online-toggle.active svg {
-    transform: rotate(-90deg) !important; /* يشير للأسفل عند الفتح */
-}
-/* ==================== تحديث تنسيقات الدروب داون ==================== */
-/* لضمان أن الدروب داون يظهر فوق العناصر الأخرى */
-.online-stat {
-    z-index: 9999 !important;
-}
-/* تصحيح تنسيق القائمة المنسدلة للتناسب مع الشكل الجديد */
-.online-list {
-    min-width: 120px;
-    background: var(--glass-strong);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border);
-    border-radius: 12px; /* تصغير الزوايا لتناسب النوتة */
-    box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* ظل أقل حدة */
-    padding: 10px 0; /* تصغير الـ padding الداخلي */
-    font-size: 0.9rem;
-}
-.online-list .online-user-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-    transition: var(--transition) ease;
-}
-.status-dot {
-    width: 8px;
-    height: 8px;
-    background: #10b981;
-    border-radius: 50%;
-    margin-left: 4px;
-    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
-}
-.online-user-item span:last-child {
-    margin-right: 8px;
-}
-#onlineDropdownPortal {
-    position: fixed !important;
-    z-index: 99999 !important;
-    pointer-events: none;
-    top: 0; left: 0;
-}
-/* ... (بقية تنسيقات .online-user-item و .status-dot تبقى كما هي) ... */
-.latest-announcement-card {
-    /* زيادة العرض إلى أقصى حد وتوسيطها */
-    max-width: 1000px;
-    margin: 40px auto; 
-    padding: 30px 40px;
-    
-    /* جعلها تبرز عن طريق ظل أقوى قليلاً */
-    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.1); 
-    border-left: 6px solid var(--primary-color); /* شريط جانبي أخضر بارز */
-    transition: transform 0.3s ease; /* إضافة حركة بسيطة عند التمرير */
-}
-/* رفع البطاقة قليلاً عند التمرير لجذب الانتباه */
-.latest-announcement-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15); 
-}
-/* تنسيق الشارة (Badge) لتبدو حادة وواضحة */
-.latest-announcement-card .badge {
-    display: inline-block;
-    background-color: var(--primary-color); /* لون أخضر أساسي */
-    color: white;
-    padding: 4px 12px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    margin-bottom: 15px;
-}
-/* جعل العنوان الرئيسي للإعلان سميكاً وكبيراً */
-.latest-announcement-card h3 {
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: var(--text-dark);
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-.latest-announcement-card p {
-    color: var(--text-medium);
-    margin-bottom: 15px;
-}
-
-/*  تنسيقات شبكة أحدث المقالات في الصفحة الرئيسية  */
-.latest-articles-grid {
-    max-width: 1200px;
-    margin: 50px auto 80px auto;
-    padding: 0 15px;
-}
-.section-heading {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--text-dark);
-    text-align: center;
-    margin-bottom: 35px;
-}
-.home_articles-grid {
-    display: grid;
-    /* شبكة من 3 أعمدة (أو عمودين على الشاشات الصغيرة) */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
-    gap: 30px;
-}
-.article-homepage-card {
-    padding: 25px;
-    border-radius: 12px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-.article-homepage-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
-}
-.card-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--text-light);
-    margin-bottom: 15px;
-}
-.card-author {
-    font-weight: 600;
-    color: var(--primary-color);
-}
-.card-title {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--text-dark);
-    margin-bottom: 10px;
-    line-height: 1.4;
-}
-.card-excerpt {
+/* --- نظام التنبيهات الموحد (Global Alerts) --- */
+.alert {
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    border-radius: 12px; /* حواف أنعم */
     font-size: 0.95rem;
-    color: var(--text-medium);
-    margin-bottom: 20px;
-    flex-grow: 1; /* يسمح للنص بالتوسع لملء المساحة */
-}
-.card-read-more {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--primary-color);
-    text-decoration: none;
     font-weight: 600;
-    font-size: 0.9rem;
-    transition: color 0.2s;
-}
-.card-read-more:hover {
-    color: #059669;
-}
-.card-read-more svg {
-    margin-top: 2px;
-}
-/* بطاقة "عرض جميع المقالات" التكميلية */
-.view-all-card {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: #f0fdf4; /* خلفية خفيفة */
-    border: 2px dashed #10b98150;
-    border-radius: 12px;
-    padding: 25px;
-}
-.btn-all-articles {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 15px 30px;
-    background-color: var(--accent);
-    color: white;
-    text-decoration: none;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 1.1rem;
-    transition: background-color 0.2s;
-}
-.btn-all-articles:hover {
-    background-color: var(--accent-hover);
-}
-/* ==========  نهاية الصفحة الرئيسية ========== */
-
-/* أنيميشن الظهور */
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-/* ========== ✅ نظام الأزرار الموحد ✅ ========== */
-
-/* 1. الحاوية العامة لأزرار النماذج */
-.form-actions {
-    display: flex;
-    flex-direction: row-reverse; /* يضع الزر الأساسي في أقصى اليسار تلقائياً في RTL */
-    justify-content: flex-start; 
-    gap: 15px;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid var(--border-light);
+    gap: 12px;
+    border-right: 5px solid; /* الاحتفاظ بميزة الحافة الجانبية */
+    animation: slideIn 0.3s ease-out;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* ظل خفيف جداً للعمق */
 }
 
-/* ========== ✅ النظام الاحترافي المعتمد ✅ ========== */
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
+/* حالة النجاح - أخضر */
+.alert.success, .alert-success {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border-color: #10b981; /* لون الحافة اليمنى */
+}
+
+/* حالة الخطأ - أحمر */
+.alert.error, .alert.danger, .alert-error, .alert-danger {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #ef4444; /* لون الحافة اليمنى */
+}
+
+/* حالة التنبيه/المعلومات - أزرق */
+.alert.info, .alert-info {
+    background-color: #eff6ff;
+    color: #1e40af;
+    border-color: #3b82f6;
+}
+
+/* ضبط المسافات داخل التنبيه */
+.alert p, .alert span {
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* زر الإغلاق (X) */
+.alert-close {
+    margin-right: auto; /* يدفع الزر لليسار في الواجهة العربية */
+    background: none;
+    border: none;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: inherit;
+    opacity: 0.5;
+    transition: 0.2s;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+/* حاوية الرسائل (لو كانت موجودة في صفحة البيس) */
+.flash-container {
+    margin-top: 110px; /* لضمان ظهور الرسائل تحت الهيدر الثابت بمسافة كافية */
+    padding: 0 20px;
+    max-width: 1300px;
+    margin-left: auto;
+    margin-right: auto;
+}
 /* 1. القاعدة المشتركة: نجمع كل أسماء الأزرار لضمان توحيد السلوك */
 /* في الملف الرئيسي - أضف .btn-f-action للقائمة الموحدة */
 .btn-primary, .submit-btn, .btn-add, .btn-edit, .btn-delete, 
@@ -873,71 +573,14 @@ footer {
     border-radius: 6px;
     font-size: 0.85rem;
 }
-/* --- نظام التنبيهات الموحد (Global Alerts) --- */
-.alert {
+
+/* ========== نظام ترقيم الصفحات الموحد (Pagination) ========== */
+.card-footer {
     padding: 1rem 1.25rem;
-    margin-bottom: 1.5rem;
-    border-radius: 12px; /* حواف أنعم */
-    font-size: 0.95rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-right: 5px solid; /* الاحتفاظ بميزة الحافة الجانبية */
-    animation: slideIn 0.3s ease-out;
-    position: relative;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05); /* ظل خفيف جداً للعمق */
+    border-top: 1px solid var(--border); 
+    background-color: #f8f9fa; /* لون فاتح لخلفية التذييل */
 }
 
-@keyframes slideIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* حالة النجاح - أخضر */
-.alert.success, .alert-success {
-    background-color: #ecfdf5;
-    color: #065f46;
-    border-color: #10b981; /* لون الحافة اليمنى */
-}
-
-/* حالة الخطأ - أحمر */
-.alert.error, .alert.danger, .alert-error, .alert-danger {
-    background-color: #fef2f2;
-    color: #991b1b;
-    border-color: #ef4444; /* لون الحافة اليمنى */
-}
-
-/* حالة التنبيه/المعلومات - أزرق */
-.alert.info, .alert-info {
-    background-color: #eff6ff;
-    color: #1e40af;
-    border-color: #3b82f6;
-}
-
-/* ضبط المسافات داخل التنبيه */
-.alert p, .alert span {
-    margin: 0;
-    line-height: 1.5;
-}
-
-/* زر الإغلاق (X) */
-.alert-close {
-    margin-right: auto; /* يدفع الزر لليسار في الواجهة العربية */
-    background: none;
-    border: none;
-    font-size: 1.3rem;
-    cursor: pointer;
-    color: inherit;
-    opacity: 0.5;
-    transition: 0.2s;
-}
-
-.alert-close:hover {
-    opacity: 1;
-}
-/* ========== 💡 تنسيقات الترقيم الأساسية 💡 ========== */
-/* ========== ترقيم الصفحات (Pagination) ========= */
 .pagination {
     display: flex; /* يجعل عناصر li تظهر أفقياً */
     padding-left: 0;
@@ -948,29 +591,35 @@ footer {
     gap: 8px;
     margin-top: 50px;
 }
-
-.page-item {
-    line-height: 1.25;
-}
-
-.page-btn {
-    padding: 10px 20px;
-    background-color: var(--accent);
-    color: white;
-    border-radius: 6px;
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 45px;
+    height: 45px;
+    padding: 0 15px;
+    background: var(--glass); /* متناسق مع الهيدر */
+    color: var(--text-light);
     text-decoration: none;
+    border-radius: 12px;
+    border: 1px solid var(--border);
     font-weight: 600;
     transition: var(--transition);
 }
-.page-btn:hover {
-    background-color: var(--accent-hover);
-}
-.page-info {
-    font-size: 1.1rem;
-    color: var(--text-dark);
-    font-weight: 500;
+
+.page-link:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(16, 185, 129, 0.05);
+    transform: translateY(-2px);
 }
 
+.page-link.active {
+    background: var(--accent);
+    color: white !important;
+    border-color: var(--accent);
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+}
 /* تنسيق العناصر النشطة والمُعطّلة */
 .page-item.active .page-link {
     z-index: 3;
@@ -978,290 +627,176 @@ footer {
     background-color: var(--accent);
     border-color: var(--accent);
 }
-
 .page-item.disabled .page-link {
-    color: var(--text-light);
+    opacity: 0.5;
     pointer-events: none;
-    background-color: #f8f9fa;
-    border-color: var(--border);
+    background: #f1f5f9;
 }
 
-/* --- 5. نظام الترقيم (Pagination) --- */
-.pagination-container { margin-top: 50px; display: flex; justify-content: center; }
-.custom-pagination { display: flex; list-style: none; gap: 10px; padding: 0; }
-.page-link {
-    display: block; padding: 0.75rem 1.2rem; background: white; color: var(--text-dark);
-    text-decoration: none; border-radius: 8px; border: 1px solid var(--border);
-    font-weight: 600; transition: var(--transition);
-}
-.page-link {
-    position: relative;
-}
-.page-link:hover { border-color: #27ae60; color: #27ae60; background: #f0fff4; }
-.page-link.active { background: #27ae60; color: white; border-color: #27ae60; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3); }
-/* 6. الترقيم (Pagination) وحالة العدم */
-.pagination-container {
-    margin-top: 50px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
+
+/*  Footer  */
+footer { 
+    background:#0f172a; 
+    color:#94a3b8; 
+    text-align:center; 
+    padding:20px 20px; 
+    margin-top:30px; 
+    border-top:1px solid #1e293b;
 }
 
-.page-link-btn {
-    padding: 10px 18px;
-    border-radius: 12px;
-    background: var(--glass);
-    border: 1px solid var(--border);
-    color: var(--text-light);
-    text-decoration: none;
-    transition: var(--transition);
+.main_footer-links a { 
+    color:#cbd5e1; 
+    margin:0 12px; 
+    font-weight:500; 
 }
-
-.page-link-btn.active {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
-    font-weight: 600;
+.main_footer-links a:hover { 
+    color:var(--accent); 
+}
+.main_footer-copyright { 
+    margin-top:16px; 
+    font-size:0.9rem; 
+    color:#64748b; 
 }
 /* ============================================================
-   تنسيق الاستجابة الموحد (Unified Responsive Design)
+   1. كلاسات المساعدة (Helper Classes) - توضع قبل الميديا كويري
    ============================================================ */
+.d-flex { display: flex !important; }
+.justify-content-center { justify-content: center !important; }
+.d-inline-block { display: inline-block !important; }
+.d-none { display: none !important; }
 
+/* أنيميشن الظهور */
+@keyframes slideDown { 
+    from { opacity: 0; transform: translateX(-50%) translateY(-20px); } 
+    to { opacity: 1; transform: translateX(-50%) translateY(0); } 
+}
 
-/* 1. الشاشات المتوسطة والموبايل (أقل من 1024 بكسل) */
+/* ============================================================
+   2. شاشات التابلت والجوال الكبيرة (أقل من 1024 بكسل)
+   ============================================================ */
 @media (max-width: 1024px) {
-    .container { padding: 0 15px; }
-    
-    /* إخفاء القائمة الكبيرة */
-    .nav-links { display: none !important; }
-    
-    
-   /* اجعل الهيدر حاوية مرنة واحدة */
     .header-container {
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        flex-direction: row-reverse; /* يضمن بقاء اللوجو يميناً والأزرار يساراً */
+        flex-direction: row-reverse; 
     }
-
-    /* تأكد أن حاوية الأزرار في جهة واحدة */
     .mobile-header-actions {
         display: flex !important;
-        align-items: center !important;
         gap: 10px !important;
-        flex-direction: row-reverse; /* ترتيب الأفاتار بجانب زر القائمة */ 
-         flex-shrink: 0; /* منع العناصر من الانضغاط */
+        flex-direction: row-reverse; 
+        flex-shrink: 0;
     }
-    footer { 
-  
-    padding:10px 10px; 
-    margin-top:20px; 
+    .nav-links { display: none !important; }
+    .logo { font-size: 1.4rem !important; order: 1 !important; }
+    .mobile-menu-toggle { display: flex !important; order: 3 !important; margin-right: auto; }
     
-    }
-    .user-area {
-        position: static !important;
-        margin: 0 !important;
+    
+     .user-chevron { display: none !important; }
+    .user-area { 
+        position: relative !important; /* تغيير من static إلى relative لضبط مكان التنبيه */
+        display: flex;
+        align-items: center; /* لضمان توسيط الزر عمودياً مع باقي عناصر الهيدر */
     }
 
-    .user-btn {
-        padding: 0 !important;
-        border: none !important;
+    .user-btn { 
+        padding: 0 !important; 
+        border: none !important; 
         background: transparent !important;
+        position: relative !important; /* ليكون مرجعاً للشارة */
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        height: 100%; /* لضمان التوسيط الرأسي */
     }
 
-    .user-btn .chevron { display: none !important; }
+    /* ضبط حجم ومكان الشارة خصيصاً للموبايل */
+    .user-btn .notification-badge {
+        width: 16px !important;  /* تصغير الشارة قليلاً لتناسب الأفاتار الصغير */
+        height: 16px !important;
+        font-size: 0.65rem !important;
+        top: -2px !important;    /* رفعها قليلاً للأعلى */
+        right: -2px !important;  /* دفعها لليمين لتكون على طرف الدائرة */
+        border-width: 1px !important; /* تقليل عرض الإطار */
+    }
 
-    .avatar {
-        width: 36px !important;
-        height: 36px !important;
+    .user-avatar { 
+        width: 38px !important; 
+        height: 38px !important; 
         font-size: 1rem !important;
+        margin: 0 !important; /* إلغاء أي هوامش قد تزيحه للأعلى */
     }
-
-    /* إظهار زر القائمة */
-    .mobile-menu-toggle { display: flex !important; }
-}
-/* 1. الشاشات المتوسطة والتابلت (أقل من 1024 بكسل) */
-@media (max-width: 1024px) {
-
-   
-
-
-    /* توزيع الهيرو والمعلومات */
-    .hero-grid, .member-body {
-        grid-template-columns: 1fr;
-        gap: 30px;
-    }
-    .logo-card, .info-card { height: auto; padding: 30px; }
-    .profile-picture { order: -1; }
-    .about-hero { padding: 80px 15px 50px; }
-    .page-title { font-size: 3rem; }
 }
 
-/* 2. شاشات الموبايل (أقل من 768 بكسل) - القسم الشامل */
+/* ============================================================
+   3. شاشات الموبايل العادية (أقل من 768 بكسل)
+   ============================================================ */
 @media (max-width: 768px) {
+    /* الخطوط */
+    .hero-title { font-size: 2.2rem; }
+    .page-title { font-size: 1.6rem; }
     
-   
-    /* العناوين والنصوص */
-    .hero-title { font-size: 2.5rem; }
-    .page-title { font-size: 1.8rem; }
-    .member-names { font-size: 2rem; }
-
-    /* تحويل كل الشبكات (Grids) لعمود واحد */
+    /* الشبكات */
     .hero-grid, .about-grid, .news-grid, .articles-grid, 
     .admin-grid, .members-list, .form-grid {
         grid-template-columns: 1fr !important;
-        gap: 20px;
+        gap: 15px;
     }
 
-    /* البطاقات والجداول */
-    .admin-section-card, .news-card, .article-card, .about-card, .inbox-card .card-body {
-        padding: 15px;
-        border-radius: 15px;
+    /* الأزرار العريضة لسهولة اللمس */
+    .submit-btn, .btn-action-news, .btn-add, .btn-edit, .btn-delete, .btn-lg {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        padding: 14px 20px;
     }
 
+    /* الجداول للموبايل */
     .table-wrapper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
-        margin: 0 -15px;
+        margin: 0 -10px;
+    }
+    .alert {
+        padding: 0.85rem 1rem;
+        font-size: 0.85rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    
+    .flash-container {
+        margin-top: 90px; /* مسافة أقل قليلاً في الموبايل */
         padding: 0 15px;
     }
-
-    /* النماذج والأزرار (العرض الكامل لسهولة الضغط) */
-    .form-card { padding: 25px 15px; border-radius: 0; border: none; box-shadow: none; }
-    .submit-btn, .btn-action-news, .btn-add, .btn-edit, .btn-delete, .btn-lg {
-        width: 100%;
-        justify-content: center;
-        padding: 14px 20px;
-        display: flex;
-    }
-
-    /* تحسين الرسائل والإشعارات */
-    .notification-item {
-        flex-direction: column;
-        align-items: flex-start !important;
-        padding: 15px;
-    }
-    .message-content { width: 100%; padding-right: 0 !important; }
-    .message-actions { margin-top: 10px; width: 100%; text-align: left; }
-
-    /* تفاصيل المقالات والأخبار */
-    .featured-media { margin: 20px -15px; border-radius: 0; }
-    .article-body-content { font-size: 1.1rem; line-height: 1.8; }
     
-    /* شريط الترقيم */
-    .page-link { padding: 0.40rem 0.65rem; }
+    /* تحسين الموبايل (Responsive) */
+@media (max-width: 767px) {
+    .pagination{
+        gap: 6px;
+    }
+    .page-link {
+        min-width: 38px;
+        height: 38px;
+        padding: 0 10px;
+        font-size: 0.85rem;
+        border-radius: 10px;
+    }
+}
 }
 
-/* 3. شاشات الموبايل الصغيرة جداً (أقل من 480 بكسل) */
+/* ============================================================
+   4. شاشات الموبايل الصغيرة جداً (أقل من 480 بكسل)
+   ============================================================ */
 @media (max-width: 480px) {
-    .bismillah { font-size: 1.1rem; }
-    .grid-buttons { grid-template-columns: 1fr; }
-    .profile-img { width: 180px; height: 180px; }
+    .hero-title { font-size: 1.8rem; }
+    .profile-img { width: 150px; height: 150px; }
 }
 
-/* 4. كلاسات التحكم في الظهور (Helper Classes) */
+/* ============================================================
+   5. كلاسات الظهور الشرطي (Conditional Display)
+   ============================================================ */
 @media (min-width: 576px) { .d-sm-inline-block { display: inline-block !important; } }
 @media (min-width: 768px) { .d-md-inline-block { display: inline-block !important; } }
+@media (min-width: 769px) { .mobile-menu-toggle { display: none !important; } }
 
-/* الشارة الظاهرة فوق زر المستخدم (Avatar) */
-.notification-badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    background-color: var(--danger); /* أحمر */
-    color: white;
-    font-size: 0.75rem;
-    font-weight: 700;
-    border-radius: 50%;
-    
-    /* وضعها أعلى يمين الصورة الرمزية */
-    position: absolute;
-    top: 5px; 
-    right: 5px; 
-    z-index: 1;
-    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
-    pointer-events: none; /* لمنعها من اعتراض النقرات على الزر */
-}
 
-/* الشارة الظاهرة داخل القائمة المنسدلة (Inline) */
-.notification-badge-inline {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 6px;
-    background-color: var(--danger);
-    color: white;
-    font-size: 0.8rem;
-    font-weight: 700;
-    border-radius: 12px;
-    float: left; /* دفعها إلى أقصى اليسار */
-    margin-top: -2px;
-    margin-left: 10px;
-}
-
-/* زر الحذف يكون صغيراً وخفيفاً */
-.message-actions .btn-link {
-    font-size: 0.8rem;
-    line-height: 1;
-}
-/* ========== 💡 فئات Flexbox الأساسية المفقودة (بدائل Bootstrap) 💡 ========== */
-/* أضف هذا التنسيق في CSS ليحل محل الفئة المفقودة من Bootstrap */
-.card-footer {
-    padding: 1rem 1.25rem;
-    border-top: 1px solid var(--border); 
-    background-color: #f8f9fa; /* لون فاتح لخلفية التذييل */
-}
-/* d-flex: تفعيل Flexbox */
-.d-flex {
-    display: flex !important;
-}
-
-/* justify-content-center: توسيط المحتوى الأفقي */
-.justify-content-center {
-    justify-content: center !important;
-}
-
-/* d-inline-block: يجعل العنصر يظهر في سطر ويقبل العرض والارتفاع */
-.d-inline-block {
-    display: inline-block !important;
-}
-
-/* إخفاء افتراضي للعناصر المحددة */
-.d-none { 
-    display: none !important; 
-}
-
-/* الإظهار في الشاشات من حجم التابلت (768px) فما فوق */
-@media (min-width: 768px) { 
-    .d-md-inline-block { 
-        display: inline-block !important; 
-    } 
-}
-
-/* تحسين شكل الأزرار في الموبايل */
-@media (max-width: 767px) {
-    .page-link {
-        padding: 8px 12px !important;
-        font-size: 0.85rem !important;
-    }
-    .pagination {
-        gap: 4px !important;
-    }
-}
-/* 1. إخفاء زر القائمة في الشاشات الكبيرة (أكبر من 768px) */
-@media (min-width: 769px) {
-    .mobile-menu-toggle {
-        display: none !important;
-    }
-}
-
-/* 2. إظهار زر القائمة فقط في شاشات الموبايل (أصغر من 768px) */
-@media (max-width: 768px) {
-    .mobile-menu-toggle {
-        display: flex !important; /* أو block حسب التنسيق عندك */
-    }
-}

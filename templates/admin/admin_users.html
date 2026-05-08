@@ -136,11 +136,11 @@
             
             <div class="pagination">
                 {% if current_page > 1 %}
-                <a href="/admin/users?page={{ current_page - 1 }}" class="page-btn">السابق</a>
+                <a href="/admin/users?page={{ current_page - 1 }}" class="page-link">السابق</a>
                 {% endif %}
-                <span class="page-info">الصفحة {{ current_page }} من {{ total_pages }}</span>
+                <span class="page-item">الصفحة {{ current_page }} من {{ total_pages }}</span>
                 {% if current_page < total_pages %}
-                <a href="/admin/users?page={{ current_page + 1 }}" class="page-btn">التالي</a>
+                <a href="/admin/users?page={{ current_page + 1 }}" class="page-link">التالي</a>
                 {% endif %}
             </div>
         </div>
