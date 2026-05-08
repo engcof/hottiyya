@@ -9,50 +9,6 @@
     .library-section { padding: 30px 10px; }
 }
 
-/* --- 2. البحث والفلترة --- */
-.search-container {
-    margin: 20px auto 40px;
-    max-width: 500px;
-    position: relative;
-}
-
-.search-form {
-    display: flex;
-    background: white;
-    padding: 5px;
-    border-radius: 50px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-
-.search-form:focus-within {
-    border-color: #27ae60;
-    box-shadow: 0 4px 20px rgba(39, 174, 96, 0.15);
-}
-
-.search-input {
-    flex: 1;
-    border: none;
-    padding: 12px 25px;
-    border-radius: 50px;
-    outline: none;
-    font-size: 0.95rem;
-    color: #2d3748;
-}
-
-.search-button {
-    background: #27ae60;
-    color: white;
-    border: none;
-    padding: 10px 25px;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
 
 .category-filter {
     display: flex;

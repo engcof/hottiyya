@@ -22,18 +22,33 @@
         </div>
 
         <!-- شريط البحث -->
-        <div class="search-bar glass">
-            <form method="get" action="/names" class="search-form">
-                <input type="text" name="q" value="{{ q or '' }}" placeholder="ابحث بالكود أو الاسم..." autocomplete="off">
-                <button type="submit" class="search-btn">
-                    <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                    بحث
+        <div class="search-container  glass">
+            <form action="/names" method="get" class="search-form">
+                <input type="text" 
+                    name="q" 
+                    class="search-input" 
+                    placeholder="ابحث بالكود أو الاسم..."
+                   value="{{ q or '' }}"
+                    autocomplete="off">
+                
+                <button type="submit" class="search-submit-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <span>بحث</span>
                 </button>
             </form>
-            {% if q %}
-            <a href="/names" class="clear-search">إلغاء البحث</a>
+            
+            {% if q%}
+                <div style="text-align: center;">
+                    <a href="/names" class="clear-search-link">
+                        ✕ إلغاء البحث والعودة للكل
+                    </a>
+                </div>
             {% endif %}
         </div>
+        
 
         <!-- جدول الأعضاء (بطاقات على الموبايل، جدول على الكمبيوتر) -->
         <div class="members-list">

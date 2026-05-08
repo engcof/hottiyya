@@ -33,24 +33,6 @@
     font-weight: bold;
     margin: 10px 0;
 }
-/* --- 2. شريط البحث (Search Bar) --- */
-.search-bar { margin-bottom: 32px; padding: 20px; }
-.search-form { display: flex; gap: 8px; max-width: 600px; margin: 0 auto; }
-
-.search-form input[type="text"] {
-    flex: 1;
-    padding: 10px 16px;
-    border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    font-size: 1rem;
-    background: white;
-}
-
-.search-form input:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 4px rgba(16,185,129,0.15);
-}
 
 /* --- 3. شبكة عرض الأعضاء (Members Grid) --- */
 .members-list {
