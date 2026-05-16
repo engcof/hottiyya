@@ -7,7 +7,6 @@
     --note-bg: #fff9e5;
     --note-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
-
 /* ============================================================
    2. قسم الترحيب (Hero Section)
    ============================================================ */
@@ -32,15 +31,16 @@
     opacity: 0.05; 
     z-index: 1;
 }
-
-.hero-content {
-    position: relative;
-    z-index: 2; 
+.home-content {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 15px;
+    z-index: 2;
+    position: relative;
 }
+
+
 
 .hero-title {
     font-size: clamp(2.5rem, 8vw, 4.5rem); /* حجم مرن للموبايل */
@@ -189,7 +189,6 @@
 }
 /* تأكد أن النوتة نفسها توزع العناصر بالمنتصف */
 .stat-card.note-style {
-    
     text-align: center;
 }
 .online-top-line {
@@ -199,17 +198,17 @@
     gap: 8px; /* مسافة بين الرقم والسهم */
     margin-bottom: 2px;
 }
-
-
-/* السطر العلوي للأونلاين (الرقم + السهم) */
-.online-top-line {
-    display: flex;
-    align-items: center; 
-    justify-content: center;
-    gap: 5px; /* مسافة بين الرقم والسهم */
-    margin-bottom: 2px; /* مسافة بسيطة عن كلمة أونلاين */
+/* الأرقام والتسميات داخل البطاقة */
+.stat-card .num {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.2;
 }
-
+.stat-card .label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: 500;
+}
 .online-toggle {
     border: none;
     background: none;
@@ -240,12 +239,10 @@
     visibility: hidden;
     transform: translateY(-10px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    
     /* التموضع */
     top: 110%; /* تظهر أسفل النوتة */
     left: 50%;
     transform: translateX(-50%) translateY(-10px); /* توسيط أفقي */
-    
     /* التصميم */
     z-index: 9999; /* قيمة عالية جداً لتظهر فوق كل شيء */
     min-width: 160px;
@@ -278,6 +275,105 @@
     margin-left: 4px;
     box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.3);
 }
+
+.latest-announcement-card {
+    /* زيادة العرض إلى أقصى حد وتوسيطها */
+    max-width: 1000px;
+    margin: 40px auto; 
+    padding: 30px 40px;
+    
+    /* جعلها تبرز عن طريق ظل أقوى قليلاً */
+    box-shadow: 0 15px 30px rgba(16, 185, 129, 0.1); 
+    border-left: 6px solid var(--primary-color); /* شريط جانبي أخضر بارز */
+    transition: transform 0.3s ease; /* إضافة حركة بسيطة عند التمرير */
+}
+/* رفع البطاقة قليلاً عند التمرير لجذب الانتباه */
+.latest-announcement-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.15); 
+}
+/* تنسيق الشارة (Badge) لتبدو حادة وواضحة */
+.latest-announcement-card .badge {
+    display: inline-block;
+    background-color: var(--primary-color); /* لون أخضر أساسي */
+    color: white;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+/* جعل العنوان الرئيسي للإعلان سميكاً وكبيراً */
+.latest-announcement-card h3 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+.latest-announcement-card p {
+    color: var(--text-medium);
+    margin-bottom: 15px;
+}
+
+/*  تنسيقات شبكة أحدث المقالات في الصفحة الرئيسية  */
+.latest-articles-grid {
+    max-width: 1200px;
+    margin: 50px auto 80px auto;
+    padding: 0 15px;
+}
+.section-heading {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--text-dark);
+    text-align: center;
+    margin-bottom: 35px;
+}
+.home_articles-grid {
+    display: grid;
+    /* شبكة من 3 أعمدة (أو عمودين على الشاشات الصغيرة) */
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 30px;
+}
+.article-homepage-card {
+    padding: 25px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.article-homepage-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+}
+
+.view-all-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0fdf4; /* خلفية خفيفة */
+    border: 2px dashed #10b98150;
+    border-radius: 12px;
+    padding: 25px;
+}
+.btn-all-articles {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 30px;
+    background-color: var(--accent);
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    transition: background-color 0.2s;
+}
+.btn-all-articles:hover {
+    background-color: var(--accent-hover);
+}
+
 /* ============================================================
    7. تحسينات الموبايل (Mobile Fixes)
    ============================================================ */
@@ -285,14 +381,15 @@
     .hero-section { padding: 40px 15px; }
     
     .stats-section.stats-grid {
-        gap: 15px;
+        gap: 10px;
     }
     
     .stat-card.note-style {
-        width: 120px;
-        height: 90px;
+        width: 90px;
+        height: 80px;
     }
 
+    
     .latest-book-card-glass {
         flex-direction: column; /* الكتاب فوق النص في الموبايل الصغير */
         text-align: center;
@@ -301,5 +398,16 @@
     
     .latest-book-details {
         text-align: center;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        padding: 10px 15px !important;
+    }
+
+    /* 4. زر العودة للرئيسية */
+    .btn-lg {
+        padding: 12px 20px;
+        font-size: 1rem;
     }
 }
