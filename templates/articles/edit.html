@@ -4,6 +4,16 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+    <style>
+        /* تحسين إضافي مخصص لعرض غلاف المقال الحالي ليتناسب مع أبعاد المقالات */
+        .current-image img {
+            width: 180px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 2px solid #cbd5e1;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -11,11 +21,12 @@
     <div class="form-card">
         <div class="form-header">
             <h1 class="form-title">تعديل المقال</h1>
-            <p class="form-subtitle">تحديث محتوى المقال المنشور</p>
+            <p class="form-subtitle">تحديث وتطوير محتوى المقال المنشور</p>
         </div>
 
+        {# التنبيه الموحد المتناسق مع السكربت العام للاختفاء التلقائي #}
         {% if error %}
-        <div class="alert error">
+        <div class="alert error" id="error-alert">
             <i class="fas fa-exclamation-circle"></i>
             <span>{{ error }}</span>
             <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
@@ -27,7 +38,7 @@
             
             <div class="form-group">
                 <label>عنوان المقال <span class="required">*</span></label>
-                <input type="text" name="title" class="input-field" value="{{ article.title }}" required>
+                <input type="text" name="title" class="input-field" value="{{ article.title }}" required placeholder="أدخل عنوان المقال...">
             </div>
 
             <div class="form-group">
@@ -74,29 +85,37 @@
                 <input type="hidden" name="content" id="content_hidden">
             </div>
 
+            {# توحيد مظهر حقل رفع وتحديث غلاف المقال #}
             <div class="form-group">
                 <label>صورة غلاف المقال</label>
-                
-                {% if article.image_url %}
-                <div class="current-image">
-                    <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 8px;">الصورة الحالية:</p>
-                    <img src="{{ article.image_url }}" alt="غلاف المقال">
-                </div>
-                {% endif %}
-
-                <div class="file-input-wrapper" style="margin-top: 15px;">
-                    <input type="file" name="image" accept="image/*" style="width: 100%;">
-                    <p class="feedback-text" style="color: #94a3b8;">اتركه فارغاً للاحتفاظ بالصورة الحالية</p>
+                <div class="file-input-wrapper" style="padding: 25px 20px;">
+                    {% if article.image_url %}
+                    <div class="current-image" style="margin-bottom: 15px;">
+                        <img src="{{ article.image_url }}" alt="غلاف المقال الحالي">
+                        <small style="display: block; color: #64748b; margin-top: 6px; font-weight: 600;">الغلاف الحالي للمقال</small>
+                    </div>
+                    {% else %}
+                    <i class="fas fa-image fa-2x" style="color: #cbd5e0; margin-bottom: 10px; display: block;"></i>
+                    {% endif %}
+                    
+                    <span>اسحب صورة جديدة هنا أو اضغط للتحديث</span>
+                    <p class="feedback-text" style="color: #94a3b8; font-weight: 500; font-size: 0.8rem; margin-top: 5px;">(اتركه فارغاً إذا كنت تريد الاحتفاظ بالغلاف الحالي)</p>
+                    <input type="file" name="image" accept="image/*" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
                 </div>
             </div>
 
-            <div style="margin-top: 30px;">
+            <div style="margin-top: 35px;">
                 <button type="submit" class="btn-submit-main">
-                    <i class="fas fa-save"></i> حفظ التعديلات
+                    <i class="fas fa-save"></i> حفظ وتحديث التعديلات
                 </button>
             </div>
             
-            <a href="/articles/{{ article.id }}" class="cancel-text-link">إلغاء والرجوع للمقال</a>
+            {# وضع زر التراجع داخل حاوية التذييل الموحدة #}
+            <div class="form-footer">
+                <a href="/articles/{{ article.id }}" class="cancel-text-link">
+                    <i class="fas fa-arrow-right" style="font-size: 0.8rem; margin-left: 5px;"></i> إلغاء والرجوع للمقال
+                </a>
+            </div>
         </form>
     </div>
 </section>

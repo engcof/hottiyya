@@ -1,4 +1,4 @@
-/* ========== ✅ سكربت معرض الصور (gallery.js) ========== */
+/* ========== ✅ سكربت معرض الصور المحدث (gallery.js) ========== */
 
 /**
  * فتح المودال وعرض الصورة المختارة
@@ -10,12 +10,16 @@ function openModal(imgUrl, imgTitle) {
     const modalImg = document.getElementById("img01");
     const captionText = document.getElementById("caption");
 
-    modal.style.display = "block";
-    modalImg.src = imgUrl;
-    captionText.innerHTML = imgTitle;
-    
-    // منع تمرير الصفحة الخلفية
-    document.body.classList.add('modal-open');
+    if (modal && modalImg) {
+        // 🌟 تعديل السطر لفرض الـ flex وإلغاء الـ none الافتراضي
+        modal.style.setProperty('display', 'flex', 'important'); 
+        
+        modalImg.src = imgUrl;
+        if (captionText) captionText.innerHTML = imgTitle;
+        
+        // منع تمرير الصفحة الخلفية
+        document.body.classList.add('modal-open');
+    }
 }
 
 /**
@@ -23,23 +27,30 @@ function openModal(imgUrl, imgTitle) {
  */
 function closeModal() {
     const modal = document.getElementById("imageModal");
-    modal.style.display = "none";
-    
-    // إعادة تفعيل التمرير
-    document.body.classList.remove('modal-open');
+    if (modal) {
+        // 🌟 إرجاع الخاصية لـ none لإخفاء المودال مجدداً بأمان
+        modal.style.setProperty('display', 'none', 'important'); 
+        
+        // إعادة تفعيل التمرير
+        document.body.classList.remove('modal-open');
+    }
 }
 
-// إغلاق المودال عند الضغط على زر Esc في لوحة المفاتيح
-document.addEventListener('keydown', function(event) {
-    if (event.key === "Escape") {
-        closeModal();
-    }
-});
+// عزل الأحداث وانتظار تحميل الـ DOM لحماية المتصفح
+document.addEventListener('DOMContentLoaded', () => {
 
-// إغلاق المودال عند الضغط في أي مكان خارج الصورة (على الخلفية السوداء)
-window.onclick = function(event) {
-    const modal = document.getElementById("imageModal");
-    if (event.target === modal) {
-        closeModal();
-    }
-};
+    // إغلاق المودال عند الضغط على زر Esc في لوحة المفاتيح
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape") {
+            closeModal();
+        }
+    });
+
+    // إغلاق المودال عند الضغط على الخلفية باستخدام الطريقة القياسية الآمنة
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById("imageModal");
+        if (modal && event.target === modal) {
+            closeModal();
+        }
+    });
+});

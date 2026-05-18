@@ -3,33 +3,51 @@
  */
 
 function formatDoc(cmd, value = null) {
-    document.execCommand(cmd, false, value);
+    if (typeof document.execCommand === 'function') {
+        document.execCommand(cmd, false, value);
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('articleForm');
     const editor = document.getElementById('editor');
     const hiddenInput = document.getElementById('content_hidden');
+    const placeholderText = "اكتب محتوى مقالك هنا...";
 
     if (form && editor) {
-        // 1. معالجة البيانات قبل إرسال النموذج
-        form.addEventListener('submit', function(e) {
-            // نقل الـ HTML الناتج من المحرر إلى الحقل المخفي
-            hiddenInput.value = editor.innerHTML;
-            
-            // التحقق من أن المقال ليس فارغاً
-            const textContent = editor.innerText.trim();
-            if (textContent === "" || textContent === "اكتب محتوى مقالك هنا...") {
-                alert("عذراً، لا يمكن نشر مقال فارغ!");
-                e.preventDefault();
+        
+        // 1. مسح النص الترحيبي بذكاء عند التركيز (Focus)
+        editor.addEventListener('focus', function() {
+            if (this.innerText.trim() === placeholderText) {
+                this.innerHTML = "";
             }
         });
 
-        // 2. مسح النص الافتراضي عند بدء الكتابة
-        editor.addEventListener('focus', function() {
-            if (this.innerText.trim() === "اكتب محتوى مقالك هنا...") {
-                this.innerHTML = "";
+        // 2. إعادة النص الترحيبي إذا ترك المستخدم المحرر فارغاً (Blur)
+        editor.addEventListener('blur', function() {
+            if (this.innerText.trim() === "") {
+                this.innerHTML = placeholderText;
             }
-        }, { once: true });
+        });
+
+        // 3. معالجة وتدقيق البيانات قبل إرسال النموذج (Submit)
+        form.addEventListener('submit', function(e) {
+            const rawContent = editor.innerHTML;
+            const textContent = editor.innerText.trim();
+
+            // تنظيف وإزالة وسوم الـ HTML الفارغة المحتملة للفحص الدقيق
+            const cleanCheck = rawContent.replace(/<[^>]*>/g, '').trim();
+
+            if (textContent === "" || textContent === placeholderText || cleanCheck === "") {
+                alert("عذراً، لا يمكن نشر مقال فارغ!");
+                e.preventDefault();
+                return;
+            }
+
+            // نقل الـ HTML النظيف والنهائي إلى الحقل المخفي ليتم إرساله لقاعدة البيانات
+            if (hiddenInput) {
+                hiddenInput.value = rawContent;
+            }
+        });
     }
 });

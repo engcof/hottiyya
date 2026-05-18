@@ -1,30 +1,32 @@
 {% extends "base.html" %}
 {% block title %}تعديل: {{ member.name }}{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
 {% endblock %}
 
 {% block content %}
 <section class="add-edit-page">
-    <div class="form-card" style="max-width: 1000px;">
+    <div class="form-card">
         <div class="form-header">
             <h1 class="form-title">تعديل بيانات العضو</h1>
             <p class="form-subtitle">تحديث سجل: <strong>{{ member.name }}</strong> ({{ code }})</p>
         </div>
 
-        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data" class="news-form">
+        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="page" value="{{ request.query_params.get('page', 1) }}">
-            <input type="hidden" name="q" value="{{ request.query_params.get('q', '') }}">
+            <input type="hidden" name="q" value="{{ request.query_params.get('q', '') if request.query_params.get('q') and request.query_params.get('q') != 'None' else '' }}">
+            
             <div class="form-grid">
                 <div class="form-group">
                     <label>الاسم <span class="required">*</span></label>
-                    <input type="text" name="name" class="input-field" value="{{ member.name }}" required>
+                    <input type="text" name="name" class="input-field" value="{{ member.name }}" required placeholder="الاسم الكامل">
                 </div>
 
                 <div class="form-group">
                     <label>اللقب (اختياري)</label>
-                    <input type="text" name="nick_name" class="input-field" value="{{ member.nick_name or '' }}">
+                    <input type="text" name="nick_name" class="input-field" value="{{ member.nick_name or '' }}" placeholder="أبو فلان">
                 </div>
 
                 <div class="form-group">
@@ -38,9 +40,10 @@
 
                 <div class="form-group">
                     <label>المستوى (الجيل)</label>
-                    <input type="number" name="level" class="input-field" value="{{ member.level }}" min="0">
+                    <input type="number" name="level" class="input-field" value="{{ member.level }}" min="0" placeholder="مثال: 5">
                 </div>
-                  <div class="form-group">
+                
+                <div class="form-group">
                     <label>العلاقة</label>
                     <select name="relation" class="input-field">
                         <option value="">-- اختر --</option>
@@ -50,87 +53,99 @@
                         {% endfor %}
                     </select>
                 </div>
+                
                 <div class="form-group">
                     <label>الحالة</label>
                     <select name="status" class="input-field">
                         <option value="">-- اختر --</option>
-                        {% set stats =  [ "حي" , "حية" , "متوفي" , "متوفية" ]  %}
+                        {% set stats = [ "حي" , "حية" , "متوفي" , "متوفية" ] %}
                         {% for sts in stats %}
                         <option value="{{ sts }}" {% if info.status == sts %}selected{% endif %}>{{ sts }}</option>
                         {% endfor %}
                     </select>
                 </div>
+                
                 <div class="form-group">
                     <label>كود الأب</label>
-                    <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" >
+                    <input type="text" name="f_code" class="input-field" value="{{ member.f_code or '' }}" placeholder="A0-000-000">
                 </div>
 
                 <div class="form-group">
                     <label>كود الأم</label>
-                    <input type="text" name="m_code" class="input-field" value="{{ member.m_code or '' }}" >
+                    <input type="text" name="m_code" class="input-field" value="{{ member.m_code or '' }}" placeholder="M0-000-000">
                 </div>
 
                 <div class="form-group">
                     <label>كود الزوج (للأنثى)</label>
-                    <input type="text" name="h_code" class="input-field" value="{{ member.h_code or '' }}" >
+                    <input type="text" name="h_code" class="input-field" value="{{ member.h_code or '' }}" placeholder="مثال: A0-001-001">
                 </div>
 
                 <div class="form-group">
                     <label>كود الزوجة (للذكر)</label>
-                    <input type="text" name="w_code" class="input-field" value="{{ member.w_code or '' }}" >
+                    <input type="text" name="w_code" class="input-field" value="{{ member.w_code or '' }}" placeholder="مثال: A0-001-001">
                 </div>
-
-              
 
                 <div class="form-group">
                     <label>تاريخ الميلاد</label>
                     <input type="date" name="d_o_b" class="input-field" value="{{ info.d_o_b or '' }}">
                 </div>
+                
                 <div class="form-group">
                     <label>تاريخ الوفاة</label>
                     <input type="date" name="d_o_d" class="input-field" value="{{ info.d_o_d or '' }}">
                 </div>
+                
                 <div class="form-group">
                     <label>مكان الميلاد</label>
                     <input type="text" name="p_o_b" class="input-field" value="{{ info.p_o_b or '' }}" placeholder="المدينة/الدولة">
                 </div>
-                 <div class="form-group" >
+                
+                <div class="form-group" >
                     <label>العنوان الحالي</label>
-                    <input type="text" name="address" class="input-field" value="{{ info.address or '' }}">
+                    <input type="text" name="address" class="input-field" value="{{ info.address or '' }}" placeholder="المدينة، الحي...">
                 </div>
           
                 <div class="form-group">
                     <label>رقم الهاتف</label>
-                    <input type="text" name="phone" class="input-field" value="{{ info.phone or '' }}">
+                    <input type="text" name="phone" class="input-field" value="{{ info.phone or '' }}" placeholder="05xxxxxxxx">
                 </div>
 
                 <div class="form-group">
                     <label>البريد الإلكتروني</label>
-                    <input type="email" name="email" class="input-field" value="{{ info.email or '' }}">
+                    <input type="email" name="email" class="input-field" value="{{ info.email or '' }}" placeholder="example@example.com">
                 </div>
-
-               
-                
            </div>
-                <div class="form-group" style="grid-column: span 2;">
-                    <div class="file-input-wrapper">
-                        {% if picture_url %}
-                            <img src="{{ picture_url }}" alt="الحالية" style="width: 80px; height: 80px; object-fit: cover; border-radius: 50%; border: 2px solid var(--accent); margin-bottom: 10px;">
-                        {% endif %}
-                        <label style="display: block; margin-bottom: 5px;">تحديث الصورة الشخصية</label>
-                        <input type="file" name="picture" accept="image/*" class="input-field">
-                    </div>
+           
+           {# --- [تصحيح] تم تكييف مدخل الصورة ليطابق ستايل صفحة الإضافة ويدعم مرونة الموبايل بالكامل --- #}
+           <div class="form-group grid-full-width">
+                <label>الصورة الشخصية للعضو</label>
+                <div class="file-input-wrapper">
+                    {% if picture_url %}
+                        <div class="current-image" style="margin-bottom: 12px;">
+                            <img src="{{ picture_url }}" alt="الحالية" style="width: 90px; height: 90px; object-fit: cover; border-radius: 50%; border: 3px solid #10b981;">
+                            <small style="display: block; color: #64748b; margin-top: 5px;">الصورة الحالية</small>
+                        </div>
+                    {% else %}
+                        <i class="fas fa-camera fa-2x" style="color: #cbd5e0; margin-bottom: 10px; display: block;"></i>
+                    {% endif %}
+                    <span>اسحب صورة جديدة هنا أو اضغط لتحديثها</span>
+                    <input type="file" name="picture" accept="image/*" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
                 </div>
+            </div>
             
-            <div style="margin-top: 35px;">
-                <button type="submit" class="btn-submit-main">تحديث بيانات العضو</button>
+            <div style="margin-top: 40px;">
+                <button type="submit" class="btn-submit-main">
+                    <i class="fas fa-sync-alt"></i> تحديث بيانات العضو وتعديلها
+                </button>
             </div>
             
             <div class="form-footer">
                 <a href="/names/details/{{ code }}" class="cancel-text-link">رجوع للتفاصيل</a>
-                <span style="margin: 0 10px; color: #cbd5e0;">|</span>
-                <a href="/names?page={{ request.query_params.get('page', 1) }}{% if request.query_params.get('q') and request.query_params.get('q') != 'None' %}&q={{ request.query_params.get('q') }}{% endif %}" class="cancel-text-link">قائمة الشجرة</a>
-
+                <span style="margin: 0 12px; color: #cbd5e1;">|</span>
+                
+                {# تصفية الرابط البرمجي لعدم إرسال كلمة None إلى السيرفر في الـ Query String #}
+                {% set search_q = request.query_params.get('q', '') %}
+                <a href="/names?page={{ request.query_params.get('page', 1) }}{% if search_q and search_q != 'None' %}&q={{ search_q }}{% endif %}" class="cancel-text-link">قائمة الشجرة</a>
             </div>
         </form>
     </div>

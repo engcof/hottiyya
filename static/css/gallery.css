@@ -96,99 +96,119 @@
 }
 
 /* ========== ✅ تنسيقات المودال (gallery.css) ========== */
+/* ========== ✅ تنسيقات المودال المحدثة (gallery.css) ========== */
 
 /* 1. خلفية المودال (الحاوية الرئيسية) */
 .image-modal {
-    display: none; /* مخفي افتراضياً */
     position: fixed;
-    z-index: 2000; /* قيمة عالية جداً ليكون فوق الهيدر */
-    padding-top: 50px;
+    z-index: 9999; /* قيمة فائقة ليتخطى الهيدر تماماً مهما كانت قوته */
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.9); /* خلفية سوداء شفافة */
+    overflow: hidden; /* منع التمرير داخل المودال لضمان الثبات */
+    background-color: rgba(0, 0, 0, 0.9); /* خلفية سوداء شفافة */
     backdrop-filter: blur(8px); /* تأثير ضبابي للخلفية */
-    cursor: zoom-out; /* مؤشر الماوس يشير للخروج */
+    
+    /* 🌟 التوسيط المطلق في منتصف الشاشة عمودياً وأفقياً */
+    /*display: flex;*/
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out; 
+     /* 🌟 الحل الحاسم: جعل الحالة الافتراضية عند التحميل مخفي تماماً */
+    display: none !important; 
 }
 
 /* 2. حاوية المحتوى (لتوسيط الصورة والعنوان) */
 .modal-content-wrapper {
-    margin: auto;
-    display: block;
-    width: 80%;
+    position: relative;
+    width: 85%;
     max-width: 900px;
     text-align: center;
-    cursor: default; /* مؤشر الماوس عادي داخل المحتوى */
+    cursor: default; 
+    margin: 0 auto;
+    
+    /* أنيميشن عند الفتح للمحتوى بالكامل */
+    animation-name: zoom;
+    animation-duration: 0.3s;
+    animation-timing-function: ease-out;
 }
 
 /* 3. الصورة داخل المودال */
 .modal-image {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
     height: auto;
-    max-height: 80vh; /* لا تتجاوز 80% من ارتفاع الشاشة */
-    object-fit: contain; /* تحافظ على أبعاد الصورة دون قص */
+    max-height: 75vh; /* لا تتجاوز 75% من ارتفاع الشاشة لتترك مساحة للعنوان وللأزرار */
+    object-fit: contain; 
     border-radius: 12px;
-    border: 4px solid white;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    
-    /* أنيميشن عند الفتح */
-    animation-name: zoom;
-    animation-duration: 0.4s;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
 }
 
 /* 4. عنوان الصورة أسفل المودال */
 .modal-caption {
-    margin: 15px auto;
-    color: white;
-    font-size: 1.25rem;
-    font-weight: 700;
+    margin-top: 15px;
+    color: #ffffff;
+    font-size: 1.2rem;
+    font-weight: 600;
     direction: rtl;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
-/* 5. زر الإغلاق (X) */
+/* 5. زر الإغلاق المطور (X) */
 .modal-close {
-    position: absolute;
-    top: 20px;
-    left: 35px; /* جهة اليسار لأن المتصفح RTL */
-    color: #f1f1f1;
-    font-size: 40px;
-    font-weight: bold;
-    transition: 0.3s;
+    position: fixed; /* تثبيت الزر بالنسبة للشاشة وليس الخلفية */
+    top: 25px;
+    left: 35px; /* في اليسار تماماً */
+    color: #ffffff;
+    font-size: 45px;
+    font-weight: 300; /* مظهر أنيق وأنحف لعلامة X */
+    line-height: 1;
+    transition: all 0.25s ease;
     cursor: pointer;
-    z-index: 2001;
+    z-index: 10000; /* أعلى من حاوية المودال ليكون قابلاً للنقر دائماً */
+    background: rgba(255, 255, 255, 0.1);
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.modal-close:hover,
-.modal-close:focus {
-    color: #ef4444; /* لون أحمر عند التمرير */
-    text-decoration: none;
-    transform: scale(1.1);
+.modal-close:hover {
+    color: #ffffff;
+    background: #ef4444; /* يتحول الخلفية للأحمر لبيان الإغلاق */
+    border-color: #ef4444;
+    transform: rotate(90deg); /* تأثير حركة دورانية خفيفة للأناقة */
 }
 
 /* 6. منع تمرير الصفحة الخلفية */
 body.modal-open {
-    overflow: hidden;
+    overflow: hidden !important;
 }
 
 /* 7. أنيميشن الزووم */
 @keyframes zoom {
-    from {transform:scale(0)}
-    to {transform:scale(1)}
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
-/* 8. تحسينات الموبايل */
+/* 8. تحسينات الموبايل الشاملة */
 @media only screen and (max-width: 768px){
     .modal-content-wrapper {
-        width: 95%;
+        width: 92%;
     }
     .modal-image {
-        max-height: 70vh;
+        max-height: 65vh; /* تقليص الارتفاع على الموبايل لضمان عدم الخروج عن الشاشة */
     }
     .modal-close {
-        font-size: 30px;
         top: 15px;
-        left: 20px;
+        left: 15px;
+        width: 40px;
+        height: 40px;
+        font-size: 30px;
     }
 }

@@ -1,8 +1,10 @@
 {% extends "base.html" %}
-{% block title %}معرض الفيديهات{% endblock %}
+{% block title %}معرض الفيديوهات{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/video.css') }}">
 {% endblock %}
+
 {% block content %}
 <section class="all-page">
     <div class="container">    
@@ -15,7 +17,7 @@
             {% endif %}
         </div>
 
-         {% if success %}
+        {% if success %}
         <div class="alert success" id="success-alert">
             <svg viewBox="0 0 24 24" width="20" height="20">
                 <path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
@@ -27,39 +29,46 @@
 
         <div class="video-grid-container">
             {% for video in videos %}
-            <article class="video-card-item shadow-sm">
-                <div class="video-frame">
-                    <video controls preload="metadata">
-                        <source src="{{ video.video_url }}" type="video/mp4">
-                    </video>
+            <article class="video-card-item">
+                <div class="video-frame-wrapper" onclick="openVideoModal('{{ video.video_url }}', '{{ video.title }}')">
+                    <div class="video-poster-placeholder">
+                        <i class="fas fa-video fa-2x"></i>
+                    </div>
+                    <div class="play-overlay">
+                        <span class="play-btn-circle">
+                            <i class="fas fa-play"></i>
+                        </span>
+                    </div>
                 </div>
                 
-                <div class="video-details p-3">
+                <div class="video-details">
                     <h3 class="video-item-title">{{ video.title }}</h3>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge bg-light text-dark border">{{ video.category }}</span>
-                        <small class="text-muted">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '' }}</small>
+                    <div class="video-item-meta">
+                        <span class="video-badge">{{ video.category }}</span>
+                        <small class="video-date">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '' }}</small>
                     </div>
                     
                     {% if perms.delete_video %}
-                    <div class="mt-3 pt-2 border-top">
-                        <form action="/video/delete/{{ video.id }}" method="POST" onsubmit="return confirm('حذف الفيديو؟');">
+                    <div class="video-actions">
+                        <form action="/video/delete/{{ video.id }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا الفيديو نهائياً؟');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <button type="submit" class="btn btn-outline-danger btn-sm w-100">
-                                <i class="fas fa-trash-alt me-1"></i> حذف
+                            <button type="submit" class="btn-delete-video">
+                                <i class="fas fa-trash-alt me-1"></i> حذف الفيديو
                             </button>
                         </form>
-                        
                     </div>
                     {% endif %}
                 </div>
             </article>
             {% else %}
-            <div class="text-center w-100 py-5">
-                <p class="text-muted">لا توجد فيديوهات مرفوعة حالياً.</p>
+            <div class="empty-video-state">
+                <i class="fas fa-video-slash fa-3x" style="color: #cbd5e1; margin-bottom: 15px; display: block;"></i>
+                <p class="text-muted">لا توجد فيديوهات مرفوعة حالياً في المعرض.</p>
             </div>
             {% endfor %}
         </div>
+
+        {# نظام الترقيم والصفحات #}
         {% if total_pages > 1 %}
         <div class="pagination-container">
             {% if current_page > 1 %}
@@ -82,7 +91,30 @@
             {% endif %}
         </div>
         {% endif %}
-       
     </div>
 </section>
+
+<div id="videoLightboxModal" class="video-lightbox" onclick="closeVideoModal(event)">
+    <div class="lightbox-dialog">
+        <div class="lightbox-header">
+            <h4 id="lightboxVideoTitle" class="lightbox-title">عرض الفيديو</h4>
+            <div class="lightbox-controls">
+                <button type="button" class="ctrl-btn" onclick="toggleLightboxFullscreen()" title="ملء الشاشة">
+                    <i id="fsIcon" class="fas fa-expand"></i>
+                </button>
+                <button type="button" class="ctrl-btn close-btn" onclick="closeVideoModal(force=true)" title="إغلاق">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="lightbox-body">
+            <video id="lightboxVideoPlayer" controls preload="auto" playsinline>
+                <source src="" type="video/mp4">
+                متصفحك لا يدعم تشغيل الفيديو.
+            </video>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', path='js/video-modal.js') }}"></script>
 {% endblock %}

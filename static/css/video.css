@@ -1,5 +1,4 @@
-
-    /* ========== ✅ معرض الفيديوهات الموحد (video.css) ✅ ========== */
+/* ========== ✅ معرض الفيديوهات الموحد والمطور (video.css) ========== */
 
 /* 1. حاوية المعرض (الشبكة) */
 .video-grid-container {
@@ -10,42 +9,81 @@
     padding: 20px 0;
 }
 
-/* 2. بطاقة الفيديو (Video Card) */
+/* 2. بطاقة الفيديو الذكية */
 .video-card-item {
-    background: var(--white, #ffffff);
-    border-radius: var(--radius, 15px);
+    background: #ffffff;
+    border-radius: 16px;
     overflow: hidden;
-    border: 1px solid var(--border, #eee);
-    transition: var(--transition, 0.3s);
-    box-shadow: var(--shadow, 0 4px 6px rgba(0,0,0,0.05));
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     display: flex;
     flex-direction: column;
     height: 100%;
 }
 
 .video-card-item:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 45px rgba(0,0,0,0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* 3. حاوية مشغل الفيديو (نسبة الأبعاد 16:9) */
-.video-frame {
+/* 3. حاوية الغلاف والتشغيل التفاعلية (16:9) */
+.video-frame-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 56.25%; /* يحافظ على أبعاد الفيديو 16:9 */
-    background: #000;
+    padding-top: 56.25%; /* نسبة أبعاد ثابتة 16:9 */
+    background: #0f172a;
+    cursor: pointer;
+    overflow: hidden;
 }
 
-.video-frame video {
+.video-poster-placeholder {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: cover; /* يضمن ملء الفيديو للمساحة دون تشويه */
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #475569;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 }
 
-/* 4. تفاصيل الفيديو */
+/* طبقة التأثير عند التمرير بالماوس فوق الكارت */
+.play-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.play-btn-circle {
+    width: 55px;
+    height: 55px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4);
+    transform: scale(0.8);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.video-frame-wrapper:hover .play-overlay {
+    opacity: 1;
+}
+
+.video-frame-wrapper:hover .play-btn-circle {
+    transform: scale(1);
+    background: #059669;
+}
+
+/* 4. تفاصيل الميتا والكارت */
 .video-details {
     padding: 20px;
     flex-grow: 1;
@@ -54,85 +92,198 @@
 }
 
 .video-item-title {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 700;
-    margin-bottom: 12px;
-    color: var(--text, #333);
-    line-height: 1.5;
-    
-    /* تحديد عدد الأسطر بـ 2 وحل مشكلة الفائض */
+    margin-bottom: 15px;
+    color: #1e293b;
+    line-height: 1.6;
     display: -webkit-box;
-    line-clamp: 2; 
     -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2; 
+    line-clamp: 2; /* الخاصية القياسية الحديثة لبعض المتصفحات */
     overflow: hidden;
-    text-overflow: ellipsis;
-    min-height: 3.3rem; /* لضمان توازي العناوين حتى لو كانت سطر واحد */
+    min-height: 3.2rem;
 }
 
-/* 5. البيانات التعريفية (التصنيف والتاريخ) */
 .video-item-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: auto; /* يدفع الميتا للأسفل */
+    margin-top: auto;
 }
 
 .video-badge {
-    background: rgba(16, 185, 129, 0.1);
-    color: var(--accent, #10b981);
+    background: #f0fdf4;
+    color: #10b981;
     padding: 4px 12px;
     border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 .video-date {
-    font-size: 0.85rem;
-    color: var(--text-light, #64748b);
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
 }
 
-/* 6. أزرار التحكم */
 .video-actions {
     margin-top: 15px;
-    padding-top: 15px;
-    border-top: 1px solid var(--border, #eee);
+    padding-top: 12px;
+    border-top: 1px solid #f1f5f9;
 }
 
 .btn-delete-video {
     width: 100%;
     padding: 10px;
-    border: 1px solid var(--danger, #ef4444);
-    background: transparent;
-    color: var(--danger, #ef4444);
+    border: 1px solid #fee2e2;
+    background: #fef2f2;
+    color: #ef4444;
     border-radius: 10px;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: 0.3s;
+    transition: 0.2s;
 }
 
 .btn-delete-video:hover {
-    background: var(--danger, #ef4444);
+    background: #ef4444;
     color: #fff;
+    border-color: #ef4444;
 }
 
-/* 7. حالة الفراغ (No Videos) */
 .empty-video-state {
     grid-column: 1 / -1;
     text-align: center;
     padding: 60px 20px;
-    background: var(--glass, #f8fafc);
-    border-radius: var(--radius, 15px);
-    border: 2px dashed var(--border, #e2e8f0);
+    background: #f8fafc;
+    border-radius: 16px;
+    border: 2px dashed #e2e8f0;
 }
 
-/* 8. تحسينات الموبايل */
+/* =========================================
+   5. نظام المودال الاحترافي (Lightbox System)
+   ========================================= */
+.video-lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+}
+
+.video-lightbox.show {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* صندوق الحاوية المرن للفيديو */
+.lightbox-dialog {
+    background: #0f172a;
+    width: 100%;
+    max-width: 900px; /* الحجم الافتراضي الذكي والمريح للعين */
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    transform: scale(0.95);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.video-lightbox.show .lightbox-dialog {
+    transform: scale(1);
+}
+
+/* هيدر المودال */
+.lightbox-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: #1e293b;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lightbox-title {
+    color: #f8fafc;
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 70%;
+    direction: rtl;
+}
+
+.lightbox-controls {
+    display: flex;
+    gap: 10px;
+}
+
+.ctrl-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #94a3b8;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: 0.2s;
+}
+
+.ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #f8fafc;
+}
+
+.close-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* جسم المودال والمشغل */
+.lightbox-body {
+    position: relative;
+    width: 100%;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox-body video {
+    width: 100%;
+    max-height: 70vh; /* يمنع خروج الفيديو خارج إطار الشاشة طولياً */
+    display: block;
+    outline: none;
+}
+
+/* تحسينات الشاشات الصغيرة للمودال والمعرض */
 @media (max-width: 768px) {
     .video-grid-container {
-        grid-template-columns: 1fr !important; /* فيديو واحد في السطر للموبايل */
+        grid-template-columns: 1fr !important;
         padding: 10px;
     }
-    
-    .video-item-title {
-        font-size: 1rem;
+    .video-lightbox {
+        padding: 10px;
+    }
+    .lightbox-header {
+        padding: 12px;
+    }
+    .lightbox-title {
+        font-size: 0.95rem;
     }
 }

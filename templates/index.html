@@ -171,55 +171,9 @@
     </section>
    
 </main>
-<div id="onlineDropdownPortal">
-</div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const toggle = document.getElementById('onlineToggle');
-    const list = document.getElementById('onlineList');
-    const portal = document.getElementById('onlineDropdownPortal');
+<div id="onlineDropdownPortal"></div>
 
-    if (toggle && list && portal) {
-        toggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            
-            // نقل القائمة إلى الـ Portal لضمان ظهورها فوق كل المحتوى (ما عدا الهيدر)
-            if (list.parentElement !== portal) {
-                portal.appendChild(list);
-            }
+<script src="{{ url_for('static', path='js/home.js') }}"></script>
 
-            const isOpen = list.classList.contains('show');
-            
-            if (!isOpen) {
-                const rect = toggle.getBoundingClientRect();
-                const scrollY = window.pageYOffset || document.documentElement.scrollTop;
-
-                // وضع القائمة بدقة أسفل النوتة
-                portal.style.display = 'block';
-                portal.style.position = 'absolute';
-                portal.style.top = (rect.bottom + scrollY + 8) + 'px';
-                portal.style.left = (rect.left + (rect.width / 2)) + 'px';
-                portal.style.transform = 'translateX(-50%)';
-
-                setTimeout(() => list.classList.add('show'), 10);
-            } else {
-                list.classList.remove('show');
-                setTimeout(() => portal.style.display = 'none', 300);
-            }
-        });
-    }
-
-    // إغلاق القائمة عند الضغط في أي مكان آخر
-    document.addEventListener('click', function() {
-        list?.classList.remove('show');
-        setTimeout(() => { if(portal) portal.style.display = 'none'; }, 300);
-    });
-});
-
-// توقف الحركة عند وضع الماوس (اختياري لراحة المستخدم)
-const ticker = document.querySelector('.home-ticker-inner');
-ticker.addEventListener('mouseenter', () => ticker.style.animationPlayState = 'paused');
-ticker.addEventListener('mouseleave', () => ticker.style.animationPlayState = 'running');
-</script>
 
 {% endblock %}
