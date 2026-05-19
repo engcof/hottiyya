@@ -31,9 +31,11 @@
             {% for video in videos %}
             <article class="video-card-item">
                 <div class="video-frame-wrapper" onclick="openVideoModal('{{ video.video_url }}', '{{ video.title }}')">
-                    <div class="video-poster-placeholder">
-                        <i class="fas fa-video fa-2x"></i>
-                    </div>
+                    
+                    <video preload="metadata" muted playsinline class="video-card-thumbnail">
+                        <source src="{{ video.video_url }}#t=0.5" type="video/mp4">
+                    </video>
+                    
                     <div class="play-overlay">
                         <span class="play-btn-circle">
                             <i class="fas fa-play"></i>
@@ -102,7 +104,7 @@
                 <button type="button" class="ctrl-btn" onclick="toggleLightboxFullscreen()" title="ملء الشاشة">
                     <i id="fsIcon" class="fas fa-expand"></i>
                 </button>
-                <button type="button" class="ctrl-btn close-btn" onclick="closeVideoModal(force=true)" title="إغلاق">
+                <button type="button" class="ctrl-btn close-btn" onclick="closeVideoModal(true)" title="إغلاق">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
