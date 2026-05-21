@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 {% block title %}صفحتي الشخصية - {{ user.username }}{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/profile.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
 {% endblock %}
+
 {% block content %}
 <section class="profile-page-wrapper">
     <div class="custom-container">
+        
         <div class="user-profile-header">
             <div class="avatar-holder">
                 <span class="avatar-icon">👤</span>
@@ -27,7 +30,7 @@
             <div class="section-header">
                 <h4>📥 صندوق الوارد</h4>
             </div>
-           <div class="inbox-messages-list">
+            <div class="inbox-messages-list">
                 {% if inbox_messages %}
                     {% for message in inbox_messages %}
                     <div class="message-item {% if not message.is_read %}unread-msg{% endif %}" id="msg-card-{{ message.id }}">
@@ -41,24 +44,23 @@
                             </p>
                         </div>
 
-                      <div class="msg-controls">
-                            <!-- زر القراءة -->
+                        <div class="msg-controls">
                             <button type="button" 
-                                    class="action-btn-msg btn-read-msg" 
+                                    class="btn-small btn-read-profile" 
                                     data-id="{{ message.id }}"
                                     data-sender="{{ message.sender_username }}"
                                     data-message="{{ message.message }}"
                                     data-is-read="{{ 'true' if message.is_read else 'false' }}"
                                     onclick="handleOpenMessage(this)">
-                                <span style="margin-left: 5px;">👁️</span> اقرأ الرسالة
+                                <i class="fas fa-eye"></i> اقرأ الرسالة
                             </button>
                             
                             <form method="post" action="/profile/delete-message/{{ message.id }}" 
-                                onsubmit="return confirm('هل أنت متأكد من حذف هذه الرسالة؟')"
-                                style="flex: 1;"> <!-- مضاف لضمان التنسيق -->
+                                  onsubmit="return confirm('هل أنت متأكد من حذف هذه الرسالة؟')"
+                                  class="msg-delete-form">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}"> 
-                                <button type="submit" class="action-btn-msg btn-delete-msg" style="width: 100%;">
-                                    <span style="margin-left: 5px;">🗑️</span> حذف
+                                <button type="submit" class="btn-small btn-f-delete">
+                                    <i class="fas fa-trash-alt"></i> حذف
                                 </button>
                             </form>
                         </div>
@@ -69,100 +71,107 @@
                 {% endif %}
             </div>
         </div>
-            <div id="messageModal" class="custom-modal">
-                <div class="modal-content shadow-soft">
-                    <div class="modal-header">
-                        <h5 id="modalSender"></h5>
-                        <span class="close-modal" onclick="closeModal()">&times;</span>
-                    </div>
-                    <div class="modal-body">
-                        <p id="fullMessageText"></p>
-                    </div>
-                    <div class="modal-footer">
-                        <button onclick="closeModal()" class="submit-btn-msg primary-bg-msg">إغلاق</button>
-                    </div>
-                </div>
-           
-                    
 
-            {% if total_pages > 1 %}
-            <div class="pagination-container">
-                <ul class="custom-pagination">
-                    {% if current_page > 1 %}
-                    <li><a href="/profile?page={{ current_page - 1 }}">السابق</a></li>
-                    {% endif %}
-                    
-                    {% for p in range(1, total_pages + 1) %}
-                    <li class="{% if p == current_page %}active-page{% endif %}">
-                        <a href="/profile?page={{ p }}">{{ p }}</a>
-                    </li>
-                    {% endfor %}
+        {% if total_pages > 1 %}
+        <div class="pagination-container">
+            <ul class="custom-pagination">
+                {% if current_page > 1 %}
+                <li><a href="/profile?page={{ current_page - 1 }}">السابق</a></li>
+                {% endif %}
+                
+                {% for p in range(1, total_pages + 1) %}
+                <li class="{% if p == current_page %}active-page{% endif %}">
+                    <a href="/profile?page={{ p }}">{{ p }}</a>
+                </li>
+                {% endfor %}
 
-                    {% if current_page < total_pages %}
-                    <li><a href="/profile?page={{ current_page + 1 }}">التالي</a></li>
-                    {% endif %}
-                </ul>
-            </div>
-            {% endif %}
+                {% if current_page < total_pages %}
+                <li><a href="/profile?page={{ current_page + 1 }}">التالي</a></li>
+                {% endif %}
+            </ul>
         </div>
+        {% endif %}
+
         <div class="profile-section-card shadow-soft">
             <div class="section-header">
                 <h4>✉️ إرسال رسالة جديدة</h4>
             </div>
-            <form method="post" action="/profile/send-message" >
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                
-                {% if user.role == 'admin' %}
+            <div class="form-card-body">
+                <form method="post" action="/profile/send-message">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    
+                    {% if user.role == 'admin' %}
+                        <div class="form-group">
+                            <label class="form-label">المستلم:</label>
+                            <select name="recipient_id" class="input-field" required>
+                                <option value="">اختر المستخدم...</option>
+                                {% for u in all_users %}
+                                    <option value="{{ u.id }}">{{ u.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% elif admin_id %}
+                        <input type="hidden" name="recipient_id" value="{{ admin_id }}"> 
+                        <div class="info-note">سيتم توجيه الرسالة إلى إدارة الموقع.</div>
+                    {% endif %}
+                    
                     <div class="form-group">
-                        <label>المستلم:</label>
-                        <select name="recipient_id" class="input-field" required>
-                            <option value="">اختر المستخدم...</option>
-                            {% for u in all_users %}
-                                <option value="{{ u.id }}">{{ u.username }}</option>
-                            {% endfor %}
-                        </select>
+                        <label class="form-label">نص الرسالة:</label>
+                        <textarea name="message" class="input-field" rows="3" required></textarea>
                     </div>
-               {% elif admin_id %}
-                    <input type="hidden" name="recipient_id" value="{{ admin_id }}"> 
-                    <div class="info-note">سيتم توجيه الرسالة إلى إدارة الموقع.</div>
-                {% endif %}
-                
-                <div class="form-group">
-                    <label>نص الرسالة:</label>
-                    <textarea name="message" class="input-field" rows="3" required></textarea>
-                </div>
-                
-                {% if user.role == 'admin' or admin_id %}
-                    <button type="submit" class="submit-btn-msg primary-bg-msg">إرسال الرسالة</button>
-                {% endif %}
-            </form>
+                    
+                    {% if user.role == 'admin' or admin_id %}
+                        <button type="submit" class="submit-btn-msg primary-bg-msg">إرسال الرسالة</button>
+                    {% endif %}
+                </form>
+            </div>
         </div>
-        <div class="form-card" >
-            <div class="form-header">
+
+        <div class="profile-section-card shadow-soft">
+            <div class="section-header">
                 <h4>🔐 أمن الحساب</h4>
             </div>
-            <form method="post" action="/profile/change-password" >
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <div class="form-group">
-                    <input type="password" name="current_password" class="input-field" placeholder="كلمة السر الحالية" required>
-                </div>
-                <div class="form-group">
-                    <input type="password" name="new_password" class="input-field" placeholder="كلمة السر الجديدة" required minlength="6">
-                </div>
-                <div class="form-group">
-                    <input type="password" name="confirm_password" class="input-field" placeholder="تأكيد كلمة السر الجديدة" required>
-                </div>
-                <button type="submit" class="submit-btn-msg secondary-bg-msg">تحديث كلمة المرور</button>
-            </form>
+            <div class="form-card-body">
+                <form method="post" action="/profile/change-password">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <div class="form-group">
+                        <input type="password" name="current_password" class="input-field" placeholder="كلمة السر الحالية" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="new_password" class="input-field" placeholder="كلمة السر الجديدة" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="confirm_password" class="input-field" placeholder="تأكيد كلمة السر الجديدة" required>
+                    </div>
+                    <button type="submit" class="submit-btn-msg secondary-bg-msg">تحديث كلمة المرور</button>
+                </form>
+            </div>
         </div>
+
         <div class="form-footer">
             <a href="/" class="cancel-text-link">
-                <i class="fas fa-arrow-right"></i>العودة للرئيسية
+                <i class="fas fa-arrow-right"></i> العودة للرئيسية
             </a>
         </div>
        
     </div>
 </section>
+
+<div id="messageModal" class="custom-modal">
+    <div class="modal-content shadow-soft">
+        <div class="modal-header">
+            <h5 id="modalSender"></h5>
+            <span class="close-modal" onclick="closeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p id="fullMessageText"></p>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeModal()" class="submit-btn-msg primary-bg-msg" style="width: auto; padding: 8px 25px;">إغلاق</button>
+        </div>
+    </div>
+</div>
+
 {% block extra_js %}
 <script src="{{ url_for('static', path='js/profile.js') }}"></script>
 {% endblock %}

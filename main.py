@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import uuid
+import mimetypes
 from urllib.parse import urlparse
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
@@ -147,6 +148,11 @@ app.add_middleware(
 # =========================================
 # Static Files
 # =========================================
+# إجبار السيرفر على إرسال ملفات woff2 و woff بالامتداد الصريح لتشغيل الأيقونات محلياً
+mimetypes.add_type('font/woff2', '.woff2')
+mimetypes.add_type('font/woff', '.woff')
+mimetypes.add_type('text/css', '.css')
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # =========================================

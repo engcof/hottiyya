@@ -1,5 +1,7 @@
 {% extends "base.html" %}
-{% block title %}سجل العمليات{% endblock %}
+
+{% block title %}سجل العمليات الشامل{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
 {% endblock %}
@@ -7,22 +9,27 @@
 {% block content %}
 <section class="all-page">
     <div class="container">
-        <div class="page-header">
-            <h1 class="page-title">سجل العمليات الشامل</h1>
-            <p class="page-subtitle">مراقبة كافة حركات الإضافة والحذف والتعديل في النظام</p>
-            <a href="/admin" class="btn-add" style="background: var(--secondary);">
-                العودة للوحة الإدارة
-            </a>
+        
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h1 class="page-title" style="margin: 0 0 5px 0;">سجل العمليات الشامل</h1>
+                <p class="page-subtitle" style="color: var(--text-light); margin: 0; font-size: 0.95rem;">مراقبة كافة حركات الإضافة والحذف والتعديل في النظام</p>
+            </div>
+            <div class="header-actions">
+                <a href="/admin" class="btn-back" style="background-color: var(--slate); color: white;">
+                    <i class="fas fa-home"></i> العودة للوحة الإدارة
+                </a>
+            </div>
         </div>
 
-        <div class="admin-card full">
+        <div class="admin-card full glass-strong">
             <div class="table-wrapper">
                 <table class="admin-table">
                     <thead>
                         <tr>
                             <th>المستخدم</th>
                             <th>نوع العملية</th>
-                            <th>التفاصيل</th>
+                            <th>التفاصيل والمستندات</th>
                             <th>التاريخ والوقت</th>
                         </tr>
                     </thead>
@@ -30,17 +37,26 @@
                         {% for log in logs %}
                         <tr>
                             <td><span class="perm-tag">{{ log.username }}</span></td>
+                            
                             <td>
-                                <span class="role-badge {% if 'حذف' in log.action %}delete{% elif 'إضافة' in log.action %}add{% else %}manager{% endif %}">
+                                <span class="role-badge {% if 'حذف' in log.action %}delete{% elif 'إضافة' in log.action %}manager{% else %}user{% endif %}">
                                     {{ log.action }}
                                 </span>
                             </td>
-                            <td style="max-width: 400px; white-space: normal;">{{ log.details }}</td>
-                            <td class="text-lighter small">{{ log.timestamp.strftime('%Y-%m-%d | %H:%M:%S') }}</td>
+                            
+                            <td style="max-width: 400px; white-space: normal; color: var(--text); font-weight: 500; line-height: 1.6;">
+                                {{ log.details }}
+                            </td>
+                            
+                            <td style="color: var(--text-light); font-weight: 600; font-size: 0.85rem; white-space: nowrap;">
+                                {{ log.timestamp.strftime('%Y-%m-%d | %H:%M:%S') }}
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="4" class="text-center">لا توجد سجلات نشاط مسجلة حالياً.</td>
+                            <td colspan="4" class="text-center" style="padding: 40px; color: var(--text-light); font-weight: 600;">
+                                ⚠️ لا توجد سجلات نشاط مسجلة حالياً في النظام.
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -49,15 +65,16 @@
 
             <div class="pagination">
                 {% if current_page > 1 %}
-                <a href="/admin/logs?page={{ current_page - 1 }}" class="page-link">السابق</a>
+                    <a href="/admin/logs?page={{ current_page - 1 }}" class="page-link">السابق</a>
                 {% endif %}
                 
-                <span class="page-item">الصفحة {{ current_page }} من {{ total_pages }}</span>
+                <span class="page-link active">الصفحة {{ current_page }} من {{ total_pages }}</span>
                 
                 {% if current_page < total_pages %}
-                <a href="/admin/logs?page={{ current_page + 1 }}" class="page-link">التالي</a>
+                    <a href="/admin/logs?page={{ current_page + 1 }}" class="page-link">التالي</a>
                 {% endif %}
             </div>
+            
         </div>
     </div>
 </section>

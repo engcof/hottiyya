@@ -11,6 +11,7 @@
     <meta property="og:description" content="بوابتكم الرقمية للتاريخ .">
     <meta property="og:image" content="/static/icon/og-image.jpg"> <meta property="og:url" content="https://hottiyya.onrender.com">
     <link rel="icon" href="/static/icon/favicon.ico">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/all.min.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/home.css') }}">
    {% block extra_css %}{% endblock %}
@@ -28,7 +29,7 @@
                 <li><a href="/video">معرض الفيديوهات</a></li>
                 <li><a href="/library">المكتبة</a></li>
                 {% if user and can_view %}
-                <li><a href="/names">شجرة الحوطية</a></li>
+                <li><a href="/family">شجرة الحوطية</a></li>
                 {% endif %}
                 {% if user and user.role == "admin" %}
                 <li><a href="/admin">الإدارة</a></li>
@@ -99,7 +100,7 @@
             <a href="/video">معرض الفيديوهات</a>
             <a href="/library">المكتبة</a>
             {% if user and can_view %}
-            <a href="/names">شجرة الحوطية</a>
+            <a href="/family">شجرة الحوطية</a>
             {% endif %}
             {% if user and user.role == "admin" %}
             <a href="/admin">الإدارة</a>
@@ -118,26 +119,22 @@
                 <a href="/about">عن الموقع</a>
             </div>
             <div class="main_footer-copyright">
-               
                 © 2026 الحوطية • جميع الحقوق محفوظة
-              
             </div>
-             <div style="margin-top:12px;color:#f9fcfb;font-weight:600;">
-              تعبر المقالات المنشورة عن رأي أصحابها، ولا تمثل بالضرورة وجهة الموقع
-               </div>
-            <div style="margin-top:12px;color:#10b981;font-weight:600;">صُمم بـ ❤ بواسطة Osmancof</div>
+            <div style="margin-top:12px; color:#f9fcfb; font-weight:600;">
+                تعبر المقالات المنشورة عن رأي أصحابها، ولا تمثل بالضرورة وجهة الموقع
+            </div>
+            <div style="margin-top:12px; color:#10b981; font-weight:600;">
+                صُمم بـ ❤ بواسطة 
+                <a href="mailto:osmancof@gmail.com" style="color: #10b981; text-decoration: underline; transition: opacity 0.3s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                    Osmancof
+                </a>
+            </div>
         </div>
-    <footer>
-    <!-- إضافة ملفات JavaScript مشتركة هنا -->
-    <script src="{{ url_for('static', path='js/main.js') }}"></script>
-   {% block extra_js %}{% endblock %}
+    </footer>
+     <script src="{{ url_for('static', path='js/main.js') }}"></script>
    
-    <script>
+    {% block extra_js %}{% endblock %}
 
-// إغلاق القائمة لما تضغط بره
-document.addEventListener('click', function() {
-    document.getElementById('onlineList')?.classList.remove('show');
-});
-</script>
 </body>
 </html>

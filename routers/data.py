@@ -1,14 +1,19 @@
 import os
+import csv
 import subprocess
+from io import StringIO
 from datetime import datetime
 import shutil
-from fastapi import APIRouter, Request, Depends, HTTPException, Form, File, UploadFile
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi import APIRouter, Request, Depends, HTTPException, Form, File, UploadFile, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
 from core.templates import templates
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
 from starlette.background import BackgroundTask 
-from security.session import set_cache_headers,get_admin_context,get_page_context
+from security.session import set_cache_headers, get_admin_context, get_page_context
+
+# استيراد خدمات العائلة لجلب البيانات من قاعدة البيانات
+from services.family_service import FamilyService
 
 # تحميل متغيرات البيئة من ملف .env
 load_dotenv()
@@ -18,7 +23,10 @@ IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "my_secret_key")
 
 router = APIRouter(prefix="/data", tags=["data"])
 
-# ====================== دالة لتنظيف الملف بعد التصدير ======================
+# =====================================================================
+# 🧰 الدالات المساعدة (Helpers)
+# =====================================================================
+
 def cleanup_file(filepath: str):
     """تحذف الملف المؤقت بعد الانتهاء من إرسال الاستجابة."""
     if os.path.exists(filepath):
@@ -29,17 +37,13 @@ def cleanup_file(filepath: str):
             print(f"Cleanup Failed: Could not remove temporary file {filepath}: {clean_e}")
 
 
-# ====================== تهيئة سلسلة اتصال قاعدة البيانات ======================
 def get_database_url():
     database_url = os.getenv("DATABASE_URL")
     if database_url:
-        # Neon يفضل أحياناً حذف المعلمات الإضافية عند الاستخدام مع pg_dump/pg_restore
-        # أو التأكد من أنها postgresql:// وليس postgres://
         if database_url.startswith("postgres://"):
             database_url = database_url.replace("postgres://", "postgresql://", 1)
         return database_url
     
-    # إذا لم يتم تعريف DATABASE_URL، نقوم ببنائها من المتغيرات المنفصلة
     db_host = os.getenv("DB_HOST")
     db_name = os.getenv("DB_NAME")
     db_user = os.getenv("DB_USER")
@@ -47,31 +51,106 @@ def get_database_url():
     db_port = os.getenv("DB_PORT", "5432")
 
     if all([db_host, db_name, db_user, db_password]):
-        # ترميز كلمة المرور لمعالجة الأحرف الخاصة مثل @
         encoded_password = quote_plus(db_password)
-        
-        # بناء السلسلة بالصيغة القياسية لـ PostgreSQL: postgresql://user:password@host:port/dbname
         return f"postgresql://{db_user}:{encoded_password}@{db_host}:{db_port}/{db_name}"
     
     return None
 
-# ====================== استيراد البيانات (GET لعرض النموذج) ======================
+# =====================================================================
+# 🌳 دالات تصدير شجرة العائلة والنسخ النصي (تم نقلها وتوحيدها هنا)
+# =====================================================================
+
+@router.get("/export/family-tree/{code}")
+@router.get("/export/family-tree/") # مسار إضافي مرن لدعم التصدير الكامل
+async def export_family_tree(request: Request, code: str = None):
+    """توليد وتصدير شجرة العائلة أو فرع محدد كملف CSV منسق ومتوافق مع Excel."""
+    user, _ = get_admin_context(request)
+    if not user:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
+        
+    if not code:
+        data = FamilyService.get_all_family_members() 
+        filename = "full_family_tree.csv"
+    else:
+        data = FamilyService.get_full_family_tree_recursive(code)
+        filename = f"family_tree_{code}.csv"
+    
+    if not data:
+        return {"error": "لم يتم العثور على بيانات"}
+    
+    output = StringIO()
+    output.write('\ufeff') # إضافة علامة BOM لدعم اللغة العربية في Excel
+    
+    writer = csv.writer(output)
+    writer.writerow(["sep=,"]) # إجبار إكسيل على استخدام الفاصلة كمحدد للحقول
+    writer.writerow(["الكود", "الاسم الرباعي", "اللقب", "الصلة", "الفئة"])
+    
+    for row in data:
+        db_relation = row.get('relation', '')
+        gender = row.get('gender', '')
+
+        if db_relation in ["ابن", "ابنة"]:
+            relation_label = "حوطاوية" if gender == "أنثى" else "حوطاوي"
+        else:
+            relation_label = "ليست حوطاوية" if gender == "أنثى" else "ليس حوطاوي"
+
+        if code and row.get('code') == code:
+            relation_label = "حوطاوي (داخل الأسرة)" if gender != "أنثى" else "حوطاوية (داخل الأسرة)"
+
+        writer.writerow([
+            row.get('code', ''), 
+            row.get('full_name', ''), 
+            row.get('nick_name', ''), 
+            relation_label, 
+            row.get('category', '')
+        ])
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv; charset=utf-8-sig",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}",
+            "Content-Type": "text/csv; charset=utf-8-sig"
+        }
+    )
+
+
+@router.get("/export/table-backup-txt")
+async def export_table_backup(request: Request):
+    """توليد نسخة احتياطية نصية سريعة لجدول العائلة."""
+    user, _ = get_admin_context(request)
+    if not user:
+        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
+        
+    content = FamilyService.get_family_table_backup_text()
+    
+    if not content:
+        return Response(content="الجدول فارغ", media_type="text/plain")
+
+    return Response(
+        content=content,
+        media_type="text/plain; charset=utf-8",
+        headers={
+            "Content-Disposition": "attachment; filename=family_name_backup.txt"
+        }
+    )
+
+# =====================================================================
+# 💾 استيراد وتصدير قاعدة البيانات (البنية التحتية الأساسية)
+# =====================================================================
+
 @router.get("/import-data", response_class=HTMLResponse)
 async def import_page(request: Request):
     cxt = get_page_context(request)
-    user = cxt["user"]
-    isad = cxt["is_admin"]
-    if not isad:
+    if not cxt["is_admin"]:
         raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
         
-  
-    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
     context = {**cxt}
-    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-    context.update({
-       "message": None
-    })
-    response = templates.TemplateResponse("data/import_data.html",  context)
+    context.update({"message": None})
+    
+    response = templates.TemplateResponse("data/import_data.html", context) # تم تعديل اسم المجلد الموحد family
     set_cache_headers(response)
     return response
    
@@ -83,31 +162,17 @@ async def import_data(
     password: str = Form(...),
 ):
     cxt = get_page_context(request)
-    user = cxt["user"]
-    isad = cxt["is_admin"]
-    if not isad or password != IMPORT_PASSWORD:
-        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-        context =   {**cxt}
-        
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-          "message": "كلمة المرور غير صحيحة أو ليس لديك صلاحية"
-        })
-        
-        response = templates.TemplateResponse("data/import_data.html",  context)
+    if not cxt["is_admin"] or password != IMPORT_PASSWORD:
+        context = {**cxt}
+        context.update({"message": "كلمة المرور غير صحيحة أو ليس لديك صلاحية"})
+        response = templates.TemplateResponse("data/import_data.html", context)
         set_cache_headers(response)
         return response
       
     if not dump_file.filename.lower().endswith(('.dump', '.sql')):
-        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-        context =   {**cxt}
-        
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-           "message": "الملف لازم يكون بصيغة .dump أو .sql"
-        })
-        
-        response = templates.TemplateResponse("data/import_data.html",  context)
+        context = {**cxt}
+        context.update({"message": "الملف لازم يكون بصيغة .dump أو .sql"})
+        response = templates.TemplateResponse("data/import_data.html", context)
         set_cache_headers(response)
         return response
        
@@ -115,12 +180,10 @@ async def import_data(
     message = None
     
     try:
-        # 1. حفظ الملف
         contents = await dump_file.read()
         with open(file_path, "wb") as f:
             f.write(contents)
         
-        # 2. بدء الاستيراد
         database_url = get_database_url() 
         if not database_url:
              raise Exception("DATABASE_URL غير معرّف أو متغيرات القاعدة مفقودة.")
@@ -129,12 +192,7 @@ async def import_data(
             "--dbname", database_url, file_path] if file_path.endswith('.dump') \
             else ["psql", database_url, "-f", file_path]
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
 
         if result.returncode == 0:
             message = "تم استيراد البيانات بنجاح! العائلة كلها موجودة الآن"
@@ -143,155 +201,105 @@ async def import_data(
             message = f"فشل الاستيراد:<br><pre dir='ltr'>{error_details[-1500:]}</pre>"
 
     except subprocess.TimeoutExpired:
-        message = "انتهت المهلة! لكن عادةً بيكون الاستيراد اكتمل جزئيًا. جرب تاني أو قسم الملف."
+        message = "انتهت المهلة! جرب تقسيم الملف أو المحاولة مرة أخرى."
     except Exception as e:
         message = f"خطأ: {str(e)}"
     finally:
-        # **ملاحظة:** تم إبقاء تنظيف ملف الاستيراد في finally لأنه لا يستخدم FileResponse
         if os.path.exists(file_path):
             try:
                 os.remove(file_path)
             except Exception as clean_e:
                 print(f"Failed to remove temp file {file_path}: {clean_e}")
         
-    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context =   {**cxt}
-    
-    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-    context.update({
-         "message": message
-    })
-    
-    response = templates.TemplateResponse("data/import_data.html",  context)
+    context = {**cxt}
+    context.update({"message": message})
+    response = templates.TemplateResponse("data/import_data.html", context)
     set_cache_headers(response)
     return response
    
 
-# ====================== تصدير البيانات (POST لمعالجة طلب التصدير) ======================
 @router.post("/export-data")
 async def export_data_post(request: Request, password: str = Form(...)):
-    export_path = None # تعريف مسار التصدير في نطاق الدالة
+    export_path = None 
     cxt = get_page_context(request)
-    user = cxt["user"]
-    isad = cxt["is_admin"]
-    # 1. التحقق من الصلاحية
-    if not isad or password != IMPORT_PASSWORD:
-        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-        context =   {**cxt}
-        
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-           "message": "فشل التصدير: كلمة المرور غير صحيحة أو ليس لديك صلاحية."
-        })
-        
-        response = templates.TemplateResponse("data/import_data.html",  context)
+    
+    if not cxt["is_admin"] or password != IMPORT_PASSWORD:
+        context = {**cxt}
+        context.update({"message": "فشل التصدير: كلمة المرور غير صحيحة أو ليس لديك صلاحية."})
+        response = templates.TemplateResponse("data/import_data.html", context)
         set_cache_headers(response)
         return response
  
-    # 2. بناء سلسلة الاتصال
     database_url = get_database_url()
     if not database_url:
-         # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-        context =   {**cxt}
-        
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-            "message": "فشل التصدير: DATABASE_URL غير معرّف أو متغيرات القاعدة مفقودة."
-        })
-        
-        response = templates.TemplateResponse("data/import_data.html",  context)
+        context = {**cxt}
+        context.update({"message": "فشل التصدير: DATABASE_URL غير معرّف أو متغيرات القاعدة مفقودة."})
+        response = templates.TemplateResponse("data/import_data.html", context)
         set_cache_headers(response)
         return response
        
-    # 3. تحديد مسار الملف
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     filename = f"عائلة_حطية_كاملة_{timestamp}.dump"
     export_path = f"/tmp/{filename}" 
     download_filename = f"full_data_{timestamp}.dump"
 
     try:
-        # 4. تشغيل pg_dump
         cmd = [
-            "pg_dump",
-            "--verbose",
-            "--no-owner",
-            "--no-acl",
-            "--no-privileges",  
-            "--format=custom",          
-            "--file", export_path,      
-            database_url       
+            "pg_dump", "--verbose", "--no-owner", "--no-acl", "--no-privileges",  
+            "--format=custom", "--file", export_path, database_url       
         ]
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=600
-        )
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
 
-        # 5. التحقق من فشل العملية (Return Code)
         if result.returncode != 0:
             error_details = result.stderr.replace(chr(10), '<br>')
-            # نطبع الخطأ في اللوغ لسهولة التشخيص
             print(f"PG_DUMP FAILED: {result.stderr}") 
-            
-            # محاولة تنظيف الملف في حالة الفشل الفوري
             cleanup_file(export_path)
-            # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-            context =   {**cxt}
             
-            # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-            context.update({
-               "message": f"فشل التصدير (Code {result.returncode}):<br><pre dir='ltr'>{error_details[-1500:]}</pre>"
-            })
-            
-            response = templates.TemplateResponse("data/import_data.html",  context)
+            context = {**cxt}
+            context.update({"message": f"فشل التصدير (Code {result.returncode}):<br><pre dir='ltr'>{error_details[-1500:]}</pre>"})
+            response = templates.TemplateResponse("data/import_data.html", context)
             set_cache_headers(response)
             return response
          
-        # 6. التحقق من وجود الملف فعلاً بعد انتهاء العملية
         if not os.path.exists(export_path) or os.path.getsize(export_path) < 100:
-            print(f"PG_DUMP returned 0 but file {export_path} is missing or too small.")
-            
-            # لا حاجة لـ cleanup_file هنا، الملف غير موجود
-            # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-            context =   {**cxt}
-            
-            # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-            context.update({
-               "message": "فشل التصدير: pg_dump لم يقم بإنشاء ملف النسخة الاحتياطية بشكل صحيح أو الملف صغير جداً."
-            })
-            
-            response = templates.TemplateResponse("data/import_data.html",  context)
+            context = {**cxt}
+            context.update({"message": "فشل التصدير: ملف النسخة الاحتياطية فارغ أو مفقود."})
+            response = templates.TemplateResponse("data/import_data.html", context)
             set_cache_headers(response)
             return response
           
-        # 7. إرجاع الملف وتعيين مهمة حذف في الخلفية (الحل الجذري)
-        response = FileResponse(
+        return FileResponse(
             path=export_path,
             filename=download_filename,
             media_type="application/octet-stream",
-            background=BackgroundTask(cleanup_file, export_path) # **هذا هو الحل**
+            background=BackgroundTask(cleanup_file, export_path)
         )
-        return response
 
     except Exception as e:
-        # في حالة حدوث خطأ غير متوقع
-        cleanup_file(export_path) # تنظيف الملف في حالة فشل غير متوقع
-         # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-        context =   {**cxt}
-        
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-          "message": f"فشل التصدير (خطأ غير متوقع): {str(e)}"
-        })
-        
-        response = templates.TemplateResponse("data/import_data.html",  context)
+        cleanup_file(export_path)
+        context = {**cxt}
+        context.update({"message": f"فشل التصدير (خطأ غير متوقع): {str(e)}"})
+        response = templates.TemplateResponse("data/import_data.html", context)
         set_cache_headers(response)
         return response
-       
-       
-    finally:
-        # **ملاحظة هامة**: تم حذف منطق الحذف من هنا
-        # عملية الحذف تتم الآن في الخلفية بواسطة BackgroundTask فقط
-        pass
+    
+# =====================================================================
+# 🌳 عرض صفحة استمارة تصدير شجرة العائلة (GET)
+# =====================================================================
+@router.get("/export-tree", response_class=HTMLResponse)
+async def export_tree_page(request: Request):
+    """عرض الصفحة المنفصلة المخصصة لإدخال كود وتصدير الشجرة."""
+    cxt = get_page_context(request)
+    if not cxt["is_admin"]: 
+        return RedirectResponse("/auth/login", status_code=303)
+
+    context = {**cxt}
+    context.update({
+        "message": request.session.pop("tree_message", None)
+    })
+    
+    # استدعاء التمبليت من مجلد البيانات الموحد
+    response = templates.TemplateResponse("data/export_tree.html", context)
+    set_cache_headers(response)
+    return response    

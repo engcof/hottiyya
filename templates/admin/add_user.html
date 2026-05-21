@@ -4,63 +4,69 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
 {% endblock %}
 
 {% block content %}
 <section class="add-edit-page">
-    <div class="form-card"> <div class="form-header">
-            <h1 class="form-title">إضافة مستخدم جديد</h1>
-            <p class="form-subtitle">إنشاء حسابات جديدة ومنح الصلاحيات اللازمة</p>
-        </div>
-
-        {% if error %}
-        <div class="alert error flash-message" >
-            <i class="fas fa-exclamation-circle"></i>
-            <span>{{ error }}</span>
-            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
-        </div>
-        {% endif %}
-
-        <form method="post" action="/admin/add_user" class="news-form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="container form-card-auth">
+        
+        <div class="form-card"> 
             
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>اسم المستخدم <span class="required">*</span></label>
-                    <input type="text" name="username" class="input-field" 
-                           placeholder="أدخل اسم المستخدم..." required>
+            <div class="form-header">
+                <h1 class="form-title">إضافة مستخدم جديد</h1>
+                <p class="form-subtitle">إنشاء حسابات جديدة ومنح الأدوار والصلاحيات اللازمة للعمل</p>
+            </div>
+
+            {% if error %}
+            <div class="alert error flash-message">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>{{ error }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endif %}
+
+            <form method="post" action="/admin/add_user" class="news-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>اسم المستخدم <span class="required">*</span></label>
+                        <input type="text" name="username" class="input-field" placeholder="أدخل اسم المستخدم بالكامل..." required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>دور المستخدم (الصلاحية) <span class="required">*</span></label>
+                        <select name="role" class="input-field">
+                            <option value="user" selected>مستخدم عادي</option>
+                            <option value="manager">مدير نظام</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-group">
-                    <label>دور المستخدم (الصلاحية) <span class="required">*</span></label>
-                    <select name="role" class="input-field">
-                        <option value="user" selected>مستخدم عادي</option>
-                        <option value="manager">مدير نظام</option>
-                    </select>
+                    <label>كلمة المرور المؤقتة <span class="required">*</span></label>
+                    <input type="password" name="password" class="input-field" placeholder="••••••••" required>
+                    <p class="feedback-text">
+                        يفضل تزويد العضو بكلمة مرور قوية ليقوم بتحديثها لاحقاً من لوحة حسابه الشخصي.
+                    </p>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label>كلمة المرور المؤقتة <span class="required">*</span></label>
-                <input type="password" name="password" class="input-field" 
-                       placeholder="••••••••" required>
-                <p class="feedback-text" style="color: #64748b; font-size: 0.8rem;">
-                    يفضل تزويد المستخدم بكلمة مرور قوية ليقوم بتغييرها لاحقاً.
-                </p>
-            </div>
+                <div class="form-group">
+                    <button type="submit" class="btn-submit-main">
+                        <i class="fas fa-user-plus"></i> إضافة المستخدم الآن
+                    </button>
+                </div>
 
-            <div style="margin-top: 35px;">
-                <button type="submit" class="btn-submit-main">
-                    <i class="fas fa-user-plus"></i> إضافة المستخدم الآن
-                </button>
-            </div>
-
-            <div class="form-footer">
-                <a href="/admin" class="cancel-text-link">
-                    <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i> الرجوع للوحة التحكم
-                </a>
-            </div>
-        </form>
+                <div class="form-footer">
+                    <a href="/admin" class="btn-back">
+                        <i class="fas fa-arrow-right"></i> الرجوع للوحة التحكم
+                    </a>
+                </div>
+            </form>
+            
+        </div>
+        
     </div>
 </section>
 {% endblock %}

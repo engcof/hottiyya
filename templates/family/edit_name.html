@@ -13,7 +13,7 @@
             <p class="form-subtitle">تحديث سجل: <strong>{{ member.name }}</strong> ({{ code }})</p>
         </div>
 
-        <form method="post" action="/names/edit/{{ code }}" enctype="multipart/form-data">
+        <form method="post" action="/family/edit/{{ code }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             <input type="hidden" name="page" value="{{ request.query_params.get('page', 1) }}">
             <input type="hidden" name="q" value="{{ request.query_params.get('q', '') if request.query_params.get('q') and request.query_params.get('q') != 'None' else '' }}">
@@ -140,12 +140,12 @@
             </div>
             
             <div class="form-footer">
-                <a href="/names/details/{{ code }}" class="cancel-text-link">رجوع للتفاصيل</a>
+                <a href="/family/details/{{ code }}" class="cancel-text-link">رجوع للتفاصيل</a>
                 <span style="margin: 0 12px; color: #cbd5e1;">|</span>
                 
                 {# تصفية الرابط البرمجي لعدم إرسال كلمة None إلى السيرفر في الـ Query String #}
                 {% set search_q = request.query_params.get('q', '') %}
-                <a href="/names?page={{ request.query_params.get('page', 1) }}{% if search_q and search_q != 'None' %}&q={{ search_q }}{% endif %}" class="cancel-text-link">قائمة الشجرة</a>
+                <a href="/family ?page={{ request.query_params.get('page', 1) }}{% if search_q and search_q != 'None' %}&q={{ search_q }}{% endif %}" class="cancel-text-link">قائمة الشجرة</a>
             </div>
         </form>
     </div>

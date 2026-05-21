@@ -1,57 +1,70 @@
 {% extends "base.html" %}
 
 {% block title %}سجل محاولات الدخول{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
 {% endblock %}
+
 {% block content %}
 <section class="all-page">
-<div class="container">
-    <div class="page-header">
-        <h1 class="page-title">🕒 سجل محاولات الدخول</h1>
-        <div class="header-actions">
-            <a href="/admin" class="btn-add" style="background-color: #6b7280;">🏠 العودة للإدارة</a>
+    <div class="container">
+        
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
+            <h1 class="page-title">🕒 سجل محاولات الدخول</h1>
+            <div class="header-actions">
+                <a href="/admin" class="btn-back" style="background-color: var(--slate); color: white;">
+                    <i class="fas fa-home"></i> العودة للإدارة
+                </a>
+            </div>
         </div>
-    </div>
-    
-    <div class="admin-card full glass-strong">
-        <div class="table-wrapper">
-            <table class="admin-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>المستخدم</th>
-                        <th>التاريخ</th>
-                        <th>الوقت</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in login_history %}
-                    <tr>
-                        <td>{{ ((current_page - 1) * 20) + loop.index }}</td>
-                        <td><span class="role-badge user">{{ log.username }}</span></td>
-                        <td>{{ log.timestamp.strftime('%Y-%m-%d') }}</td>
-                        <td>{{ log.timestamp.strftime('%H:%M:%S') }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+        
+        <div class="admin-card full glass-strong">
+            <div class="table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">#</th>
+                            <th>المستخدم</th>
+                            <th>التاريخ</th>
+                            <th>الوقت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in login_history %}
+                        <tr>
+                            <td><strong>{{ ((current_page - 1) * 20) + loop.index }}</strong></td>
+                            
+                            <td><span class="role-badge user">{{ log.username }}</span></td>
+                            
+                            <td><span style="color: var(--text-light); font-weight: 500;">{{ log.timestamp.strftime('%Y-%m-%d') }}</span></td>
+                            
+                            <td><span style="color: var(--text); font-weight: 600;">{{ log.timestamp.strftime('%H:%M:%S') }}</span></td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center" style="padding: 30px; color: var(--text-light);">لا توجد سجلات لمحاولات الدخول حالياً.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-        {% if total_pages > 1 %}
-        <div class="pagination" style="display: flex; justify-content: center; gap: 10px; margin-top: 20px; padding: 15px;">
-            {% if current_page > 1 %}
-            <a href="/admin/login-logs?page={{ current_page - 1 }}" class="page-link">السابق</a>
+            {% if total_pages > 1 %}
+            <div class="pagination">
+                {% if current_page > 1 %}
+                    <a href="/admin/login-logs?page={{ current_page - 1 }}" class="page-link">السابق</a>
+                {% endif %}
+                
+                <span class="page-link active">صفحة {{ current_page }} من {{ total_pages }}</span>
+                
+                {% if current_page < total_pages %}
+                    <a href="/admin/login-logs?page={{ current_page + 1 }}" class="page-link">التالي</a>
+                {% endif %}
+            </div>
             {% endif %}
             
-            <span class="page-item">صفحة {{ current_page }} من {{ total_pages }}</span>
-            
-            {% if current_page < total_pages %}
-            <a href="/admin/login-logs?page={{ current_page + 1 }}" class="page-link">التالي</a>
-            {% endif %}
         </div>
-        {% endif %}
-    </div>
     </div>
 </section>
 {% endblock %}

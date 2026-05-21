@@ -1,8 +1,9 @@
-/* --- إعدادات الصفحة الشخصية (متوافقة مع الهوية البصرية) --- */
+/* --- إعدادات الصفحة الشخصية (متوافقة مع الهوية البصرية ونظام الموقع) --- */
 
 .profile-page-wrapper {
     padding: 60px 20px;
-    background-color: #f8fafc; /* لون خلفية هادئ متناسق مع main.css */
+    background-color: #f8fafc;
+    direction: rtl;
 }
 
 .custom-container {
@@ -33,17 +34,23 @@
     padding-bottom: 4px;
 }
 
-/* --- الكروت (باستخدام نظام Glassmorphism الخفيف من ملفك الأساسي) --- */
+.profile-subtitle {
+    color: var(--text-light);
+    font-size: 0.95rem;
+    margin-top: 5px;
+}
+
+/* --- الكروت بنظام هويتك البصرية الموحدة --- */
 .profile-section-card {
     transition: var(--transition);
-    max-width: 1000px; /* تم التوسيع ليناسب بيانات الشجرة والمقالات */
     width: 100%;
-    margin: 0 auto;
-    padding: 40px;
+    margin: 0 auto 30px auto;
+    padding: 0; /* جعل البادينج داخل العناصر لعدم تداخل الهيدر */
     background: var(--white, #ffffff);
     border-radius: var(--radius, 20px);
     border: 1px solid var(--border, #e2e8f0);
-    box-shadow: var(--shadow1, 0 20px 50px rgba(0,0,0,0.1));
+    box-shadow: var(--shadow1, 0 20px 50px rgba(0,0,0,0.05));
+    overflow: hidden;
 }
 
 .section-header {
@@ -58,25 +65,44 @@
     font-weight: 800;
 }
 
-/* --- تحسين حاوي الرسالة --- */
+.form-card-body {
+    padding: 25px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* --- تحسين حاوي صندوق الرسائل الواردة --- */
+.inbox-messages-list {
+    background: transparent;
+}
+
 .message-item {
     padding: 25px;
     border-bottom: 1px solid var(--border);
     transition: all 0.3s ease;
-    border-radius: var(--radius-sm); /* إضافة حواف ناعمة لكل رسالة */
-    margin-bottom: 10px;
 }
 
 .message-item:hover {
-    background-color: #ffffff;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05); /* تأثير ارتفاع عند التمرير */
-    transform: translateY(-2px);
+    background-color: #f8fafc;
+    transform: translateY(-1px);
 }
-.message-item:last-child { border-bottom: none; }
+
+.message-item:last-child { 
+    border-bottom: none; 
+}
 
 .unread-msg {
     border-right: 6px solid var(--accent) !important;
-    background-color: rgba(16, 185, 129, 0.03) !important;
+    background-color: rgba(16, 185, 129, 0.02) !important;
 }
 
 .msg-meta {
@@ -87,72 +113,108 @@
     margin-bottom: 10px;
 }
 
-.sender-name { font-weight: 700; color: var(--text); }
+.sender-name { 
+    font-weight: 700; 
+    color: var(--text); 
+}
 
+.msg-preview {
+    color: var(--text);
+    opacity: 0.9;
+    font-size: 0.95rem;
+    margin: 0;
+}
 
-/* --- تنسيق الأزرار في خط واحد --- */
+.empty-state {
+    padding: 40px;
+    text-align: center;
+    color: var(--text-light);
+}
+
+/* --- تنسيق حاوية عناصر التحكم المشتركة للأزرار --- */
 .msg-controls {
     display: flex;
-    gap: 12px; /* مسافة بين الأزرار */
+    gap: 12px;
     margin-top: 15px;
     align-items: center;
+    width: 100%;
 }
 
-.msg-controls form {
-    margin: 0; /* إلغاء الهوامش التلقائية للفورم */
+.msg-delete-form {
+    flex: 1;
+    margin: 0;
 }
 
-/* --- الأزرار (Buttons) --- */
-/* --- تصميم الأزرار المطور --- */
-.action-btn-msg {
+/* ربط الأزرار الصغيرة بالنظام المشترك */
+.msg-controls .btn-small {
+    width: 100%; 
+    height: 38px; 
+    box-sizing: border-box;
+}
+
+.btn-read-profile {
+    background-color: #f1f5f9;
+    color: #334155;
+    border-color: #e2e8f0;
+}
+.btn-read-profile:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+/* أزرار النماذج الممتدة الأساسية */
+.submit-btn-msg {
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 8px 20px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    cursor: pointer;
-    font-weight: 600;
+    gap: 6px;
     transition: all 0.2s ease;
-    border: 1px solid transparent;
-    height: 38px; /* توحيد الطول */
 }
 
-.btn-delete-msg { 
-    background: rgba(239, 68, 68, 0.05); 
-    color: var(--danger); 
-    border-color: rgba(239, 68, 68, 0.1); 
+.primary-bg-msg { 
+    background-color: var(--accent); 
 }
-.btn-delete-msg:hover { 
-    background: var(--danger); 
-    color: white; 
+.primary-bg-msg:hover { 
+    background-color: var(--accent-hover); 
+    transform: translateY(-2px);
 }
 
-.submit-btn-msg {
-    width: 100%;
-    padding: 14px;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: white;
-    cursor: pointer;
-    font-weight: 800;
-    transition: var(--transition);
+.secondary-bg-msg { 
+    background-color: var(--text); 
+}
+.secondary-bg-msg:hover { 
+    background-color: #1e293b; 
+    transform: translateY(-2px);
 }
 
-.primary-bg-msg { background: var(--accent); }
-.primary-bg-msg:hover { background: var(--accent-hover); }
-
-.secondary-bg-msg { background: var(--text); }
-.secondary-bg-msg:hover { background: #1e293b; }
+.info-note {
+    background-color: rgba(16, 185, 129, 0.05);
+    border: 1px solid var(--border);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    color: var(--accent);
+    margin-bottom: 15px;
+}
 
 /* --- المدخلات (Inputs) --- */
 .input-field {
     width: 100%;
     padding: 14px;
     border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-sm, 8px);
     background: #fcfcfc;
+    font-family: inherit;
     transition: var(--transition);
+    box-sizing: border-box;
 }
 .input-field:focus {
     outline: none;
@@ -160,28 +222,68 @@
     box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
 
+.form-footer {
+    text-align: right;
+    margin-top: 20px;
+}
+.cancel-text-link {
+    color: var(--text-light);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.cancel-text-link:hover { color: var(--text); }
+
+/* --- نظام التحرير والصفحات --- */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+.custom-pagination {
+    display: flex;
+    list-style: none;
+    padding: 0;
+    gap: 5px;
+}
+.custom-pagination li a {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+.custom-pagination li.active-page a {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
 /* --- النافذة المنبثقة (Modal) --- */
 .custom-modal {
     display: none;
     position: fixed;
-    z-index: 10000; /* أعلى من الهيدر */
-    left: 0; top: 0; width: 100%; height: 100%;
-    background-color: rgba(15, 23, 42, 0.6); /* استخدام لون --text للشفافية */
+    z-index: 10000; 
+    inset: 0;
+    background-color: rgba(15, 23, 42, 0.6); 
     backdrop-filter: blur(8px);
 }
 
 .modal-content {
     background: white;
-    margin: 10% auto;
-    border-radius: var(--radius);
+    margin: 12% auto;
+    border-radius: var(--radius, 16px);
     width: 90%;
-    max-width: 600px;
+    max-width: 550px;
     box-shadow: var(--shadow1);
-    animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+    overflow: hidden;
 }
 
 @keyframes slideUp {
-    from { transform: translateY(30px); opacity: 0; }
+    from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
 
@@ -191,100 +293,50 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: #f8fafc;
 }
+.close-modal { cursor: pointer; font-size: 1.4rem; color: var(--text-light); }
+.close-modal:hover { color: #ef4444; }
 
+.modal-body { padding: 25px; line-height: 1.6; }
 
-/* ========== استجابة الشاشات (Mobile Responsive) ✅ ========== */
-
+/* ========== استجابة الشاشات الموحدة والمحدثة (Mobile Responsive) ✅ ========== */
 @media (max-width: 768px) {
     .profile-page-wrapper {
-        padding: 20px 10px; /* تقليل المسافات الجانبية */
+        padding: 20px 10px;
     }
-
-    .user-profile-header {
-        margin-bottom: 25px;
-    }
-
-    .avatar-holder .avatar-icon {
-        font-size: 2.2rem;
-        padding: 15px;
-    }
-
-    .welcome-text {
-        font-size: 1.5rem; /* تصغير العنوان ليناسب الشاشة */
-    }
-
-    /* ضبط الكروت */
+    .user-profile-header { margin-bottom: 25px; }
+    .avatar-holder .avatar-icon { font-size: 2.2rem; padding: 15px; }
+    .welcome-text { font-size: 1.4rem; }
+    
     .profile-section-card {
-        border-radius: var(--radius-sm); /* حواف أصغر قليلاً */
+        padding: 0;
         margin-bottom: 20px;
     }
-
-    .section-header {
-        padding: 15px;
-    }
-
-    /* تحسين عرض الرسائل في الجوال */
-    .message-item {
-        padding: 15px;
-    }
+    .form-card-body { padding: 15px; }
+    .message-item { padding: 15px; }
 
     .msg-meta {
-        flex-direction: column; /* جعل اسم المرسل والتاريخ فوق بعضهما */
+        flex-direction: column;
         gap: 5px;
         font-size: 0.8rem;
     }
-
     
-.msg-controls {
-        flex-direction: row; /* الحفاظ على الأزرار بجانب بعضها حتى في الجوال */
-        width: 100%;
+    .msg-controls {
+        flex-direction: row;
+        gap: 8px;
     }
-    .action-btn-msg {
-        flex: 1; /* الأزرار تأخذ مساحة متساوية */
-        padding: 8px 5px;
+    
+    .msg-controls .btn-small {
         font-size: 0.8rem;
-    }
-    /* ضبط الفورم (النماذج) */
-    .form-group-custom {
-        padding: 0 15px; /* تقليل المسافة داخل الكرت */
+        padding: 6px 8px;
     }
 
-    .input-field {
-        padding: 12px;
-        font-size: 0.95rem;
-    }
-
-    /* ضبط الترقيم (Pagination) */
-    .custom-pagination {
-        padding: 15px 5px;
-        gap: 5px;
-    }
-
-    .custom-pagination li a {
-        padding: 8px 12px;
-        font-size: 0.85rem;
-    }
-
-    /* ضبط النافذة المنبثقة (Modal) في الجوال */
-    .modal-content {
-        width: 95%;
-        margin: 20% auto;
-    }
-
-    .modal-body {
-        padding: 20px;
-        font-size: 0.95rem;
-    }
+    .input-field { padding: 12px; font-size: 0.9rem; }
+    .modal-content { width: 95%; margin: 25% auto; }
 }
 
-/* للشاشات الصغيرة جداً (مثل iPhone SE) */
 @media (max-width: 480px) {
-    .welcome-text {
-        font-size: 1.2rem;
-    }
-    
-    .section-header h4 {
-        font-size: 1rem;
-    }
+    .welcome-text { font-size: 1.2rem; }
+    .section-header h4 { font-size: 1rem; }
 }

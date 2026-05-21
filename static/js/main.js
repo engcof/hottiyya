@@ -1,4 +1,4 @@
-/* ========== ✅ الملف الرئيسي العام للموقع (main.js) ========== */
+/* ========== ✅ الملف الرئيسي العام للموقع المطور والمؤمن (main.js) ========== */
 document.addEventListener("DOMContentLoaded", function () {
 
     /* ==================== 1. القوائم وتحديد الروابط النشطة ==================== */
@@ -10,25 +10,30 @@ document.addEventListener("DOMContentLoaded", function () {
     const onlineList = document.getElementById('onlineList');
     const portal = document.getElementById('onlineDropdownPortal');
 
-    // --- [تصحيح] تعريف دالة إغلاق الأونلاين في الأعلى لتكون متاحة لبقية القوائم فوراً ---
+    // --- دالة إغلاق الأونلاين الموحدة والمصححة لمنع التضارب ---
     function hideOnlineList() {
         if (!onlineToggle || !onlineList) return;
         
-        const originalParent = document.querySelector('.online-stat'); // الأب الأصلي
+        // 1. سحب كلاس العرض من القائمة لتختفي بصرياً بناءً على قواعد الـ CSS
+        onlineList.classList.remove('show');
+        
+        // 2. إزالة الفتح من السهم ليعود لوضعه الطبيعي
+        onlineToggle.classList.remove('active');
+        onlineToggle.setAttribute('aria-expanded', 'false');
+        
+        // 3. إعادة القائمة لمكانها الأصلي داخل كرت الإحصائيات (النوتة)
+        const originalParent = document.querySelector('.online-stat'); 
         if (originalParent && onlineList.parentElement === portal) {
             originalParent.appendChild(onlineList);
         }
         
-        Object.assign(onlineList.style, { opacity: '0', visibility: 'hidden', pointerEvents: 'none', transform: 'translateY(-10px)' });
+        // 4. حجب بورتال العرض الخارجي
         if (portal) {
-            portal.style.pointerEvents = 'none';
             portal.style.display = 'none';
         }
-        onlineToggle.classList.remove('active');
-        onlineToggle.setAttribute('aria-expanded', 'false');
     }
 
-    // إتاحة الدالة للنطاق العالمي (Global Scope)
+    // إتاحة الدالة الموحدة للنطاق العالمي (Global Scope) لتستدعيها بقية القوائم بأمان
     window.hideOnlineList = hideOnlineList;
 
     // تحديد الرابط النشط تلقائياً في القائمة
@@ -36,7 +41,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const allNavLinks = document.querySelectorAll('.nav-links a, .mobile-nav a');
     
     allNavLinks.forEach(link => {
-        const linkPath = link.getAttribute('href').replace(/\/$/, "");
+        const href = link.getAttribute('href');
+        if (!href) return;
+        const linkPath = href.replace(/\/$/, "");
         if (linkPath === "" && currentPath === "") {
             link.classList.add('active');
         } else if (linkPath !== "" && currentPath.startsWith(linkPath)) {
@@ -46,15 +53,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // 1.1 قائمة الموبايل
+    // 1.1 قائمة الموبايل التفاعلية
     if (mobileToggle && mobileNav) {
         mobileToggle.addEventListener("click", function (e) {
             e.stopPropagation();
             this.classList.toggle("active");
             mobileNav.classList.toggle("active");
             mobileNav.classList.toggle("show"); 
-            userDropdown?.classList.remove("show"); // إغلاق قائمة المستخدم
-            hideOnlineList(); // إغلاق الأونلاين
+            userDropdown?.classList.remove("show"); 
+            hideOnlineList(); // تستدعي الدالة المصححة الآن بنجاح
         });
 
         mobileNav.querySelectorAll("a").forEach(link => {
@@ -66,76 +73,83 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 1.2 قائمة المستخدم
+    // 1.2 قائمة حساب المستخدم
     if (userBtn && userDropdown) {
         userBtn.addEventListener("click", function (e) {
             e.stopPropagation();
-            hideOnlineList();
-            mobileNav?.classList.remove("active");
-            mobileNav?.classList.remove("show");
-            mobileToggle?.classList.remove("active");
-            
+            hideOnlineList(); // تستدعي الدالة المصححة الآن بنجاح
+            if (mobileNav) {
+                mobileNav.classList.remove("active", "show");
+                mobileToggle?.classList.remove("active");
+            }
             userDropdown.classList.toggle("show");
         });
     }
 
-    // 1.3 إغلاق القوائم عند الضغط خارجها
+    // 1.3 إغلاق كافة القوائم المنسدلة الذكي عند الضغط الخارجي
     document.addEventListener("click", function (e) {
         if (userDropdown && !userBtn?.contains(e.target) && !userDropdown.contains(e.target)) {
             userDropdown.classList.remove("show");
         }
         if (mobileNav && mobileNav.classList.contains('active') && !mobileToggle?.contains(e.target) && !mobileNav.contains(e.target)) {
             mobileToggle?.classList.remove("active");
-            mobileNav?.classList.remove("active");
-            mobileNav?.classList.remove("show");
+            mobileNav.classList.remove("active", "show");
         }
     });
 
-    /* ==================== 2. قائمة المستخدمين أونلاين (Portal) ==================== */
-    if (onlineToggle && onlineList && portal) {
-        function showOnlineList() {
-            portal.appendChild(onlineList);
-            const parentCard = onlineToggle.closest('.stat-card'); 
-            if (!parentCard) return;
-            
-            const rect = parentCard.getBoundingClientRect(); 
-            const scrollY = window.scrollY || window.pageYOffset;
-            const scrollX = window.scrollX || window.pageXOffset;
 
-            portal.style.left = (rect.left + scrollX + rect.width / 2) + 'px'; 
-            portal.style.top = (rect.bottom + scrollY + 10) + 'px';
-            portal.style.transform = 'translateX(-50%)'; 
-            portal.style.pointerEvents = 'all';
-            portal.style.display = 'block';
-            
-            Object.assign(onlineList.style, { 
-                opacity: '1', 
-                visibility: 'visible', 
-                pointerEvents: 'all', 
-                transform: 'translateY(0)' 
-            });
+    /* ==================== 2. قائمة المستخدمين أونلاين المحدثة ==================== */
+    if (onlineToggle && onlineList) {
+        function showOnlineList() {
+            // تفعيل الكلاسات الأساسية للـ CSS لتبدأ الأنيميشن فوراً
+            onlineList.classList.add('show');
             onlineToggle.classList.add('active');
             onlineToggle.setAttribute('aria-expanded', 'true');
+
+            // إذا كان الـ Portal موجوداً، نقوم بحساب الإحداثيات المطلقة بدقة فوق كل الكروت
+            if (portal) {
+                portal.appendChild(onlineList);
+                const parentCard = onlineToggle.closest('.stat-card'); 
+                if (!parentCard) return;
+                
+                const rect = parentCard.getBoundingClientRect(); 
+                const scrollY = window.scrollY || window.pageYOffset;
+                const scrollX = window.scrollX || window.pageXOffset;
+
+                portal.style.left = (rect.left + scrollX + rect.width / 2) + 'px'; 
+                portal.style.top = (rect.bottom + scrollY + 8) + 'px';
+                portal.style.display = 'block';
+            }
         }
 
-        onlineToggle.addEventListener('click', e => { 
+        // تفاعل الضغط على زر الأونلاين (فتح / إغلاق تبادلي)
+        onlineToggle.addEventListener('click', function(e) { 
             e.stopPropagation(); 
             userDropdown?.classList.remove("show"); 
-            mobileNav?.classList.remove("active"); 
-            onlineToggle.classList.contains('active') ? hideOnlineList() : showOnlineList(); 
+            if (mobileNav) mobileNav.classList.remove("active", "show");
+            
+            // الفحص بالاعتماد على الكلاس الفعلي المستقر
+            if (onlineToggle.classList.contains('active')) {
+                hideOnlineList();
+            } else {
+                showOnlineList();
+            }
         });
 
-        document.addEventListener('click', e => { 
-            if (!onlineToggle.contains(e.target) && !onlineList.contains(e.target)) hideOnlineList(); 
+        // جدار حماية آمن للإغلاق عند الضغط في أي مكان خارجي
+        document.addEventListener('click', function(e) { 
+            if (!onlineToggle.contains(e.target) && !onlineList.contains(e.target)) {
+                hideOnlineList(); 
+            }
         });
     }
 
-    /* ==================== 3. تأثيرات عامة (Flash & Scroll & Ticker) ==================== */
-    // [تحسين] شمل كافة التنبيهات الموحدة بالصفحات (Success & Error Alerts) للاختفاء التلقائي
+    /* ==================== 3. تأثيرات عامة التنبيهات والأخبار ==================== */
     document.querySelectorAll('.flash-message, .alert, #success-alert, #error-alert').forEach(msg => {
         setTimeout(() => { 
-            msg.style.transition = 'opacity 0.6s ease'; 
+            msg.style.transition = 'opacity 0.6s ease, transform 0.6s ease'; 
             msg.style.opacity = '0'; 
+            msg.style.transform = 'translateY(-10px)';
             setTimeout(() => msg.remove(), 600); 
         }, 5000);
     });
@@ -145,7 +159,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (header) header.classList.toggle("scrolled", window.scrollY > 50);
     });
 
-    // شريط الأخبار المتحرك برمجياً
+    // تحريك شريط الأخبار اللانهائي برمجياً بدقة فائقة
     const tickerInner = document.getElementById('tickerInner');
     if (tickerInner) {
         tickerInner.innerHTML += tickerInner.innerHTML + tickerInner.innerHTML; 

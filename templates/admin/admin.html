@@ -1,91 +1,75 @@
   
 {% extends "base.html" %}
+
 {% block title %}لوحة الإدارة{% endblock %}
+
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
 {% endblock %}
+
 {% block content %}
 <section class="all-page">
     <div class="container">
+        
         <div class="page-header">
             <h1 class="page-title">لوحة التحكم الإدارية</h1>
         </div>
 
         {% if success_message %}
-            <div class="alert success flash-message">✅ {{ success_message }}</div>
+            <div class="alert success flash-message">
+                <i class="fa-solid fa-check-circle"></i>
+                <span>{{ success_message }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
         {% endif %}
 
-        <div class="admin-grid">
+        {% if error_message %}
+            <div class="alert error flash-message">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>{{ error_message }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+        {% endif %}
+
+       <div class="admin-grid">
             <div class="admin-section-card">
                 <h3>👥 إدارة الحسابات</h3>
                 <div class="grid-buttons">
-                    <a href="/admin/add_user" class="card-btn blue">
-                        <i class="icon-user-plus"></i> إضافة مستخدم جديد
-                    </a>
-                    <a href="/admin/change_password" class="card-btn orange">
-                        <i class="icon-lock"></i> تغيير كلمة مرور
-                    </a>
-                    <a href="/admin/users" class="card-btn purple">
-                        <i class="icon-users"></i> عرض وتعديل المستخدمين
-                    </a>
+                    <a href="/admin/add_user" class="card-btn blue"><i class="fa-solid fa-user-plus"></i> إضافة مستخدم جديد</a>
+                    <a href="/admin/change_password" class="card-btn orange"><i class="fa-solid fa-lock"></i> تغيير كلمة مرور</a>
+                    <a href="/admin/users" class="card-btn purple"><i class="fa-solid fa-users"></i> عرض وتعديل المستخدمين</a>
                 </div>
             </div>
 
-            <div class="admin-section-card">
+          <div class="admin-section-card">
+                <h3>🛡️ نظام الصلاحيات والأمان</h3>
+                <div class="grid-buttons">
+                    <a href="/permissions" class="card-btn indigo"><i class="fa-solid fa-shield"></i> إنشاء صلاحية جديدة</a>
+                </div>
+            </div>
+
+          <div class="admin-section-card">
                 <h3>⚙️ الإعدادات والبيانات</h3>
                 <div class="grid-buttons">
-                    <a href="/permissions" class="card-btn indigo">
-                        <i class="icon-shield"></i> إنشاء صلاحية جديدة
-                    </a>
-                    <a href="/data/import-data" class="card-btn green">
-                        <i class="icon-database"></i> إدارة قاعدة البيانات
-                    </a>
-                    <a href="/names/export/table-backup-txt" class="card-btn pink">
-                        <i class="icon-export"></i> تصدير بيانات (TXT)
-                    </a>
+                    <a href="/data/import-data" class="card-btn green"><i class="fa-solid fa-database"></i> إدارة واستيراد البيانات</a>
+                    <a href="/data/export-tree" class="card-btn slate"><i class="fa-solid fa-network-wired"></i> تصدير شجرة العائلة</a>
+                    <a href="/data/export/table-backup-txt" class="card-btn pink"><i class="fa-solid fa-file-export"></i> تصدير بيانات (TXT)</a>
                 </div>
             </div>
-
             <div class="admin-section-card">
                 <h3>📜 المراقبة والسجلات</h3>
                 <div class="grid-buttons">
-                    <a href="/admin/logs" class="card-btn gray">
-                        <i class="icon-list"></i> سجل العمليات العام
-                    </a>
-                    <a href="/admin/login-logs" class="card-btn slate">
-                        <i class="icon-log-in"></i> سجل محاولات الدخول
-                    </a>
+                    <a href="/admin/logs" class="card-btn gray"><i class="fa-solid fa-table-list"></i> سجل العمليات العام</a>
+                    <a href="/admin/login-logs" class="card-btn slate"><i class="fa-solid fa-right-to-bracket"></i> سجل محاولات الدخول</a>
                 </div>
             </div>
-            <div class="admin-section-card">
-    <h3>🌳 تصدير شجرة العائلة</h3>
-    <div class="input-group" style="margin-bottom: 15px;">
-        <input type="text" id="treeCodeInput" placeholder="أدخل كود الشخص (مثال: A-001)" 
-               style="padding: 10px; width: 100%; border: 1px solid #ccc; border-radius: 5px;">
-    </div>
-    <div class="grid-buttons">
-        <button onclick="exportTree()" class="card-btn blue" style="width: 100%; border: none; cursor: pointer;">
-            <i class="icon-download"></i> تصدير الشجرة (Excel/CSV)
-        </button>
-    </div>
-</div>
 
-<script>
-    function exportTree() {
-        const code = document.getElementById('treeCodeInput').value.trim();
-        if (!code) {
-            alert("يرجى إدخال كود الشخص أولاً!");
-            return;
-        }
-        // هذا الرابط يوجه الطلب للـ Router الذي قمنا ببرمجته
-        window.location.href = `/names/export/family-tree/${code}`;
-    }
-</script>
+           
         </div>
     </div>
 </section>
-<script>
-   
-</script>
 {% endblock %}
 
+{% block extra_js %}
+    <script src="{{ url_for('static', path='js/admin-actions.js') }}"></script>
+{% endblock %}

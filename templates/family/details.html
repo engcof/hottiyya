@@ -99,7 +99,7 @@
                     <div class="relation-card mother">
                         <h5>الأم</h5>
                         {% if mother_full_name %}
-                        <a href="/names/details/{{ member.m_code }}" class="relation-link">{{ mother_full_name }}</a>
+                        <a href="/family/details/{{ member.m_code }}" class="relation-link">{{ mother_full_name }}</a>
                         {% else %}
                         <span class="text-muted">غير مسجلة</span>
                         {% endif %}
@@ -112,7 +112,7 @@
                         <h5>{% if wives|length > 1 %}الزوجات ({{ wives|length }}){% else %}الزوجة{% endif %}</h5>
                         
                         {% for wife in wives %}
-                            <a href="/names/details/{{ wife.code }}" class="relation-link">
+                            <a href="/family/details/{{ wife.code }}" class="relation-link">
                                 {{ wife.name }}
                                 {% if wives|length > 1 %} 
                                     <small class="text-muted">({{ loop.index }})</small> 
@@ -125,7 +125,7 @@
                             {# تعديل العنوان ليصبح "الأزواج" في حال تعددوا #}
                             <h5>{% if husbands|length > 1 %}الأزواج ({{ husbands|length }}){% else %}الزوج{% endif %}</h5>
                             {% for h in husbands %}
-                                <a href="/names/details/{{ h.code }}" class="relation-link">
+                                <a href="/family/details/{{ h.code }}" class="relation-link">
                                     {{ h.name }}{% if husbands|length > 1 %} <small>({{ loop.index }})</small>{% endif %}
                                 </a>
                             {% endfor %}
@@ -145,7 +145,7 @@
                         <div class="children-list">
                             {% if children %}
                                 {% for child in children %}
-                                <a href="/names/details/{{ child.code }}" class="child-item">
+                                <a href="/family/details/{{ child.code }}" class="child-item">
                                     {{ child.name }}
                                 </a>
                                 {% endfor %}
@@ -162,11 +162,11 @@
         <!-- الأزرار السفلية -->
         <div class="action-buttons">
             {% if user.role == "admin" or perms.edit_member %}
-            <a href="/names/edit/{{ member.code }}?page={{ current_page }}&q={{ search_query }}" class="btn-edit">
+            <a href="/family/edit/{{ member.code }}?page={{ current_page }}&q={{ search_query }}" class="btn-edit">
                 تعديل البيانات
             </a>
             {% endif %}
-              <a href="/names?page={{ request.query_params.get('page', 1) }}{% if request.query_params.get('q') and request.query_params.get('q') != 'None' %}&q={{ request.query_params.get('q') }}{% endif %}" class="btn-back">رجوع إلى شجرة العائلة</a>
+              <a href="/family?page={{ request.query_params.get('page', 1) }}{% if request.query_params.get('q') and request.query_params.get('q') != 'None' %}&q={{ request.query_params.get('q') }}{% endif %}" class="btn-back">رجوع إلى شجرة العائلة</a>
          
         </div>
     </div>

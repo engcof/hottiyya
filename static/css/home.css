@@ -224,27 +224,19 @@
     /* السهم يشير لليمين أو اليسار بشكل افتراضي */
 }
 
-/* التدوير عند النشاط */
-.online-toggle.active svg {
-    transform: rotate(-90deg); /* يشير للأسفل عند الفتح */
-}
 
 /* ============================================================
    6. قائمة الأونلاين (إصلاح الظهور والتموضع)
    ============================================================ */
 .online-list {
-    /* الوضع الافتراضي */
     position: absolute;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-10px);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    /* التموضع */
-    top: 110%; /* تظهر أسفل النوتة */
+    top: 110%; 
     left: 50%;
-    transform: translateX(-50%) translateY(-10px); /* توسيط أفقي */
-    /* التصميم */
-    z-index: 9999; /* قيمة عالية جداً لتظهر فوق كل شيء */
+    transform: translateX(-50%) translateY(-10px); 
+    z-index: 9999; 
     min-width: 160px;
     background: var(--glass-strong);
     backdrop-filter: blur(20px);
@@ -253,13 +245,30 @@
     border-radius: 12px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     padding: 8px 0;
+    pointer-events: none;
 }
 
-/* حالة الإظهار من الجافا سكريبت */
+/* حالة الإظهار المدعومة برمجياً من السكربت الموحد ✅ */
 .online-list.show {
     opacity: 1 !important;
     visibility: visible !important;
     transform: translateX(-50%) translateY(0) !important;
+    pointer-events: all !important;
+}
+
+/* تدوير السهم لأسفل بنعومة عند النشاط */
+.online-toggle.active svg {
+    transform: rotate(-90deg) !important;
+}
+
+/* تنسيق الـ Portal الخارجي لضمان عدم حجب الماوس */
+#onlineDropdownPortal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    z-index: 99999;
 }
 
 /* ضمان أن النوتة لا تحجب القائمة */

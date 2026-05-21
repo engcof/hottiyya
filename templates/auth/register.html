@@ -8,7 +8,7 @@
 
 {% block content %}
 <section class="add-edit-page">
-    <div class="form-card" style="max-width: 500px;">
+    <div class="form-card form-card-auth">
         
         <div class="form-header">
             <h1 class="form-title">عضوية جديدة</h1>
@@ -30,8 +30,8 @@
                 <label for="username">اسم المستخدم <span class="required">*</span></label>
                 <input type="text" name="username" id="username" class="input-field" 
                        placeholder="مثال: ahmed_hottiyya" required autocomplete="username">
-                <p class="feedback-text" style="color: #64748b; font-size: 0.8rem;">
-                    يُفضل استخدامه باللغة الإنجليزية (3-30 حرفاً).
+                <p class="feedback-text" style="color: #64748b; font-size: 0.8rem; margin-top: 6px;">
+                    ℹ️ يُفضل استخدامه باللغة الإنجليزية (3-30 حرفاً).
                 </p>
             </div>
 
@@ -53,10 +53,10 @@
                 </button>
             </div>
 
-            <div class="form-footer" >
-                <p >
+            <div class="form-footer">
+                <p style="margin: 0; color: #64748b; font-size: 0.95rem; font-weight: 600;">
                     لديك حساب بالفعل؟ 
-                    <a href="/auth/login" class="cancel-text-link" >تسجيل الدخول</a>
+                    <a href="/auth/login" class="cancel-text-link" style="color: #10b981; margin-right: 5px;">تسجيل الدخول</a>
                 </p>
             </div>
         </form>

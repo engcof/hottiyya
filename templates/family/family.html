@@ -12,7 +12,7 @@
         <div class="page-header">
             <h1 class="page-title">شجرة الحوطية</h1>
             {% if perms.add_member%}
-            <a href="/names/add" class="btn-add">
+            <a href="/family/add" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
                 </svg>
@@ -23,7 +23,7 @@
 
         <!-- شريط البحث -->
         <div class="search-container  glass">
-            <form action="/names" method="get" class="search-form">
+            <form action="/family" method="get" class="search-form">
                 <input type="text" 
                     name="q" 
                     class="search-input" 
@@ -42,7 +42,7 @@
             
             {% if q%}
                 <div style="text-align: center;">
-                    <a href="/names" class="clear-search-link">
+                    <a href="/family" class="clear-search-link">
                         ✕ إلغاء البحث والعودة للكل
                     </a>
                 </div>
@@ -66,12 +66,12 @@
                 </div>
                 
                 <div class="member-actions">
-                    <a href="/names/details/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-view">التفاصيل</a>
+                    <a href="/family/details/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-view">التفاصيل</a>
                     {% if perms.edit_member %}
-                        <a href="/names/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">تعديل</a>
+                        <a href="/family/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">تعديل</a>
                     {% endif %}
                     {% if perms.delete_member %}
-                        <form method="post" action="/names/delete/{{ m.code }}" style="display:inline;" 
+                        <form method="post" action="/family/delete/{{ m.code }}" style="display:inline;" 
                               onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <!-- إرسال الصفحة الحالية والبحث لضمان العودة الصحيحة -->
@@ -91,7 +91,7 @@
                     {% set query_params = "&q=" + q if q else "" %} 
                     
                     <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
-                        <a class="page-link" href="/names?page={{ current_page - 1 }}{{ query_params }}">السابق</a>
+                        <a class="page-link" href="/family?page={{ current_page - 1 }}{{ query_params }}">السابق</a>
                     </li>
                    
                     {% for p in page_numbers %}
@@ -101,11 +101,11 @@
                                 d-none d-md-inline-block 
                             {% endif %}">
                             
-                            <a class="page-link" href="/names?page={{ p }}{{ query_params }}">{{ p }}</a>
+                            <a class="page-link" href="/family?page={{ p }}{{ query_params }}">{{ p }}</a>
                         </li>
                     {% endfor %}
                     <li class="page-item {% if current_page == totals_pages %}disabled{% endif %}">
-                        <a class="page-link" href="/names?page={{ current_page + 1 }}{{ query_params }}">التالي</a>
+                        <a class="page-link" href="/family?page={{ current_page + 1 }}{{ query_params }}">التالي</a>
                     </li>
                 </ul>
             </nav>

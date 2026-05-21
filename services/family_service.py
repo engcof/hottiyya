@@ -25,7 +25,7 @@ class FamilyService:
     # 1. البحث وجلب القوائم
     # ===============================================
     @staticmethod
-    def search_and_fetch_names(q: str, page: int) -> Tuple[List[Dict[str, Any]], int, int, int]:
+    def search_and_fetch_family(q: str, page: int) -> Tuple[List[Dict[str, Any]], int, int, int]:
         with get_db_context() as conn:
             # 💡 توحيد الـ Cursor هنا أيضاً
             with conn.cursor(cursor_factory=RealDictCursor) as cur:

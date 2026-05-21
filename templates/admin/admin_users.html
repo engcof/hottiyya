@@ -1,28 +1,36 @@
 {% extends "base.html" %}
 
-{% block title %}إدارة المستخدمين{% endblock %}
+{% block title %}إدارة المستخدمين والصلاحيات{% endblock %}
+
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
 {% endblock %}
+
 {% block content %}
 <section class="all-page">
     <div class="container">
-        <div class="page-header">
+        
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
             <h1 class="page-title">قائمة المستخدمين والصلاحيات</h1>
             <div class="header-actions">
-                <a href="/admin" class="btn-add" style="background-color: #4b5563;">🏠 العودة للوحة الإدارة</a>
+                <a href="/admin" class="btn-back" style="background-color: var(--slate); color: white;">
+                    <i class="fas fa-home"></i> العودة للوحة الإدارة
+                </a>
             </div>
         </div>
 
         {% if success_message %}
-            <div class="alert success flash-message">✅  <span>{{ success_message }}</span>
-            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
-        </div>
+            <div class="alert success flash-message">
+                <i class="fas fa-check-circle"></i> <span>{{ success_message }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
         {% endif %}
+        
         {% if error_message %}
-            <div class="alert error flash-message">❌<span>{{ error_message }}</span>
-            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
-        </div>
+            <div class="alert error flash-message">
+                <i class="fas fa-exclamation-circle"></i> <span>{{ error_message }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
         {% endif %}
 
         <div class="admin-card full">
@@ -33,26 +41,28 @@
                             <th>اسم المستخدم</th>
                             <th>الدور</th>
                             <th>الصلاحيات الحالية</th>
-                            <th>تعديل البيانات</th>
-                            <th>إضافة صلاحية</th>
+                            <th>تعديل البيانات الأساسية</th>
+                            <th>إضافة صلاحية جديدة</th>
                             <th>إزالة صلاحية</th>
-                            <th>حذف</th>
+                            <th style="text-align: center;">إجراء الحذف</th>
                         </tr>
                     </thead>
                     <tbody>
-                      
                         {% for u in users %}
                         <tr>
-                          
                             <td><strong>{{ u.username }}</strong></td>
+                            
                             <td>
-                                <span class="role-badge {{ u.role }}">{{ u.role | title }}</span>
+                                <span class="role-badge {{ u.role }}">
+                                    {% if u.role == 'manager' %} مدير {% else %} مستخدم {% endif %}
+                                </span>
                             </td>
+                            
                             <td>
                                 {% if user_permissions[u.id] %}
                                 <details class="permissions-dropdown">
                                     <summary class="permissions-summary">
-                                        {{ user_permissions[u.id]|length }} صلاحية
+                                        <i class="fas fa-key"></i> {{ user_permissions[u.id]|length }} صلاحيات
                                     </summary>
                                     <div class="permission-list-content">
                                         {% for perm in user_permissions[u.id] %}
@@ -61,43 +71,47 @@
                                     </div>
                                 </details>
                                 {% else %}
-                                    <em>لا توجد صلاحيات</em>
+                                    <em style="color: var(--text-lighter); font-size: 0.85rem;">لا توجد صلاحيات</em>
                                 {% endif %}
                             </td>
+                            
                             <td>
                                 <form method="post" action="/admin/edit_user" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    
                                     <input type="text" name="username" value="{{ u.username }}" class="small-input">
                                     <select name="role" class="small-select">
                                         <option value="manager" {% if u.role == 'manager' %}selected{% endif %}>مدير</option>
                                         <option value="user" {% if u.role == 'user' %}selected{% endif %}>مستخدم</option>
                                     </select>
-                                    <button type="submit" class="btn-small edit">تعديل</button>
+                                    <button type="submit" class="btn-small edit" style="background-color: var(--primary);"><i class="fas fa-save"></i> حفظ</button>
                                 </form>
                             </td>
+                            
                             <td>
                                 <form method="post" action="/admin/give_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    
                                     <select name="permission_id" class="small-select">
                                         {% for perm in permissions %}
                                         <option value="{{ perm.id }}">{{ perm.name }}</option>
                                         {% endfor %}
                                     </select>
-                                    <button type="submit" class="btn-small edit">إضافة</button>
+                                    <button type="submit" class="btn-small add" style="background-color: var(--accent);"><i class="fas fa-plus"></i> منح</button>
                                 </form>
                             </td>
-                          <td>
+                          
+                            <td>
                                 <form method="post" action="/admin/remove_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
                                     
                                     <select name="permission_id" class="small-select">
-                                        {# نتحقق أولاً إذا كان لدى المستخدم أي صلاحيات في القائمة الممررة من السيرفس #}
                                         {% if user_permissions[u.id] %}
                                             {% for perm in permissions %}
                                                 {% if perm.name in user_permissions[u.id] %}
@@ -109,25 +123,27 @@
                                         {% endif %}
                                     </select>
                                     
-                                    <button type="submit" class="btn-small remove" {% if not user_permissions[u.id] %}disabled style="opacity:0.5;"{% endif %}>
-                                        إزالة
+                                    <button type="submit" class="btn-small remove" style="background-color: var(--edit);" {% if not user_permissions[u.id] %}disabled style="opacity:0.4; cursor: not-allowed;"{% endif %}>
+                                        <i class="fas fa-minus-circle"></i> سحب
                                     </button>
                                 </form>
                             </td>
-                            <td>
-                                <form method="post" action="/admin/delete_user">
+                            
+                            <td style="text-align: center;">
+                                <form method="post" action="/admin/delete_user" class="inline-form" style="justify-content: center;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    <button type="submit" class="btn-small delete"
-                                        onclick="return confirm('هل أنت متأكد من حذف هذا المستخدم نهائياً؟');">
-                                        حذف</button>
+                                    <button type="submit" class="btn-small delete" style="background-color: var(--danger);"
+                                        onclick="return confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً من النظام؟');">
+                                        <i class="fas fa-trash-alt"></i> حذف
+                                    </button>
                                 </form>
                             </td>
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="7" class="text-center">لا توجد بيانات متاحة حالياً.</td>
+                            <td colspan="7" class="text-center" style="padding: 30px; color: var(--text-light);">لا توجد بيانات متاحة حالياً.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -136,18 +152,17 @@
             
             <div class="pagination">
                 {% if current_page > 1 %}
-                <a href="/admin/users?page={{ current_page - 1 }}" class="page-link">السابق</a>
+                    <a href="/admin/users?page={{ current_page - 1 }}" class="page-link">السابق</a>
                 {% endif %}
-                <span class="page-item">الصفحة {{ current_page }} من {{ total_pages }}</span>
+                
+                <span class="page-link active">الصفحة {{ current_page }} من {{ total_pages }}</span>
+                
                 {% if current_page < total_pages %}
-                <a href="/admin/users?page={{ current_page + 1 }}" class="page-link">التالي</a>
+                    <a href="/admin/users?page={{ current_page + 1 }}" class="page-link">التالي</a>
                 {% endif %}
             </div>
+            
         </div>
     </div>
 </section>
-
-<script>
-   
-</script>
 {% endblock %}

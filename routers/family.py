@@ -24,7 +24,7 @@ import urllib.parse
 load_dotenv()
 IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
 
-router = APIRouter(prefix="/names", tags=["family"])
+router = APIRouter(prefix="/family", tags=["family"])
 
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -37,7 +37,7 @@ def validate_parent_code(code_value, code_name):
     return None
 # ====================== قائمة الأعضاء ======================
 @router.get("/", response_class=HTMLResponse)
-async def show_names(
+async def show_family(
     request: Request, 
     page: int = Query(1, ge=1), 
     q: str = Query(None),
@@ -61,7 +61,7 @@ async def show_names(
     search_query = q.strip() if q else None
     
     # لاحظ أننا نستخدم FamilyService دائماً الآن
-    members, current_page, totals_pages, total_count = FamilyService.search_and_fetch_names(search_query or "", page)
+    members, current_page, totals_pages, total_count = FamilyService.search_and_fetch_family(search_query or "", page)
         
     # منطق الترقيم (Pagination)
     PAGES_TO_SHOW = 7
@@ -93,7 +93,7 @@ async def show_names(
         "page_numbers": page_numbers, "q": q,
         "success": success_message
     })
-    response = templates.TemplateResponse("family/names.html", context)
+    response = templates.TemplateResponse("family/family.html", context)
     set_cache_headers(response)
     return response
    
@@ -155,12 +155,12 @@ async def name_details(
 async def add_name_form(request: Request):
     cxt = get_page_context(request,additional_perms=["view_tree", "add_member"])
     if not cxt:
-        return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
+        return RedirectResponse(url="/family/?error=unauthorized", status_code=303)
 
     # التحقق من الصلاحية
     added = cxt.get("perms", {}).get("add_member", False)
     if not added:
-         return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
+         return RedirectResponse(url="/family/?error=unauthorized", status_code=303)
     
     # 🟢 الحل هنا: تعريف قاموس فارغ لكي لا يظهر خطأ Undefined في القالب
     empty_form_data = {
@@ -199,7 +199,7 @@ async def add_name(
     cxt = get_page_context(request,additional_perms=[ "add_member"])
     user = cxt["user"]
     if not user :
-        return RedirectResponse("/names")
+        return RedirectResponse("/family")
    
     added = cxt.get("perms", {}).get("add_member", False)
     if not added:
@@ -438,12 +438,12 @@ async def check_code(code: str):
 async def edit_name_form(request: Request, code: str):
     cxt = get_page_context(request, additional_perms=["view_tree", "edit_member"])
     if not cxt:
-        return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
+        return RedirectResponse(url="/family/?error=unauthorized", status_code=303)
 
     # التحقق من الصلاحية
     edited = cxt.get("perms", {}).get("edit_member", False)
     if not edited:
-         return RedirectResponse(url="/names/?error=unauthorized", status_code=303)
+         return RedirectResponse(url="/family/?error=unauthorized", status_code=303)
   
     
     # 1. استدعاء دالة الخدمة لجلب البيانات
@@ -631,7 +631,7 @@ async def update_name(request: Request,
             )
 
             # 🟢 التعديل المطلوب: العودة لصفحة القائمة مع الحفاظ على الفلتر والصفحة
-            redirect_url = f"/names?page={page}"
+            redirect_url = f"/family?page={page}"
             if q and q != "None":
                 redirect_url += f"&q={urllib.parse.quote(q)}"
             
@@ -707,85 +707,9 @@ async def delete_name(
         log_action(cxt["user"]['id'], "حذف فرد", f"الكود: {code}")
         
         # 4. إعادة التوجيه مع استخدام & بدلاً من الفاصلة
-        return RedirectResponse(f"/names?page={current_page}&success=member_deleted", status_code=303)
+        return RedirectResponse(f"/family?page={current_page}&success=member_deleted", status_code=303)
         
     except Exception as e:
         print(f"❌ Error during deletion: {e}") # سيظهر لك الخطأ الحقيقي في الـ Terminal
         raise HTTPException(status_code=500, detail="فشل في عملية الحذف من قاعدة البيانات")
 
-# ====================== family tree by code ====================== 
-@router.get("/export/family-tree/{code}")
-async def export_family_tree(request: Request, code: str):
-    # استخدام الدالة المساعدة
-    user, _ = get_admin_context(request)
-    if not user:
-        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
-    data = FamilyService.get_full_family_tree_recursive(code)
-    
-    if not data:
-        return {"error": "لم يتم العثور على بيانات"}
-    
-    output = StringIO()
-    output.write('\ufeff') 
-    
-    writer = csv.writer(output)
-    writer.writerow(["sep=,"])
-    writer.writerow(["الكود", "الاسم الرباعي", "اللقب", "الصلة", "الفئة"])
-    
-    for row in data:
-        # جلب العلاقة المسجلة في قاعدة البيانات لهذا الشخص
-        db_relation = row.get('relation', '')
-        # جلب النوع (ذكر/أنثى) للمساعدة في التسمية
-        gender = row.get('gender', '')
-
-        # التحديد بناءً على قيمة "العلاقة" (relation) فقط
-        if db_relation in ["ابن", "ابنة"]:
-            if gender == "أنثى":
-                relation_label = "حوطاوية"
-            else:
-                relation_label = "حوطاوي"
-        else:
-            # أي علاقة أخرى (زوج، زوجة، ابن زوج، إلخ) تعتبر خارج الأسرة
-            relation_label = "ليست حوطاوية" if gender == "أنثى" else "ليس حوطاوي"
-
-        # استثناء للشخص الأساسي (صاحب الكود المطلوب) ليكون دائماً داخل الأسرة
-        if row.get('code') == code:
-            relation_label = "حوطاوي (داخل الأسرة)" if gender != "أنثى" else "حوطاوية (داخل الأسرة)"
-
-        writer.writerow([
-            row.get('code', ''), 
-            row.get('full_name', ''), 
-            row.get('nick_name', ''), 
-            relation_label, 
-            row.get('category', '') # الفئة (حفيد/حفيدة) تظهر هنا للتوضيح فقط
-        ])
-    
-    output.seek(0)
-    
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv; charset=utf-8-sig",
-        headers={
-            "Content-Disposition": f"attachment; filename=family_tree_{code}.csv",
-            "Content-Type": "text/csv; charset=utf-8-sig"
-        }
-    )
-# ====================== backup-txt======================
-@router.get("/export/table-backup-txt")
-async def export_table_backup(request: Request, ):
-    # استخدام الدالة المساعدة
-    user, _ = get_admin_context(request)
-    if not user:
-        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
-    content = FamilyService.get_family_table_backup_text()
-    
-    if not content:
-        return Response(content="الجدول فارغ", media_type="text/plain")
-
-    return Response(
-        content=content,
-        media_type="text/plain; charset=utf-8",
-        headers={
-            "Content-Disposition": "attachment; filename=family_name_backup.txt"
-        }
-    )  

@@ -35,7 +35,7 @@
         </div>
         {% endif %}
      
-        <form action="/names/add" method="post" enctype="multipart/form-data">
+        <form action="/family/add" method="post" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
             
             <div class="form-grid">
@@ -165,7 +165,7 @@
             </div>
             
             <div class="form-footer">
-                <a href="/names" class="cancel-text-link">رجوع إلى قائمة الشجرة</a>
+                <a href="/family" class="cancel-text-link">رجوع إلى قائمة الشجرة</a>
             </div>
         </form>
     </div>
