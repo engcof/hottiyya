@@ -6,19 +6,18 @@ from typing import Optional
 from datetime import date 
 
 # المكتبات الخارجية (Third-party)
-from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Query, Response
-from fastapi.responses import HTMLResponse, RedirectResponse,StreamingResponse
+from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, Query
+from fastapi.responses import HTMLResponse, RedirectResponse
 from dotenv import load_dotenv
 
 # المكتبات المحلية (Local Imports)
 from core.templates import templates
 from security.csrf import  verify_csrf_token
-from security.session import set_cache_headers,get_admin_context,get_page_context
+from security.session import set_cache_headers,get_page_context
 from utils.time_utils import calculate_age_details
 from services.analytics import log_action
 from services.family_service import FamilyService
-import csv
-from io import StringIO
+
 import urllib.parse
 
 load_dotenv()

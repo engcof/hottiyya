@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // الحالة أ: إذا كتب المستخدم حرفاً واحداً كبادئة أولية (مثل: A)
             if (val.length === 1 && /^[A-Z]$/.test(val)) {
                 try {
-                    const res = await fetch(`/names/get-next-code?letter=${val}`);
+                    const res = await fetch(`/family/get-next-code?letter=${val}`);
                     const data = await res.json();
                     if (data.next_code) {
                         e.target.value = data.next_code;
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // الحالة ب: إذا كتب المستخدم بادئة كاملة أو مخصصة (مثل: A0-005) طولها 6 محارف وتحتوي على شرطة
             else if (val.length === 6 && val.includes('-')) {
                 try {
-                    const response = await fetch(`/names/get-next-code?prefix=${val}`);
+                    const response = await fetch(`/family/get-next-code?prefix=${val}`);
                     const data = await response.json();
                     if (data.next_code) {
                         e.target.value = data.next_code;
@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (code.length < 3 || !statusIcon || !feedback || !codeInput) return;
 
         try {
-            const response = await fetch(`/names/check-code-availability?code=${code}`);
+            const response = await fetch(`/family/check-code-availability?code=${code}`);
             const data = await response.json();
 
             if (data.available) {
