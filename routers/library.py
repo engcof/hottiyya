@@ -1,7 +1,7 @@
 import re  
 from fastapi import BackgroundTasks
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse,StreamingResponse
 from urllib.parse import quote
 from security.session import set_cache_headers,get_page_context
 from security.csrf import generate_csrf_token, verify_csrf_token
@@ -12,6 +12,8 @@ import shutil
 import os
 from core.templates import templates
 import html 
+import httpx
+import urllib.parse
 
 router = APIRouter(prefix="/library", tags=["Library"])
 
@@ -278,8 +280,7 @@ async def view_book(request: Request, book_id: int):
         return RedirectResponse(url="/library?error=not_ready")
 
     file_url = book_data['file_url']
-    book_title = book_data['title']
-    
+    book_title = book_data.get('title', 'عرض كتاب')
     # تنظيف الرابط وتجهيزه
     clean_url = file_url.split('?')[0]
     ext = clean_url.split('.')[-1].lower()
@@ -317,22 +318,48 @@ async def view_book(request: Request, book_id: int):
 
 @router.get("/download/{book_id}")
 async def download_book(book_id: int):
+    # 1. جلب بيانات الكتاب كاملة من قاعدة البيانات
     book_data = LibraryService.increment_download(book_id)
     if not book_data:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=404, detail="الكتاب غير موجود")
 
     file_url = book_data['file_url']
+    book_title = book_data.get('title', 'book') 
     
-    if "cloudinary" in file_url:
-        # تأكد من أن الرابط ينتهي بالامتداد الصحيح ليتم التحميل بشكل سليم
-        if "/upload/" in file_url and "fl_attachment" not in file_url:
-            final_url = file_url.replace('/upload/', '/upload/fl_attachment/')
-        else:
-            final_url = file_url
-    else:
-        final_url = file_url
+    # استخراج وتنظيف الامتداد والاسم
+    ext = os.path.splitext(file_url.split('?')[0])[1].lower()
+    if not ext:
+        ext = ".pdf"
+        
+    clean_title = re.sub(r'[^\w\s-]', '', book_title).strip().replace(' ', '_')
+    download_name = f"{clean_title}{ext}"
+    encoded_filename = urllib.parse.quote(download_name)
 
-    return RedirectResponse(url=final_url)
+    # 2. إذا كان الملف مرفوعاً على Cloudinary (الملفات الصغيرة أقل من 10 ميجا)
+    if "cloudinary" in file_url:
+        
+        # دالة البث المصححة هندسياً للاستهلاك الآمن من httpx
+        async def file_streamer():
+            async with httpx.AsyncClient() as client:
+                async with client.stream("GET", file_url) as response:
+                    # التحقق من أن خادم Cloudinary استجاب بنجاح قبل بدء البث
+                    if response.status_code != 200:
+                        raise HTTPException(status_code=400, detail="فشل جلب الملف من خادم التخزين")
+                        
+                    # الاستماع للبث باستخدام aiter_bytes() الصريحة للأ동 الفوري
+                    async for chunk in response.aiter_bytes(chunk_size=128 * 1024): # بث على أجزاء 128 كيلوبايت
+                        yield chunk
+
+        headers = {
+            "Content-Disposition": f"attachment; filename*=UTF-8''{encoded_filename}",
+            "Content-Type": "application/octet-stream"
+        }
+        # تمرير دالة المولد مباشرة لـ StreamingResponse لتقرأ الـ __aiter__ بشكل سليم
+        return StreamingResponse(file_streamer(), headers=headers)
+
+    # 3. إذا كان الملف مرفوعاً على Google Drive (الملفات الكبيرة أكبر من 10 ميجا)
+    else:
+        return RedirectResponse(url=file_url)
 
 @router.get("/admin/fix-errors")
 async def admin_fix_errors(request: Request):

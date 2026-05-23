@@ -910,7 +910,7 @@ footer {
 /* =====================================================================
    🛠️ فرض خط Font Awesome 6 ومنع تداخله مع خطوط الموقع العامة
    ===================================================================== */
-.fa,.fa-solid, .fa-regular, .fa-brands {
+.fa, .fas, .fa-solid, .fa-regular, .fa-brands {
     font-family: "Font Awesome 6 Free", "Font Awesome" !important;
     font-weight: 900 !important;
     display: inline-block !important;

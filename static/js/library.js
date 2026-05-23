@@ -8,19 +8,23 @@ function setupCounterUpdates() {
     
     actionButtons.forEach(button => {
         button.addEventListener('click', function(e) {
-            // --- [تصحيح] بدلاً من once: true الذي يعطل الزر للأبد، نستخدم الـ Dataset لمنع النقرات المتتالية السريعة ---
-            if (this.dataset.clicked === "true") {
-                e.preventDefault(); // منع النقرة الثانية
+            // منع النقرات المتتالية السريعة جداً (Debounce) لحماية السيرفر
+            if (this.dataset.loading === "true") {
+                e.preventDefault();
                 return;
             }
             
-            this.dataset.clicked = "true";
+            this.dataset.loading = "true";
+            
+            // تحديث العداد بصرياً للمستخدم فوراً
             handleCounterClick(this);
             
-            // إعادة تفعيل الزر بعد ثانيتين للسماح بالتحميل مرة أخرى إذا لزم الأمر
+            // إعادة تفعيل إمكانية الضغط بعد ثانيتين
             setTimeout(() => {
-                this.dataset.clicked = "false";
+                this.dataset.loading = "false";
             }, 2000);
+            
+            // ❌ تم حذف e.preventDefault() من هنا لكي يعمل الرابط الطبيعي للـ <a href> وينتقل المتصفح للراوتر بنجاح
         }); 
     });
 }
@@ -32,14 +36,9 @@ function handleCounterClick(element) {
         let currentText = smallTag.innerText;
         let count = parseInt(currentText.replace(/[^0-9]/g, '')) || 0;
         
-        const isViewAction = element.classList.contains('btn-read');
-        
-        // إذا لم يكن إجراء عرض (أي أنه إجراء تحميل لا يغير الصفحة الحالية)
-        if (!isViewAction) {
-            smallTag.innerText = `(${count + 1})`;
-        }
-        
-        console.log("تم تسجيل الضغطة بنجاح.");
+        // زيادة العداد بصرياً في الصفحة الحالية
+        smallTag.innerText = `(${count + 1})`;
+        console.log("تم تحديث العداد البصري بنجاح.");
     }
 }
 
