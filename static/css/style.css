@@ -1,6 +1,5 @@
 /*style.css*/
 @charset "utf-8";
-
 /* ==========  الإعدادات العامة ✅ ========== */
 *,
 *::before,
@@ -8,12 +7,14 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* الاعتماد على خطوط النظام الافتراضية الداعمة للعربية لمنع الاعتماد على روابط خارجية */
-  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  /* ❌ تم حذف الـ font-family من هنا لمنع تدمير خطوط الأيقونات */
 }
+
 html {
   scroll-behavior: smooth;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* هنا المكان السليم هندسياً */
 }
+
 body {
   background: #ffffff;
   color: #0f172a;
@@ -24,6 +25,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* لضمان توريث الخط لجميع النصوص */
 }
 
 /* تعديل العناوين لتكون أكثر بروزاً وفخامة */
@@ -905,4 +907,15 @@ footer {
 @media (min-width: 768px) { .d-md-inline-block { display: inline-block !important; } }
 @media (min-width: 769px) { .mobile-menu-toggle { display: none !important; } }
 
-
+/* =====================================================================
+   🛠️ فرض خط Font Awesome 6 ومنع تداخله مع خطوط الموقع العامة
+   ===================================================================== */
+.fa,.fa-solid, .fa-regular, .fa-brands {
+    font-family: "Font Awesome 6 Free", "Font Awesome" !important;
+    font-weight: 900 !important;
+    display: inline-block !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    text-rendering: auto !important;
+    -webkit-font-smoothing: antialiased !important;
+}

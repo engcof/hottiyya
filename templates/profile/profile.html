@@ -52,7 +52,7 @@
                                     data-message="{{ message.message }}"
                                     data-is-read="{{ 'true' if message.is_read else 'false' }}"
                                     onclick="handleOpenMessage(this)">
-                                <i class="fas fa-eye"></i> اقرأ الرسالة
+                                <i class="fas fa-eye style="color: #3b82f6; margin-left: 5px;"></i> اقرأ الرسالة
                             </button>
                             
                             <form method="post" action="/profile/delete-message/{{ message.id }}" 
