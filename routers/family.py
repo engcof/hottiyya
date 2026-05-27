@@ -685,7 +685,8 @@ async def update_name(request: Request,
 async def delete_name(
     request: Request, 
     code: str,  
-    current_page: int = Form(1) # سيعود للقيمة 1 إذا لم يجدها في الفورم
+    current_page: int = Form(1),    # 💡 استلام رقم الصفحة
+   q: str = Form("")
 ):
     cxt = get_page_context(request, additional_perms=["delete_member"])
     
@@ -706,7 +707,10 @@ async def delete_name(
         log_action(cxt["user"]['id'], "حذف فرد", f"الكود: {code}")
         
         # 4. إعادة التوجيه مع استخدام & بدلاً من الفاصلة
-        return RedirectResponse(f"/family?page={current_page}&success=member_deleted", status_code=303)
+        redirect_url = f"/family?page={current_page}"
+        if q and q != "None":
+            redirect_url += f"&q={urllib.parse.quote(q)}"
+        return RedirectResponse(redirect_url + "&success=member_deleted", status_code=303)
         
     except Exception as e:
         print(f"❌ Error during deletion: {e}") # سيظهر لك الخطأ الحقيقي في الـ Terminal

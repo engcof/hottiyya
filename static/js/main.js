@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    /* ==================== 3. تأثيرات عامة التنبيهات والأخبار ==================== */
+    /* ==================== 3. تأثيرات عامة التنبيهات والأخبار وتطهير الروابط ==================== */
     document.querySelectorAll('.flash-message, .alert, #success-alert, #error-alert').forEach(msg => {
         setTimeout(() => { 
             msg.style.transition = 'opacity 0.6s ease, transform 0.6s ease'; 
@@ -153,6 +153,23 @@ document.addEventListener("DOMContentLoaded", function () {
             setTimeout(() => msg.remove(), 600); 
         }, 5000);
     });
+
+    // ✨ تنظيف شريط العنوان في المتصفح فوراً لحماية الصفحة من تكرار الرسائل عند عمل Refresh
+    try {
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.has('success') || currentUrl.searchParams.has('error')) {
+            // مسح بارامترات الحالة فقط والحفاظ على بقية البارامترات مثل رقم الصفحة (page) والبحث (q)
+            currentUrl.searchParams.delete('success');
+            currentUrl.searchParams.delete('error');
+            
+            // إحلال الرابط النظيف في المتصفح بدون إعادة تحميل الصفحة
+            window.history.replaceState({}, document.title, currentUrl.pathname + currentUrl.search);
+        }
+    } catch (urlErr) {
+        console.error("خطأ أثناء تنظيف رابط المتصفح:", urlErr);
+    }
+
+    /* ========================================================================= */
 
     window.addEventListener("scroll", () => {
         const header = document.querySelector("header");
