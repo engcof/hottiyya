@@ -13,8 +13,15 @@
             <p class="form-subtitle">تحديث سجل: <strong>{{ member.name }}</strong> ({{ code }})</p>
         </div>
 
+        {% if error %}
+        <div class="error-alert-banner" style="background-color: #fef2f2; border-right: 4px solid #ef4444; color: #991b1b; padding: 12px 16px; border-radius: 6px; margin-bottom: 24px; font-weight: 500;">
+            <i class="fas fa-exclamation-circle" style="margin-left: 8px;"></i> {{ error }}
+        </div>
+        {% endif %}
+
         <form method="post" action="/family/edit/{{ code }}" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            
             <input type="hidden" name="page" value="{{ request.query_params.get('page', 1) }}">
             <input type="hidden" name="q" value="{{ request.query_params.get('q', '') if request.query_params.get('q') and request.query_params.get('q') != 'None' else '' }}">
             
@@ -116,13 +123,12 @@
                 </div>
            </div>
            
-           {# --- [تصحيح] تم تكييف مدخل الصورة ليطابق ستايل صفحة الإضافة ويدعم مرونة الموبايل بالكامل --- #}
            <div class="form-group grid-full-width">
                 <label>الصورة الشخصية للعضو</label>
-                <div class="file-input-wrapper">
+                <div class="file-input-wrapper" style="position: relative; border: 2px dashed #cbd5e1; padding: 20px; text-align: center; border-radius: 8px;">
                     {% if picture_url %}
                         <div class="current-image" style="margin-bottom: 12px;">
-                            <img src="{{ picture_url }}" alt="الحالية" style="width: 90px; height: 90px; object-fit: cover; border-radius: 50%; border: 3px solid #10b981;">
+                            <img src="/{{ picture_url }}" alt="الحالية" style="width: 90px; height: 90px; object-fit: cover; border-radius: 50%; border: 3px solid #10b981;">
                             <small style="display: block; color: #64748b; margin-top: 5px;">الصورة الحالية</small>
                         </div>
                     {% else %}
@@ -139,13 +145,12 @@
                 </button>
             </div>
             
-            <div class="form-footer">
+            <div class="form-footer" style="margin-top: 20px; text-align: center;">
                 <a href="/family/details/{{ code }}" class="cancel-text-link">رجوع للتفاصيل</a>
                 <span style="margin: 0 12px; color: #cbd5e1;">|</span>
                 
-                {# تصفية الرابط البرمجي لعدم إرسال كلمة None إلى السيرفر في الـ Query String #}
                 {% set search_q = request.query_params.get('q', '') %}
-                <a href="/family ?page={{ request.query_params.get('page', 1) }}{% if search_q and search_q != 'None' %}&q={{ search_q }}{% endif %}" class="cancel-text-link">قائمة الشجرة</a>
+                <a href="/family?page={{ request.query_params.get('page', 1) }}{% if search_q and search_q != 'None' and search_q != '' %}&q={{ search_q }}{% endif %}" class="cancel-text-link">قائمة الشجرة</a>
             </div>
         </form>
     </div>

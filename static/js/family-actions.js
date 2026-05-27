@@ -1,14 +1,12 @@
 /**
  * سكربت إدارة أعضاء الشجرة - موقع الحوطية
  */
-
 document.addEventListener('DOMContentLoaded', () => {
     const codeInput = document.getElementById('memberCode');
     const statusIcon = document.getElementById('codeStatusIcon');
     const feedback = document.getElementById('codeFeedback');
 
     if (codeInput) {
-        
         // 1. ميزة الاقتراح التلقائي والاختصار المدمجة والمحمية من التكرار
         codeInput.addEventListener('input', async function(e) {
             let val = e.target.value.trim().toUpperCase();
@@ -17,11 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // الحالة أ: إذا كتب المستخدم حرفاً واحداً كبادئة أولية (مثل: A)
             if (val.length === 1 && /^[A-Z]$/.test(val)) {
                 try {
-                    const res = await fetch(`/family/get-next-code?letter=${val}`);
+                    // تم توحيد الإرسال لـ prefix لتوافق تام مع الباكيند المحدث
+                    const res = await fetch(`/family/get-next-code?prefix=${val}`);
                     const data = await res.json();
                     if (data.next_code) {
                         e.target.value = data.next_code;
-                        // تحديد النص المتبقي المكتوب تلقائياً لتسهيل المسح أو التعديل
                         e.target.setSelectionRange(1, data.next_code.length);
                         validateCode(data.next_code);
                     }

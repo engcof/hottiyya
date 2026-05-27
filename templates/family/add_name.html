@@ -3,10 +3,15 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
     <style>
-        /* إضافة لمسة خاصة لحقل التحقق من الكود تتماشى مع الـ RTL */
         .input-with-status { position: relative; width: 100%; }
+        /* سحب أيقونة التنبيه إلى اليسار قليلاً بما يتوافق مع حقول الإدخال العربية RTL */
         .status-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; z-index: 5; }
         .feedback-text { font-weight: 700; margin-top: 5px; display: block; }
+        
+        /* كلاس الاستجابة الشامل المخصص المأمون لعرض الهواتف والشاشات */
+        @media (min-width: 768px) {
+            .grid-full-width { grid-column: span 2; }
+        }
     </style>
 {% endblock %}
 
@@ -18,7 +23,6 @@
             <p class="form-subtitle">يرجى إدخال البيانات الشخصية بدقة لضمان صحة شجرة العائلة</p>
         </div>
 
-        {# --- [تصحيح] تم إصلاح المعرفات ID لتعمل مع سكربت الاختفاء التلقائي في main.js بشكل سليم --- #}
         {% if success %}
         <div class="alert success flash-message" id="success-alert">
             <i class="fas fa-check-circle"></i>
@@ -30,7 +34,7 @@
         {% if error %}
         <div class="alert error flash-message" id="error-alert">
             <i class="fas fa-exclamation-circle"></i>
-            <span><strong>خطأ:</strong> {{ error }}</span>
+            <span><strong>خطأ:</strong> {{ error|safe }}</span>
             <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
@@ -146,7 +150,6 @@
                     </select>
                 </div>
                 
-                {# --- [تصحيح] تم تحويل الحقل ليمتد باستخدام كلاس مخصص بدلاً من الستايل المباشر لتلافي تدمير الـ Responsive --- #}
                 <div class="form-group grid-full-width">
                     <label>صورة العضو الشخصية (اختياري)</label>
                     <div class="file-input-wrapper">
@@ -170,7 +173,6 @@
         </form>
     </div>
 </section>
-
 
 <script src="{{ url_for('static', path='js/family-actions.js') }}"></script>
 {% endblock %}

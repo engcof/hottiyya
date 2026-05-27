@@ -1,13 +1,14 @@
 {% extends "base.html" %}
 {% block title %}تفاصيل العضو • {{ full_name }}{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/family.css') }}">
 {% endblock %}
+
 {% block content %}
 <section class="all-page">
     <div class="container">
         
-        <!-- العنوان الرئيسي + الكود + اللقب + الحالة -->
         <div class="member-header text-center">
             <h1 class="member-names">{{ full_name }}</h1>
             <p class="member-code">
@@ -15,42 +16,40 @@
             </p>
 
             {% if member.nick_name %}
-            <div class="">
+            <div class="nickname-container" style="margin-top: 8px;">
                 <span class="nickname-big">{{ member.nick_name }}</span>
             </div>
             {% endif %}
 
             {% if info.status %}
-            <div class="status-display">
+            <div class="status-display" style="margin-top: 12px;">
                 {% if info.status in ["متوفي", "متوفية"] %}
-                <span class="status deceased">رحمه الله • {{ info.status }}</span>
+                <span class="status deceased" style="color: #ef4444; font-weight: bold;">رحمه الله • {{ info.status }}</span>
                 {% else %}
-                <span class="status alive">{{ info.status }}</span>
+                <span class="status alive" style="color: #10b981; font-weight: bold;">{{ info.status }}</span>
                 {% endif %}
             </div>
             {% endif %}
         </div>
 
-        <div class="member-body">
-            <!-- الصورة الشخصية -->
+        <div class="member-body" style="margin-top: 30px;">
             {% if picture_url %}
-            <div class="profile-picture">
-                <img src="/{{ picture_url }}" alt="{{ full_name }}" class="profile-img">
-                <p class="img-caption">صورة العضو</p>
+            <div class="profile-picture text-center" style="margin-bottom: 25px;">
+                <img src="/{{ picture_url }}" alt="{{ full_name }}" class="profile-img" style="width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 4px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">
+                <p class="img-caption" style="color: #64748b; font-size: 0.85rem; margin-top: 5px;">صورة العضو</p>
             </div>
             {% endif %}
 
-            <!-- المعلومات الأساسية -->
             <div class="info-section">
                 <h2 class="section-title">المعلومات الأساسية</h2>
                 <div class="info-grid">
                     {% macro info_row(label, value, link=False) %}
                         {% if value %}
-                        <div class="info-row">
-                            <span class="info-label">{{ label }}</span>
-                            <span class="info-value">
+                        <div class="info-row" style="padding: 10px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between;">
+                            <span class="info-label" style="font-weight: 600; color: #475569;">{{ label }}</span>
+                            <span class="info-value" style="color: #0f172a;">
                                 {% if link %}
-                                <a href="{{ link }}{{ value }}">{{ value }}</a>
+                                <a href="{{ link }}{{ value }}" style="color: #2563eb; text-decoration: none;">{{ value }}</a>
                                 {% else %}
                                 {{ value }}
                                 {% endif %}
@@ -59,60 +58,51 @@
                         {% endif %}
                     {% endmacro %}
 
-                    {{ info_row("العلاقة  :- ", member.relation) }}
-                    {{ info_row("الجنس  :- ", gender) }}
-                    {{ info_row("المستوى  :- ", member.level) }}
-                    {{ info_row("تاريخ الميلاد  :- ", info.d_o_b) }}
-                    {{ info_row("تاريخ الوفاة  :- ", info.d_o_d) }}
-                    {% if age_details %}
+                    {{ info_row("العلاقة:", member.relation) }}
+                    {{ info_row("الجنس:", gender) }}
+                    {{ info_row("المستوى:", member.level) }}
+                    {{ info_row("تاريخ الميلاد:", info.d_o_b) }}
+                    {{ info_row("تاريخ الوفاة:", info.d_o_d) }}
                     
-                    {# 1. إذا كان متوفيًا (عرض العمر عند الوفاة والوفاة منذ) #}
-                    {% if age_details.has_dod %}
-                        
-                        {# 💡 التعديل: لا تعرض "العمر عند الوفاة" إلا إذا كان تاريخ الميلاد موجوداً (has_dob) #}
-                        {% if age_details.has_dob and age_details.age_at_death is not none %}
-                            {{ info_row("العمر عند الوفاة  :- ", age_details.age_at_death ~ " سنة") }}
+                    {% if age_details %}
+                        {# 1. إذا كان متوفيًا (عرض العمر عند الوفاة والوفاة منذ) #}
+                        {% if age_details.has_dod %}
+                            {% if age_details.has_dob and age_details.age_at_death is not none %}
+                                {{ info_row("العمر عند الوفاة:", age_details.age_at_death ~ " سنة") }}
+                            {% endif %}
+                            {{ info_row("الوفاة منذ:", age_details.time_since_death) if age_details.time_since_death is not none else "" }}
+
+                        {# 2. إذا كان على قيد الحياة (عرض العمر الحالي) #}
+                        {% elif age_details.has_dob %}
+                            {{ info_row("العمر الحالي:", age_details.age ~ " سنة") if age_details.age is not none else "" }}
                         {% endif %}
-                        
-                        {# 'الوفاة منذ' لا يعتمد على تاريخ الميلاد، لذلك يبقى كما هو #}
-                        {{ info_row("الوفاة منذ  :- ", age_details.time_since_death) if age_details.time_since_death is not none else "" }}
-
-                    {# 2. إذا كان على قيد الحياة (عرض العمر الحالي) #}
-                    {% elif age_details.has_dob %}
-                        {{ info_row("العمر الحالي  :- ", age_details.age ~ " سنة") if age_details.age is not none else "" }}
                     {% endif %}
-
-                    {% endif %}
-                    {{ info_row("مكان الميلاد  :- ", info.p_o_b) }}
-                    {{ info_row("العنوان  :- ", info.address) }}
-                    {{ info_row("البريد الإلكتروني  :- ", info.email, "mailto:") }}
-                    {{ info_row("رقم الهاتف  :- ", info.phone, "tel:") }}
+                    
+                    {{ info_row("مكان الميلاد:", info.p_o_b) }}
+                    {{ info_row("العنوان:", info.address) }}
+                    {{ info_row("البريد الإلكتروني:", info.email, "mailto:") }}
+                    {{ info_row("رقم الهاتف:", info.phone, "tel:") }}
                 </div>
             </div>
 
-            <!-- العلاقات الأسرية -->
-            <div class="relations-section">
+            <div class="relations-section" style="margin-top: 40px;">
                 <h2 class="section-title">العلاقات الأسرية</h2>
                 <div class="relations-grid">
 
-                    <!-- الأم -->
                     <div class="relation-card mother">
                         <h5>الأم</h5>
                         {% if mother_full_name %}
-                        <a href="/family/details/{{ member.m_code }}" class="relation-link">{{ mother_full_name }}</a>
+                        <a href="/family/details/{{ member.m_code }}?page={{ current_page }}&q={{ search_query }}" class="relation-link">{{ mother_full_name }}</a>
                         {% else %}
                         <span class="text-muted">غير مسجلة</span>
                         {% endif %}
                     </div>
 
-                    <!-- الزوج/الزوجة -->
-                   {% if gender == "ذكر" and wives %}
+                    {% if gender == "ذكر" and wives %}
                     <div class="relation-card wife">
-                        {# تعديل العنوان ليصبح "الزوجة" للمفرد و"الزوجات" للجمع #}
                         <h5>{% if wives|length > 1 %}الزوجات ({{ wives|length }}){% else %}الزوجة{% endif %}</h5>
-                        
                         {% for wife in wives %}
-                            <a href="/family/details/{{ wife.code }}" class="relation-link">
+                            <a href="/family/details/{{ wife.code }}?page={{ current_page }}&q={{ search_query }}" class="relation-link" style="display: block; margin-bottom: 4px;">
                                 {{ wife.name }}
                                 {% if wives|length > 1 %} 
                                     <small class="text-muted">({{ loop.index }})</small> 
@@ -121,31 +111,29 @@
                         {% endfor %}
                     </div>
                     {% elif gender == "أنثى" and husbands %}
-                        <div class="relation-card husband">
-                            {# تعديل العنوان ليصبح "الأزواج" في حال تعددوا #}
-                            <h5>{% if husbands|length > 1 %}الأزواج ({{ husbands|length }}){% else %}الزوج{% endif %}</h5>
-                            {% for h in husbands %}
-                                <a href="/family/details/{{ h.code }}" class="relation-link">
-                                    {{ h.name }}{% if husbands|length > 1 %} <small>({{ loop.index }})</small>{% endif %}
-                                </a>
-                            {% endfor %}
-                        </div>
+                    <div class="relation-card husband">
+                        <h5>{% if husbands|length > 1 %}الأزواج ({{ husbands|length }}){% else %}الزوج{% endif %}</h5>
+                        {% for h in husbands %}
+                            <a href="/family/details/{{ h.code }}?page={{ current_page }}&q={{ search_query }}" class="relation-link" style="display: block; margin-bottom: 4px;">
+                                {{ h.name }}{% if husbands|length > 1 %} <small class="text-muted">({{ loop.index }})</small>{% endif %}
+                            </a>
+                        {% endfor %}
+                    </div>
                     {% else %}
-                        {# حالة عدم وجود بيانات مسجلة #}
-                        <div class="relation-card spouse">
-                            <h5>الزوج / الزوجة</h5>
-                            <div class="relation-link text-center">
-                                <span class="text-muted" style="font-size: 0.85rem;">غير مسجل</span>
-                            </div>
+                    <div class="relation-card spouse">
+                        <h5>الزوج / الزوجة</h5>
+                        <div class="relation-link text-center">
+                            <span class="text-muted" style="font-size: 0.85rem;">غير مسجل</span>
                         </div>
+                    </div>
                     {% endif %}
-                    <!-- الأبناء -->
+
                     <div class="relation-card children">
                         <h5>الأبناء ({{ children|length }})</h5>
                         <div class="children-list">
                             {% if children %}
                                 {% for child in children %}
-                                <a href="/family/details/{{ child.code }}" class="child-item">
+                                <a href="/family/details/{{ child.code }}?page={{ current_page }}&q={{ search_query }}" class="child-item" style="display: block; margin-bottom: 4px;">
                                     {{ child.name }}
                                 </a>
                                 {% endfor %}
@@ -159,15 +147,14 @@
             </div>
         </div>
 
-        <!-- الأزرار السفلية -->
-        <div class="action-buttons">
+        <div class="action-buttons" style="margin-top: 40px; display: flex; gap: 15px; justify-content: center;">
             {% if user.role == "admin" or perms.edit_member %}
-            <a href="/family/edit/{{ member.code }}?page={{ current_page }}&q={{ search_query }}" class="btn-edit">
+            <a href="/family/edit/{{ member.code }}?page={{ current_page }}&q={{ search_query }}" class="btn-edit" style="padding: 10px 20px; background-color: #2563eb; color: white; border-radius: 6px; text-decoration: none;">
                 تعديل البيانات
             </a>
             {% endif %}
-              <a href="/family?page={{ request.query_params.get('page', 1) }}{% if request.query_params.get('q') and request.query_params.get('q') != 'None' %}&q={{ request.query_params.get('q') }}{% endif %}" class="btn-back">رجوع إلى شجرة العائلة</a>
-         
+            
+            <a href="/family?page={{ current_page }}{% if search_query and search_query != 'None' %}&q={{ search_query }}{% endif %}" class="btn-back" style="padding: 10px 20px; background-color: #64748b; color: white; border-radius: 6px; text-decoration: none;">رجوع إلى شجرة العائلة</a>
         </div>
     </div>
 </section>
