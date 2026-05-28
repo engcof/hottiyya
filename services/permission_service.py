@@ -8,21 +8,17 @@ class PermissionService:
         offset = (page - 1) * per_page
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # جلب الصلاحيات
                 cursor.execute("""
                     SELECT id, name, category FROM permissions 
                     ORDER BY name LIMIT %s OFFSET %s
                 """, (per_page, offset))
                 perms = cursor.fetchall()
 
-                # حساب إجمالي الصفحات
                 cursor.execute("SELECT COUNT(*) FROM permissions")
                 count_res = cursor.fetchone()
-                # التعامل مع اختلاف مخرجات الـ cursor (Dict vs Tuple)
                 total_perms = count_res['count'] if isinstance(count_res, dict) else count_res[0]
-                total_pages = (total_perms + per_page - 1) // per_page
+                total_pages = max((total_perms + per_page - 1) // per_page, 1)
 
-                # جلب بقية البيانات
                 cursor.execute("SELECT id, username, role FROM users ORDER BY username")
                 users = cursor.fetchall()
                 
@@ -54,14 +50,14 @@ class PermissionService:
             with conn.cursor() as cur:
                 cur.execute("SELECT id FROM permissions WHERE name = %s", (name,))
                 if cur.fetchone():
-                    return False, f"الصلاحية **{name}** موجودة بالفعل."
+                    return False, f"الصلاحية ({name}) موجودة بالفعل."
                 
                 cur.execute(
                     "INSERT INTO permissions (name, category) VALUES (%s, %s)",
                     (name, category)
                 )
                 conn.commit()
-                return True, f"تم إضافة الصلاحية **{name}** بنجاح."
+                return True, f"تم إضافة الصلاحية ({name}) بنجاح."
 
     @staticmethod
     def update_permission(perm_id: int, name: str, category: str) -> Tuple[bool, str]:
@@ -76,12 +72,12 @@ class PermissionService:
                 if old_name != name:
                     cur.execute("SELECT id FROM permissions WHERE name = %s", (name,))
                     if cur.fetchone():
-                        return False, f"الاسم **{name}** مستخدم لصلاحية أخرى."
+                        return False, f"الاسم ({name}) مستخدم لصلاحية أخرى."
 
                 cur.execute("UPDATE permissions SET name = %s, category = %s WHERE id = %s", 
                             (name, category, perm_id))
                 conn.commit()
-                return True, f"تم تعديل **{old_name}** إلى **{name}** بنجاح."
+                return True, f"تم تعديل ({old_name}) إلى ({name}) بنجاح."
 
     @staticmethod
     def delete_permission(perm_id: int) -> Tuple[bool, str]:
@@ -93,6 +89,11 @@ class PermissionService:
                     return False, "الصلاحية غير موجودة."
                 
                 name = record[0]
+                
+                # حماية منطقية: حذف الارتباطات من جدول الصلاحيات الممنوحة للمستخدمين أولاً لمنع الفشل
+                cur.execute("DELETE FROM user_permissions WHERE permission_id = %s", (perm_id,))
+                
+                # الآن نحذف الصلاحية بأمان
                 cur.execute("DELETE FROM permissions WHERE id = %s", (perm_id,))
                 conn.commit()
-                return True, f"تم حذف الصلاحية **{name}** بنجاح."
+                return True, f"تم حذف الصلاحية ({name}) بنجاح."

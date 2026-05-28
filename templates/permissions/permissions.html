@@ -14,7 +14,7 @@
         <div class="form-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
             <h1 class="form-title">لوحة الصلاحيات</h1>
             <div class="header-actions">
-                <a href="/admin" class="btn-back" style="background-color: var(--slate); color: white;">
+                <a href="/admin" class="btn-back" style="background-color: var(--slate)">
                     <i class="fas fa-home"></i> العودة للوحة الإدارة
                 </a>
             </div>
@@ -23,14 +23,14 @@
         {% if success_message %}
             <div class="alert success flash-message">
                 <i class="fas fa-check-circle"></i>
-                <span>{{ success_message | safe }}</span>
+                <span>{{ success_message }}</span>
                 <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
             </div>
         {% endif %}
         {% if error_message %}
             <div class="alert error flash-message">
                 <i class="fas fa-exclamation-circle"></i>
-                <span>{{ error_message | safe }}</span>
+                <span>{{ error_message }}</span>
                 <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
             </div>
         {% endif %}
@@ -96,7 +96,7 @@
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>الصلاحية الحالي</th>
+                            <th>الصلاحية الحالية</th>
                             <th>تعديل الاسم</th>
                             <th>تعديل الصنف</th>
                             <th style="text-align: center;">الإجراء</th>

@@ -1,60 +1,72 @@
 from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
 from fastapi import Request, HTTPException, status
-from typing import Dict, Any
 
-# تخزين مؤقت لمحاولات الفاشلة (Key -> بيانات المحاولة).
-# Key يمكن أن يكون IP لتسجيل الدخول أو User ID لتغيير كلمة السر.
-attempt_tracker: Dict[str, Any] = {}
+class RateLimitService:
+    # =======================================================
+    # إعدادات تقييد المعدل الافتراضية
+    # =======================================================
+    MAX_ATTEMPTS = 5
+    LOCKOUT_DURATION = timedelta(minutes=5)
+    
+    # الذاكرة المؤقتة لتتبع المحاولات (Key -> بيانات المحاولة)
+    _attempt_tracker: Dict[str, Dict[str, Any]] = {}
 
-# إعدادات تقييد المعدل
-MAX_ATTEMPTS = 5
-LOCKOUT_DURATION = timedelta(minutes=5)
+    @classmethod
+    def initialize_rate_limiter(cls) -> None:
+        """إعادة تهيئة وتفريغ ذاكرة تتبع المحاولات."""
+        cls._attempt_tracker = {}
+        print("🚀 تم تهيئة وتنظيف نظام تقييد المعدل الذكي بنجاح.")
 
-def initialize_rate_limiter():
-    """تهيئة مبدئية (لا تفعل شيئًا في هذا المثال البسيط)"""
-    print("تم تهيئة نظام تقييد المعدل البسيط.")
-    global attempt_tracker
-    attempt_tracker = {}
+    @staticmethod
+    def get_client_ip(request: Request) -> str:
+        """الحصول على عنوان IP الحقيقي للعميل، مع مراعاة خوادم الـ Proxy (مثل Cloudflare أو Render)."""
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            # في حال وجود سلسلة من الـ IPs عبر الـ Proxy، نأخذ الأول دائماً وهو العميل الحقيقي
+            return forwarded.split(",")[0].strip()
+        return request.client.host if request.client else "127.0.0.1"
 
-def get_client_ip(request: Request) -> str:
-    """الحصول على عنوان IP للعميل، مع مراعاة Proxy (مثل Render)"""
-    return request.headers.get("x-forwarded-for") or request.client.host
+    @classmethod
+    def rate_limit_attempt(cls, key: str) -> None:
+        """
+        تطبيق تقييد المعدل على أساس مفتاح مخصص (مثل IP للعميل، أو معرف المستخدم User ID).
+        يرفع HTTPException برمز 429 في حال تخطي الحد المسموح.
+        """
+        now = datetime.now()
 
-def rate_limit_attempt(key: str):
-    """
-    يطبق تقييد المعدل على أساس مفتاح (IP أو User ID).
-    """
-    now = datetime.now()
+        if key in cls._attempt_tracker:
+            attempt_data = cls._attempt_tracker[key]
+            last_attempt_time = attempt_data['last_attempt']
+            attempts_count = attempt_data['count']
 
-    if key in attempt_tracker:
-        attempt_data = attempt_tracker[key]
-        last_attempt_time = attempt_data['last_attempt']
-        attempts_count = attempt_data['count']
+            # 1. تحقق مما إذا كان المستخدم داخل فترة الحظر (Lockout) حالياً
+            if attempts_count >= cls.MAX_ATTEMPTS and (now - last_attempt_time) < cls.LOCKOUT_DURATION:
+                time_left = cls.LOCKOUT_DURATION - (now - last_attempt_time)
+                seconds_left = max(int(time_left.total_seconds()), 1)
+                
+                # رفع الخطأ الأمني القياسي مع إرجاع رأس Retry-After لإعلام المتصفح بفترة الانتظار
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"تم تجاوز الحد الأقصى للمحاولات المسموحة. يرجى الانتظار {seconds_left} ثانية قبل إعادة المحاولة.",
+                    headers={"Retry-After": str(seconds_left)}
+                )
+            
+            # 2. إذا انتهت فترة الحظر تماماً، نقوم بإعادة تعيين العداد للبدء من جديد
+            elif (now - last_attempt_time) >= cls.LOCKOUT_DURATION:
+                cls._attempt_tracker[key] = {'count': 1, 'last_attempt': now}
+            
+            # 3. إذا لم يصل للحد الأقصى وما زال يحاول في فترة قريبة، نزيد العداد ونحدث وقت آخر محاولة
+            else:
+                cls._attempt_tracker[key]['count'] += 1
+                cls._attempt_tracker[key]['last_attempt'] = now
 
-        # 1. تحقق من انتهاء فترة القفل
-        if attempts_count >= MAX_ATTEMPTS and (now - last_attempt_time) < LOCKOUT_DURATION:
-            time_left = LOCKOUT_DURATION - (now - last_attempt_time)
-            # 💡 يتم إرجاع رأس Retry-After في HTTP 429
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"تم تجاوز الحد الأقصى للمحاولات. يرجى الانتظار {time_left.seconds} ثانية قبل المحاولة مرة أخرى.",
-                headers={"Retry-After": str(time_left.seconds)}
-            )
-        
-        # 2. إذا انتهت فترة القفل، إعادة تعيين العداد
-        elif (now - last_attempt_time) >= LOCKOUT_DURATION:
-            attempt_tracker[key] = {'count': 1, 'last_attempt': now}
-        
-        # 3. زيادة العداد إذا لم يكن مقفولاً
         else:
-            attempt_tracker[key]['count'] += 1
-            attempt_tracker[key]['last_attempt'] = now
+            # تسجيل المحاولة الأولى للمفتاح
+            cls._attempt_tracker[key] = {'count': 1, 'last_attempt': now}
 
-    else:
-        # أول محاولة
-        attempt_tracker[key] = {'count': 1, 'last_attempt': now}
-
-def reset_attempts(key: str):
-    """إعادة تعيين عداد المحاولات الفاشلة بعد عملية ناجحة (تسجيل دخول، تغيير كلمة سر)."""
-    if key in attempt_tracker:
-        del attempt_tracker[key]        
+    @classmethod
+    def reset_attempts(cls, key: str) -> None:
+        """إعادة تعيين العداد وحذف السجل فوراً بعد عملية نجاح (مثل: تسجيل دخول صحيح، أو تغيير ناجح لكلمة السر)."""
+        if key in cls._attempt_tracker:
+            del cls._attempt_tracker[key]

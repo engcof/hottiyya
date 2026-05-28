@@ -6,11 +6,9 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from services.gallery_service import GalleryService
 from urllib.parse import urlparse
 from core.templates import templates
-from security.csrf import generate_csrf_token, verify_csrf_token
-from security.session import set_cache_headers,get_page_context
-from utils.has_permissions import can
+from security.session import SessionService
 from services.gallery_service import upload_to_cloudinary, GalleryService
-from services.analytics import log_action
+from services.analytics_service import AnalyticsService
 
 router = APIRouter(prefix="/gallery", tags=["gallery"])
 
@@ -23,7 +21,7 @@ async def get_gallery(
     page: int = Query(1, ge=1), # استقبال رقم الصفحة
     success: Optional[str] = Query(None)
 ):
-    cxt = get_page_context(request,additional_perms=["view_tree", "add_gallery", "delete_gallery"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_gallery", "delete_gallery"])
     per_page = 12
     
     # جلب الصور والإجمالي من السيرفس
@@ -51,12 +49,12 @@ async def get_gallery(
         "success": messages.get(success)
     })
     response = templates.TemplateResponse("gallery/index.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 @router.get("/add", response_class=HTMLResponse)
 async def add_image_page(request: Request):
-    cxt = get_page_context(request, additional_perms=["view_tree", "add_gallery"])
+    cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "add_gallery"])
     if not cxt:
         return RedirectResponse(url="/gallery/?error=unauthorized", status_code=303)
 
@@ -66,7 +64,7 @@ async def add_image_page(request: Request):
          return RedirectResponse(url="/gallery/?error=unauthorized", status_code=303)
 
     response = templates.TemplateResponse("gallery/add.html", cxt) # نمرر cxt مباشرة لأنه يحتوي على csrf_token
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
    
@@ -78,14 +76,14 @@ async def add_new_image(
     category: str = Form(None),
     csrf_token: str = Form(...)
 ):
-    cxt = get_page_context(request,additional_perms=[ "add_gallery"])
+    cxt = SessionService.get_page_context(request,additional_perms=[ "add_gallery"])
     user = cxt["user"]
     edited = cxt.get("perms", {}).get("add_gallery", False)
     if not edited:
         raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
     
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     # 2. تنظيف العنوان والتحقق منه
     title = title.strip()
@@ -99,7 +97,7 @@ async def add_new_image(
         })
         
         response = templates.TemplateResponse("gallery/add.html",  context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
       
     if title[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", title):
@@ -126,7 +124,7 @@ async def add_new_image(
             })
             
             response = templates.TemplateResponse("gallery/add.html",  context)
-            set_cache_headers(response)
+            SessionService.set_cache_headers(response)
             return response
           
         # 4. الحفظ في قاعدة البيانات باستخدام الرابط الناتج
@@ -138,7 +136,7 @@ async def add_new_image(
         )
 
         # 5. تسجيل النشاط (البصمة الاحترافية لـ engcof)
-        log_action(
+        AnalyticsService.log_action(
             user_id=user['id'],
             action="إضافة صورة",
             details=f"تم رفع صورة بعنوان '{title}' بنجاح إلى المعرض"
@@ -157,7 +155,7 @@ async def add_new_image(
         })
         
         response = templates.TemplateResponse("gallery/add.html",  context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
        
 
@@ -168,7 +166,7 @@ async def delete_photo(
     page: int = Query(1), # استقبال رقم الصفحة الحالية
     category: str = Query(None) # استقبال التصنيف الحالي إن وجد
 ):
-    cxt = get_page_context(request,additional_perms=[ "delete_gallery"])
+    cxt = SessionService.get_page_context(request,additional_perms=[ "delete_gallery"])
     user = cxt["user"]
     perms = cxt.get("perms", {})
     deleted = perms.get("delete_gallery", False)
@@ -178,12 +176,12 @@ async def delete_photo(
     
     # 2. التحقق من CSRF
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
     
     try:
         if GalleryService.delete_image(image_id):
             # تسجيل النشاط
-            log_action(
+            AnalyticsService.log_action(
                 user_id=user['id'],
                 action="حذف صورة",
                 details=f"تم حذف مادة من المعرض (ID: {image_id}) وإزالتها من السحابة"

@@ -2,9 +2,8 @@ from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException,Qu
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from services.news_service import NewsService
-from services.analytics import log_action
-from security.csrf import verify_csrf_token
-from security.session import set_cache_headers,get_page_context
+from services.analytics_service import AnalyticsService
+from security.session import SessionService
 from core.templates import templates
 
 import os
@@ -30,7 +29,7 @@ def is_safe_html(content):
 # === عرض الأخبار (القائمة) ===
 @router.get("/", response_class=HTMLResponse)
 async def list_news(request: Request, page: int = Query(1, ge=1), q: str = Query(None)):
-    cxt = get_page_context(request,additional_perms=["view_tree", "add_news", "delete_news", "edit_news"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_news", "delete_news", "edit_news"])
     
     # 1. جلب البيانات من السيرفس
     limit = 10
@@ -50,13 +49,13 @@ async def list_news(request: Request, page: int = Query(1, ge=1), q: str = Query
     
     # 4. إرسال القالب (لاحظ تمرير context فقط)
     response = templates.TemplateResponse("news/list.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 # === عرض تفاصيل الخبر ===
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_news(request: Request, id: int):
-    cxt = get_page_context(request,additional_perms=["view_tree", "add_news", "delete_news", "edit_news"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_news", "delete_news", "edit_news"])
     
     # جلب الخبر من السيرفس
     item = NewsService.get_news_by_id(id)
@@ -71,13 +70,13 @@ async def view_news(request: Request, id: int):
        "item": item,
     })
     response = templates.TemplateResponse("news/detail.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 # === إضافة خبر ===
 @router.get("/add", response_class=HTMLResponse)
 async def add_news_form(request: Request):
-    cxt = get_page_context(request,additional_perms=["view_tree", "add_news"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_news"])
     user = cxt["user"]
     if not user:
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
@@ -94,7 +93,7 @@ async def add_news_form(request: Request):
           "form_data": {} # إضافة form_data فارغة
     })
     response = templates.TemplateResponse("news/add.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 @router.post("/add")
@@ -105,7 +104,7 @@ async def add_news(
     author: str = Form(...),
     image: UploadFile = File(None) # هذا الحقل سيستقبل الصورة أو الفيديو
 ):
-    cxt = get_page_context(request,additional_perms=[ "add_news"])
+    cxt = SessionService.get_page_context(request,additional_perms=[ "add_news"])
     user = cxt["user"]
     if not user :
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
@@ -115,7 +114,7 @@ async def add_news(
         raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
     
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     # التنظيف والتحقق
     title_stripped = title.strip()
@@ -155,7 +154,7 @@ async def add_news(
             }
         })
         response = templates.TemplateResponse("news/add.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
       
     try:
@@ -168,7 +167,7 @@ async def add_news(
         )
 
         # تسجيل النشاط في السجل الشامل
-        log_action(
+        AnalyticsService.log_action(
             user_id=user["id"],
             action="إضافة خبر",
             details=f"قام {user['username']} بنشر خبر جديد بعنوان: {title[:50]}..."
@@ -182,7 +181,7 @@ async def add_news(
 # === تعديل الخبر ===
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_news_form(request: Request, id: int):
-    cxt = get_page_context(request,additional_perms=["edit_news"])
+    cxt = SessionService.get_page_context(request,additional_perms=["edit_news"])
     user = cxt["user"]
     if not user :
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
@@ -204,7 +203,7 @@ async def edit_news_form(request: Request, id: int):
           "item": item,
     })
     response = templates.TemplateResponse("news/edit.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 @router.post("/edit/{id:int}")
@@ -217,7 +216,7 @@ async def update_news(
     image: UploadFile = File(None),
     page: int = Form(1)
 ):
-    cxt = get_page_context(request,additional_perms=[ "edit_news"])
+    cxt = SessionService.get_page_context(request,additional_perms=[ "edit_news"])
     user = cxt["user"]
     if not user :
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
@@ -229,7 +228,7 @@ async def update_news(
 
     # تحقق من CSRF
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     # التنظيف والتحقق
     title_stripped = title.strip()
@@ -276,7 +275,7 @@ async def update_news(
             "error": error
         })
         response = templates.TemplateResponse("news/edit.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
 
     try:
@@ -291,7 +290,7 @@ async def update_news(
         
         if success:
             # تسجيل النشاط في السجل الشامل
-            log_action(
+            AnalyticsService.log_action(
                 user_id=user["id"],
                 action="تعديل خبر",
                 details=f"قام {user['username']} بتعديل الخبر رقم ({id}) بعنوان: {title_stripped[:30]}..."
@@ -304,7 +303,7 @@ async def update_news(
 
 @router.post("/delete/{id:int}")
 async def delete_news(request: Request, id: int):
-    cxt = get_page_context(request,additional_perms=["delete_news"])
+    cxt = SessionService.get_page_context(request,additional_perms=["delete_news"])
     user = cxt["user"]
     if not user :
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
@@ -316,7 +315,7 @@ async def delete_news(request: Request, id: int):
 
     # التحقق من CSRF
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     try:
         # تنفيذ الحذف عبر السيرفس
@@ -324,7 +323,7 @@ async def delete_news(request: Request, id: int):
         
         if success:
             # تسجيل العملية في السجل الشامل
-            log_action(
+            AnalyticsService.log_action(
                 user_id=user["id"],
                 action="حذف خبر",
                 details=f"قام {user['username']} بحذف الخبر رقم ({id}) نهائياً مع ملفاته."

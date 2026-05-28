@@ -1,3 +1,4 @@
+# utils/normalize.py
 import re
 
 def normalize_arabic(text):

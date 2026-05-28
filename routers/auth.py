@@ -2,12 +2,11 @@
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from security.hash import check_password
-from security.session import set_cache_headers,get_page_context
-from security.csrf import  verify_csrf_token
+from security.session import SessionService
 from services.auth_service import AuthService
 from core.templates import templates
 import re  
-from security.rate_limit import rate_limit_attempt, reset_attempts 
+from security.rate_limit import RateLimitService
 router = APIRouter(prefix="/auth")
 
 # التعبير النمطي: لا تبدأ بـ: مسافة، أو أحد الرموز [ - _ . @ # ! $ % ^ & * ( ) ]
@@ -20,7 +19,7 @@ SYMBOL_START_PATTERN = r"^[-\s_\.\@\#\!\$\%\^\&\*\(\)]"
 @router.get("/login")
 async def login_page(request: Request, error: str = None, success: str = None):
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_page_context(request)
+    context = SessionService.get_page_context(request)
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
@@ -28,7 +27,7 @@ async def login_page(request: Request, error: str = None, success: str = None):
            "success": success
     })
     response = templates.TemplateResponse("auth/login.html",context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
   
 
@@ -43,9 +42,9 @@ async def login(
     csrf_token: str = Form(...),
 ):
     # 🚨 1. تقييد المعدل (الخطوة الجديدة)
-    rate_limit_attempt(request)
+    RateLimitService.rate_limit_attempt(RateLimitService.get_client_ip(request))
     # 1. الأمان أولاً: التحقق من CSRF
-    verify_csrf_token(request, csrf_token)
+    SessionService.verify_csrf_token(request, csrf_token)
     
     error = None
 
@@ -79,7 +78,7 @@ async def login(
   
     if user_data and check_password(password, user_data["password"]):
         # 💡 إعادة تعيين العداد عند النجاح
-        reset_attempts(request)
+        RateLimitService.reset_attempts(RateLimitService.get_client_ip(request))
         # تسجيل الدخول الصحيح
         request.session["user"] = {
             "username": user_data["username"],
@@ -103,7 +102,7 @@ async def login(
 async def logout(request: Request):
     request.session.clear()
     response = RedirectResponse(url="/", status_code=303)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
    
 # ------------------------------
@@ -112,7 +111,7 @@ async def logout(request: Request):
 @router.get("/register")
 async def register_page(request: Request, error: str = None, success: str = None):
     # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_page_context(request)
+    context = SessionService.get_page_context(request)
     
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
@@ -120,7 +119,7 @@ async def register_page(request: Request, error: str = None, success: str = None
         "success": success
     })
     response = templates.TemplateResponse( "auth/register.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
     
 # ------------------------------
@@ -135,7 +134,7 @@ async def register(
     csrf_token: str = Form(...),
 ):
     # 1. التحقق من CSRF
-    verify_csrf_token(request, csrf_token)
+    SessionService.verify_csrf_token(request, csrf_token)
     
     # 2. التحقق من تطابق كلمات المرور قبل الذهاب للسيرفس
     if password != confirm_password:

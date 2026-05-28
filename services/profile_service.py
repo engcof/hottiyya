@@ -1,52 +1,14 @@
 # profile_service.py
-import re
-import math
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
-from security.hash import hash_password, check_password
 
 class ProfileService:
-    # --- إعدادات الأمان ---
-    SYMBOL_START_PATTERN = r"^[-\s_\.\@\#\!\$\%\^\&\*\(\)\{\}\[\]\<\>]"
-
-    # ---------------------------------------------------------
-    # 1. إدارة الحساب والأمان
-    # ---------------------------------------------------------
-    @staticmethod
-    def change_user_password(user_id: int, current_password: str, new_password: str) -> Tuple[bool, str]:
-        if not new_password or len(new_password) < 6:
-            return False, "كلمة السر الجديدة يجب أن تكون 6 أحرف على الأقل."
-
-        if re.match(ProfileService.SYMBOL_START_PATTERN, new_password):
-            return False, "كلمة السر الجديدة لا يجب أن تبدأ برمز أو مسافة."
-
-        try:
-            with get_db_context() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT password FROM users WHERE id = %s", (user_id,))
-                    db_row = cur.fetchone()
-                    
-                    if not db_row or not check_password(current_password, db_row[0]):
-                        return False, "كلمة السر الحالية غير صحيحة."
-
-                    cur.execute("UPDATE users SET password = %s WHERE id = %s", (hash_password(new_password), user_id))
-                    conn.commit()
-                    return True, "تم تحديث كلمة المرور بنجاح!"
-        except Exception as e:
-            print(f"❌ Error changing password: {e}")
-            return False, "حدث خطأ في النظام أثناء تحديث كلمة المرور."
-
-    # ---------------------------------------------------------
-    # 2. إدارة الإشعارات والرسائل
-    # ---------------------------------------------------------
     @staticmethod
     def get_inbox_data(user_id: int, limit: int, offset: int) -> Dict:
-        """جلب الرسائل والإحصائيات في دالة واحدة لتقليل استعلامات قاعدة البيانات."""
         try:
             with get_db_context() as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    # جلب الرسائل
                     cur.execute("""
                         SELECT n.id, n.message, n.created_at, n.is_read, n.sender_id,
                                COALESCE(u.username, 'النظام') as sender_username 
@@ -57,7 +19,6 @@ class ProfileService:
                     """, (user_id, limit, offset))
                     messages = cur.fetchall()
 
-                    # جلب الأعداد (الإجمالي وغير المقروء)
                     cur.execute("""
                         SELECT 
                             COUNT(id) as total,
@@ -80,11 +41,17 @@ class ProfileService:
         try:
             with get_db_context() as conn:
                 with conn.cursor() as cur:
+                    # 💡 التحقق من وجود المستلم الفعلي في قاعدة البيانات لمنع أخطاء الحشو العشوائي الكاذبة
+                    cur.execute("SELECT id FROM users WHERE id = %s", (recipient_id,))
+                    if not cur.fetchone():
+                        return False
+
                     cur.execute("INSERT INTO notifications (sender_id, recipient_id, message) VALUES (%s, %s, %s)", 
                                 (sender_id, recipient_id, message))
                     conn.commit()
             return True
-        except Exception:
+        except Exception as e:
+            print(f"❌ Error sending message: {e}")
             return False
 
     @staticmethod
@@ -105,11 +72,9 @@ class ProfileService:
                 with conn.cursor() as cur:
                     cur.execute("UPDATE notifications SET is_read = TRUE WHERE id = %s AND recipient_id = %s", (notification_id, user_id))
                     conn.commit()
-        except Exception: pass
+        except Exception: 
+            pass
 
-    # ---------------------------------------------------------
-    # 3. وظائف الإدارة (Admin Tasks)
-    # ---------------------------------------------------------
     @staticmethod
     def get_all_users_for_admin() -> List[Dict]:
         try:
@@ -119,4 +84,3 @@ class ProfileService:
                     return cur.fetchall()
         except Exception:
             return []
-

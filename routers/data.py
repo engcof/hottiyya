@@ -10,7 +10,7 @@ from core.templates import templates
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
 from starlette.background import BackgroundTask 
-from security.session import set_cache_headers, get_admin_context, get_page_context
+from security.session import SessionService
 
 # استيراد خدمات العائلة لجلب البيانات من قاعدة البيانات
 from services.family_service import FamilyService
@@ -64,7 +64,7 @@ def get_database_url():
 @router.get("/export/family-tree/") # مسار إضافي مرن لدعم التصدير الكامل
 async def export_family_tree(request: Request, code: str = None):
     """توليد وتصدير شجرة العائلة أو فرع محدد كملف CSV منسق ومتوافق مع Excel."""
-    user, _ = get_admin_context(request)
+    user, _ = SessionService.get_admin_context(request)
     if not user:
         raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
         
@@ -120,7 +120,7 @@ async def export_family_tree(request: Request, code: str = None):
 @router.get("/export/table-backup-txt")
 async def export_table_backup(request: Request):
     """توليد نسخة احتياطية نصية سريعة لجدول العائلة."""
-    user, _ = get_admin_context(request)
+    user, _ = SessionService.get_admin_context(request)
     if not user:
         raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
         
@@ -143,7 +143,7 @@ async def export_table_backup(request: Request):
 
 @router.get("/import-data", response_class=HTMLResponse)
 async def import_page(request: Request):
-    cxt = get_page_context(request)
+    cxt = SessionService.get_page_context(request)
     if not cxt["is_admin"]:
         raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
         
@@ -151,7 +151,7 @@ async def import_page(request: Request):
     context.update({"message": None})
     
     response = templates.TemplateResponse("data/import_data.html", context) # تم تعديل اسم المجلد الموحد family
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
    
 
@@ -161,19 +161,19 @@ async def import_data(
     dump_file: UploadFile = File(...),
     password: str = Form(...),
 ):
-    cxt = get_page_context(request)
+    cxt = SessionService.get_page_context(request)
     if not cxt["is_admin"] or password != IMPORT_PASSWORD:
         context = {**cxt}
         context.update({"message": "كلمة المرور غير صحيحة أو ليس لديك صلاحية"})
         response = templates.TemplateResponse("data/import_data.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
       
     if not dump_file.filename.lower().endswith(('.dump', '.sql')):
         context = {**cxt}
         context.update({"message": "الملف لازم يكون بصيغة .dump أو .sql"})
         response = templates.TemplateResponse("data/import_data.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
        
     file_path = f"/tmp/{dump_file.filename}_{datetime.now().timestamp()}" 
@@ -214,20 +214,20 @@ async def import_data(
     context = {**cxt}
     context.update({"message": message})
     response = templates.TemplateResponse("data/import_data.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
    
 
 @router.post("/export-data")
 async def export_data_post(request: Request, password: str = Form(...)):
     export_path = None 
-    cxt = get_page_context(request)
+    cxt = SessionService.get_page_context(request)
     
     if not cxt["is_admin"] or password != IMPORT_PASSWORD:
         context = {**cxt}
         context.update({"message": "فشل التصدير: كلمة المرور غير صحيحة أو ليس لديك صلاحية."})
         response = templates.TemplateResponse("data/import_data.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
  
     database_url = get_database_url()
@@ -235,7 +235,7 @@ async def export_data_post(request: Request, password: str = Form(...)):
         context = {**cxt}
         context.update({"message": "فشل التصدير: DATABASE_URL غير معرّف أو متغيرات القاعدة مفقودة."})
         response = templates.TemplateResponse("data/import_data.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
        
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -254,34 +254,34 @@ async def export_data_post(request: Request, password: str = Form(...)):
         if result.returncode != 0:
             error_details = result.stderr.replace(chr(10), '<br>')
             print(f"PG_DUMP FAILED: {result.stderr}") 
-            cleanup_file(export_path)
+            SessionService.cleanup_file(export_path)
             
             context = {**cxt}
             context.update({"message": f"فشل التصدير (Code {result.returncode}):<br><pre dir='ltr'>{error_details[-1500:]}</pre>"})
             response = templates.TemplateResponse("data/import_data.html", context)
-            set_cache_headers(response)
+            SessionService.set_cache_headers(response)
             return response
          
         if not os.path.exists(export_path) or os.path.getsize(export_path) < 100:
             context = {**cxt}
             context.update({"message": "فشل التصدير: ملف النسخة الاحتياطية فارغ أو مفقود."})
             response = templates.TemplateResponse("data/import_data.html", context)
-            set_cache_headers(response)
+            SessionService.set_cache_headers(response)
             return response
           
         return FileResponse(
             path=export_path,
             filename=download_filename,
             media_type="application/octet-stream",
-            background=BackgroundTask(cleanup_file, export_path)
+            background=BackgroundTask(SessionService.cleanup_file, export_path)
         )
 
     except Exception as e:
-        cleanup_file(export_path)
+        SessionService.cleanup_file(export_path)
         context = {**cxt}
         context.update({"message": f"فشل التصدير (خطأ غير متوقع): {str(e)}"})
         response = templates.TemplateResponse("data/import_data.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
     
 # =====================================================================
@@ -290,7 +290,7 @@ async def export_data_post(request: Request, password: str = Form(...)):
 @router.get("/export-tree", response_class=HTMLResponse)
 async def export_tree_page(request: Request):
     """عرض الصفحة المنفصلة المخصصة لإدخال كود وتصدير الشجرة."""
-    cxt = get_page_context(request)
+    cxt = SessionService.get_page_context(request)
     if not cxt["is_admin"]: 
         return RedirectResponse("/auth/login", status_code=303)
 
@@ -301,5 +301,5 @@ async def export_tree_page(request: Request):
     
     # استدعاء التمبليت من مجلد البيانات الموحد
     response = templates.TemplateResponse("data/export_tree.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response    

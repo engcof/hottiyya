@@ -13,8 +13,8 @@
         <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
             <h1 class="page-title">قائمة المستخدمين والصلاحيات</h1>
             <div class="header-actions">
-                <a href="/admin" class="btn-back" style="background-color: var(--slate); color: white;">
-                    <i class="fas fa-home"></i> العودة للوحة الإدارة
+                <a href="{{ back_url }}" class="btn-back" style="background-color: var(--slate); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 8px 15px; border-radius: 4px;">
+                    <i class="{{ back_icon }}"></i> {{ back_text }}
                 </a>
             </div>
         </div>
@@ -32,7 +32,17 @@
                 <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
             </div>
         {% endif %}
-
+         <div class="search-box-container" style="margin-bottom: 20px;">
+            <form method="get" action="/admin/users" style="display: flex; gap: 10px; max-width: 400px;">
+                <input type="hidden" name="from" value="{{ from_page }}">
+                <input type="text" name="search" value="{{ search_query }}" placeholder="🔍 ابحث عن مستخدم بالاسم..." 
+                    class="small-input" style="padding: 10px; flex: 1; font-size: 0.95rem;">
+                <button type="submit" class="btn-small edit" style="background-color: var(--primary); padding: 0 15px;">بحث</button>
+                {% if search_query %}
+                    <a href="/admin/users?from={{ from_page }}" class="btn-small delete" style="background-color: var(--slate); text-decoration: none; padding: 10px; line-height: 1.5;">إعادة تعيين</a>
+                {% endif %}
+            </form>
+        </div>
         <div class="admin-card full">
             <div class="table-wrapper">
                 <table class="admin-table">
@@ -41,10 +51,19 @@
                             <th>اسم المستخدم</th>
                             <th>الدور</th>
                             <th>الصلاحيات الحالية</th>
+                            
+                            {% if is_admin or perms.edit_users %}
                             <th>تعديل البيانات الأساسية</th>
-                            <th>إضافة صلاحية جديدة</th>
+                            {% endif %}
+                            
+                            {% if is_admin or perms.grant_permissions %}
+                            <th>منح صلاحية</th>
                             <th>إزالة صلاحية</th>
+                            {% endif %}
+                            
+                            {% if is_admin or perms.delete_users %}
                             <th style="text-align: center;">إجراء الحذف</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -75,6 +94,7 @@
                                 {% endif %}
                             </td>
                             
+                            {% if is_admin or perms.edit_users %}
                             <td>
                                 <form method="post" action="/admin/edit_user" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -82,25 +102,43 @@
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
                                     
                                     <input type="text" name="username" value="{{ u.username }}" class="small-input">
-                                    <select name="role" class="small-select">
-                                        <option value="manager" {% if u.role == 'manager' %}selected{% endif %}>مدير</option>
-                                        <option value="user" {% if u.role == 'user' %}selected{% endif %}>مستخدم</option>
-                                    </select>
+                                  
                                     <button type="submit" class="btn-small edit" style="background-color: var(--primary);"><i class="fas fa-save"></i> حفظ</button>
                                 </form>
                             </td>
+                            {% endif %}
                             
-                            <td>
+                            {% if is_admin or perms.grant_permissions %}
+                           <td>
                                 <form method="post" action="/admin/give_permission" class="inline-form">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
                                     
-                                    <select name="permission_id" class="small-select">
+                                    <select name="permission_id" class="small-select" style="max-width: 180px;" required>
+                                        <option value="" disabled selected>اختر صلاحية...</option>
+                                        
+                                        {% set current_cat = namespace(name='') %}
                                         {% for perm in permissions %}
-                                        <option value="{{ perm.id }}">{{ perm.name }}</option>
+                                            {% if perm.category != current_cat.name %}
+                                                {% if current_cat.name != '' %}
+                                                    </optgroup>
+                                                {% endif %}
+                                                {% set current_cat.name = perm.category %}
+                                                <optgroup label="📁 قسم: {{ perm.category }}">
+                                            {% endif %}
+                                            
+                                            <option value="{{ perm.id }}">{{ perm.name }}</option>
+                                            
+                                            {# تضمن إغلاق التجميع في نهاية اللوب دائماً #}
+                                            {% if loop.last %}
+                                                </optgroup>
+                                            {% endif %}
+                                        {% else %}
+                                            <option disabled>لا توجد صلاحيات متاحة للمنح</option>
                                         {% endfor %}
                                     </select>
+                                    
                                     <button type="submit" class="btn-small add" style="background-color: var(--accent);"><i class="fas fa-plus"></i> منح</button>
                                 </form>
                             </td>
@@ -111,13 +149,36 @@
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
                                     
-                                    <select name="permission_id" class="small-select">
+                                    <select name="permission_id" class="small-select" style="max-width: 180px;" required>
                                         {% if user_permissions[u.id] %}
+                                            <option value="" disabled selected>اختر لسحبها...</option>
+                                            {% set current_cat_remove = namespace(name='') %}
+                                            {% set has_selectable_perm = namespace(value=false) %}
+                                            
                                             {% for perm in permissions %}
                                                 {% if perm.name in user_permissions[u.id] %}
+                                                    {% set has_selectable_perm.value = true %}
+                                                    
+                                                    {% if perm.category != current_cat_remove.name %}
+                                                        {% if current_cat_remove.name != '' %}
+                                                            </optgroup>
+                                                        {% endif %}
+                                                        {% set current_cat_remove.name = perm.category %}
+                                                        <optgroup label="📁 قسم: {{ perm.category }}">
+                                                    {% endif %}
+                                                    
                                                     <option value="{{ perm.id }}">{{ perm.name }}</option>
                                                 {% endif %}
+                                                
+                                                {# إغلاق ذكي للمجموعة المفتوحة فقط #}
+                                                {% if loop.last and current_cat_remove.name != '' %}
+                                                    </optgroup>
+                                                {% endif %}
                                             {% endfor %}
+                                            
+                                            {% if not has_selectable_perm.value %}
+                                                <option disabled selected>صلاحيات محمية لا يمكنك سحبها</option>
+                                            {% endif %}
                                         {% else %}
                                             <option disabled selected>لا توجد صلاحيات</option>
                                         {% endif %}
@@ -128,7 +189,9 @@
                                     </button>
                                 </form>
                             </td>
+                            {% endif %}
                             
+                            {% if is_admin or perms.delete_users %}
                             <td style="text-align: center;">
                                 <form method="post" action="/admin/delete_user" class="inline-form" style="justify-content: center;">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -140,6 +203,7 @@
                                     </button>
                                 </form>
                             </td>
+                            {% endif %}
                         </tr>
                         {% else %}
                         <tr>
@@ -150,16 +214,32 @@
                 </table>
             </div>
             
-            <div class="pagination">
+            <div class="pagination" style="display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 20px;">
+    
+                {# زر الانتقال لـ البداية #}
                 {% if current_page > 1 %}
-                    <a href="/admin/users?page={{ current_page - 1 }}" class="page-link">السابق</a>
+                    <a href="/admin/users?page=1&search={{ search_query }}&from={{ from_page }}" class="page-link" title="الصفحة الأولى">&laquo;</a>
+                    <a href="/admin/users?page={{ current_page - 1 }}&search={{ search_query }}&from={{ from_page }}" class="page-link">السابق</a>
                 {% endif %}
-                
-                <span class="page-link active">الصفحة {{ current_page }} من {{ total_pages }}</span>
-                
+
+                {# حلقة تكرار أرقام الصفحات ديناميكياً #}
+                {% for p in range(1, total_pages + 1) %}
+                    {% if p == current_page %}
+                        <span class="page-link active" style="background-color: var(--primary); color: white; border-color: var(--primary);">{{ p }}</span>
+                    {% else %}
+                        {# عرض أرقام الصفحات القريبة فقط لعدم زحام التصميم إن كانت كثيرة #}
+                        {% if p >= current_page - 3 and p <= current_page + 3 %}
+                            <a href="/admin/users?page={{ p }}&search={{ search_query }}&from={{ from_page }}" class="page-link">{{ p }}</a>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {# زر الانتقال لـ النهاية #}
                 {% if current_page < total_pages %}
-                    <a href="/admin/users?page={{ current_page + 1 }}" class="page-link">التالي</a>
+                    <a href="/admin/users?page={{ current_page + 1 }}&search={{ search_query }}&from={{ from_page }}" class="page-link">التالي</a>
+                    <a href="/admin/users?page={{ total_pages }}&search={{ search_query }}&from={{ from_page }}" class="page-link" title="الصفحة الأخيرة">&raquo;</a>
                 {% endif %}
+                
             </div>
             
         </div>

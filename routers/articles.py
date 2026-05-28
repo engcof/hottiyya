@@ -1,10 +1,8 @@
 from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from security.session import set_cache_headers,get_page_context
-from security.csrf import verify_csrf_token
-from utils.has_permissions import can
-from services.analytics import log_action
+from security.session import SessionService
+from services.analytics_service import AnalyticsService
 from services.article_service import ArticleService
 import os
 from core.templates import templates
@@ -27,7 +25,7 @@ def is_safe_html(content):
 # === عرض قائمة المقالات (باستخدام الخدمة) ===
 @router.get("/", response_class=HTMLResponse)
 async def list_articles(request: Request, page: int = 1):
-    cxt = get_page_context(request,additional_perms=["view_tree", "add_article", "delete_article"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_article", "delete_article"])
     
     # استدعاء الخدمة لجلب البيانات والترقيم
     articles, total_pages = ArticleService.get_all_articles(page=page, per_page=12)
@@ -43,7 +41,7 @@ async def list_articles(request: Request, page: int = 1):
         "has_next": page < total_pages
     })
     response = templates.TemplateResponse("articles/list.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
     
 # === 🌟 التوجيه إلى أحدث مقال (مسار ثابت) 🌟 ===
@@ -61,7 +59,7 @@ async def latest_article_redirect():
 # === عرض مقال + التعليقات ===
 @router.get("/{id:int}", response_class=HTMLResponse)
 async def view_article(request: Request, id: int):
-    cxt = get_page_context(request,additional_perms=["view_tree", "edit_article", "delete_article", "add_comment", "delete_comment"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "edit_article", "delete_article", "add_comment", "delete_comment"])
     
     article, comments = ArticleService.get_article_details(id)
     
@@ -75,13 +73,13 @@ async def view_article(request: Request, id: int):
        "article": article, "comments": comments,
     })
     response = templates.TemplateResponse("articles/detail.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 # === إضافة مقال ===
 @router.get("/add", response_class=HTMLResponse)
 async def add_article_form(request: Request):
-    cxt = get_page_context(request,additional_perms=["view_tree", "add_article"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_article"])
     user = cxt["user"]
     if not user:
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
@@ -99,19 +97,19 @@ async def add_article_form(request: Request):
        "form_data": {}
     })
     response = templates.TemplateResponse("articles/add.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 @router.post("/add")
 async def add_article(request: Request, title: str = Form(...),content: str = Form(...), image: UploadFile = File(None)):
-    cxt = get_page_context(request,additional_perms=["add_article"])
+    cxt = SessionService.get_page_context(request,additional_perms=["add_article"])
     user = cxt["user"]
     edited = cxt.get("perms", {}).get("add_article", False)
     if not edited:
         raise HTTPException(status_code=403, detail="لا تملك صلاحية النشر")
     # التحقق من CSRF والنظافة (كما في كودك)
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
     
     error = None
 
@@ -148,7 +146,7 @@ async def add_article(request: Request, title: str = Form(...),content: str = Fo
             "form_data": {"title": title, "content": content} 
         })
         response = templates.TemplateResponse("articles/add.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
     try:
         # في حالة أردت التأكد من إغلاق الملف يدوياً (اختياري لأن FastAPI يقوم بذلك أحياناً)
@@ -164,7 +162,7 @@ async def add_article(request: Request, title: str = Form(...),content: str = Fo
             await image.close() # إغلاق الملف بعد الانتهاء
 
         # 2. ✅ إضافة العملية لسجل النشاطات
-        log_action(
+        AnalyticsService.log_action(
             user_id=user["id"], 
             action="إضافة مقال", 
             details=f"تم نشر مقال جديد بعنوان: {title}"
@@ -178,7 +176,7 @@ async def add_article(request: Request, title: str = Form(...),content: str = Fo
 # === تعديل مقال ===
 @router.get("/edit/{id:int}", response_class=HTMLResponse)
 async def edit_article_form(request: Request, id: int):
-    cxt = get_page_context(request,additional_perms=["view_tree", "edit_article"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "edit_article"])
     if not cxt:
         return RedirectResponse(url="/articles/?error=unauthorized", status_code=303)
 
@@ -199,7 +197,7 @@ async def edit_article_form(request: Request, id: int):
         "article": articl,      
     })
     response = templates.TemplateResponse("articles/edit.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
     
   
@@ -212,7 +210,7 @@ async def update_article(
     content: str = Form(...), 
     image: UploadFile = File(None)
 ):
-    cxt = get_page_context(request,additional_perms=[ "edit_article"])
+    cxt = SessionService.get_page_context(request,additional_perms=[ "edit_article"])
     user = cxt["user"]
     # 🛡️ خط الدفاع الأخير: إذا حاول شخص تجاوز الـ GET وإرسال الطلب مباشرة
     is_allowed = cxt.get("perms", {}).get("edit_article", False)
@@ -220,7 +218,7 @@ async def update_article(
         raise HTTPException(status_code=403, detail="لا تملك صلاحية التعديل")
 
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     error = None
 
@@ -264,7 +262,7 @@ async def update_article(
            "error": error
         })
         response = templates.TemplateResponse("articles/edit.html", context)
-        set_cache_headers(response)
+        SessionService.set_cache_headers(response)
         return response
        
     # استكمال عملية حفظ التعديلات
@@ -275,7 +273,7 @@ async def update_article(
         image_file=image if image and image.filename else None
     )
     # 🌟 إضافة سجل النشاطات (Analytics) 
-    log_action(
+    AnalyticsService.log_action(
         user_id=user["id"], 
         action="تعديل مقال", 
         details=f"قام {user['username']} بتعديل المقال رقم ({id}) بعنوان: {title[:50]}..."
@@ -285,7 +283,7 @@ async def update_article(
 # === حذف مقال ===
 @router.post("/delete/{id:int}")
 async def delete_article(request: Request, id: int):
-    cxt = get_page_context(request,additional_perms=["view_tree", "delete_article"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "delete_article"])
     user = cxt["user"]
     perms = cxt.get("perms", {})
     deleted = perms.get("delete_article", False)
@@ -293,7 +291,7 @@ async def delete_article(request: Request, id: int):
         raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف المقال.")
 
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     # جلب عنوان المقال قبل الحذف لاستخدامه في سجل النشاطات
     article_data = ArticleService.get_article_details(id)
@@ -303,7 +301,7 @@ async def delete_article(request: Request, id: int):
     ArticleService.delete_article(id)
 
     # 🌟 تسجيل عملية الحذف في السجل
-    log_action(
+    AnalyticsService.log_action(
         user_id=user["id"], 
         action="حذف مقال", 
         details=f"قام {user['username']} بحذف المقال رقم ({id}) بعنوان: {title} مع كافة ملحقاته"
@@ -314,7 +312,7 @@ async def delete_article(request: Request, id: int):
 # === إضافة تعليق ===
 @router.post("/{id:int}/comment")
 async def add_comment(request: Request, id: int, content: str = Form(...)):
-    cxt = get_page_context(request,additional_perms=["view_tree", "add_comment"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_comment"])
     if not cxt:
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
 
@@ -326,7 +324,7 @@ async def add_comment(request: Request, id: int, content: str = Form(...)):
    
 
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     content_safe = html.escape(content.strip())
     
@@ -334,7 +332,7 @@ async def add_comment(request: Request, id: int, content: str = Form(...)):
     ArticleService.add_comment(id, user["id"], content_safe)
 
     # 🌟 تسجيل النشاط
-    log_action(
+    AnalyticsService.log_action(
         user_id=user["id"],
         action="إضافة تعليق",
         details=f"قام {user['username']} بالتعليق على المقال رقم ({id})"
@@ -345,7 +343,7 @@ async def add_comment(request: Request, id: int, content: str = Form(...)):
 # === حذف تعليق ===
 @router.post("/{article_id:int}/comment/{comment_id:int}/delete")
 async def delete_comment(request: Request, article_id: int, comment_id: int):
-    cxt = get_page_context(request,additional_perms=["view_tree", "delete_comment"])
+    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "delete_comment"])
     user = cxt["user"]
     perms = cxt.get("perms", {})
     deleted = perms.get("delete_comment", False)
@@ -353,7 +351,7 @@ async def delete_comment(request: Request, article_id: int, comment_id: int):
         raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف التعليق.")
 
 
-    verify_csrf_token(request, (await request.form()).get("csrf_token"))
+    SessionService.verify_csrf_token(request, (await request.form()).get("csrf_token"))
 
     # جلب بيانات التعليق للتحقق والتسجيل
     comment = ArticleService.get_comment_owner(comment_id)
@@ -362,7 +360,7 @@ async def delete_comment(request: Request, article_id: int, comment_id: int):
         
     allowed = (
         user.get("id") == comment["user_id"] or 
-        can(user, "delete_comment") # دالة can ستغطي الأدمن وصاحب الصلاحية
+        SessionService.can(user, "delete_comment") # دالة can ستغطي الأدمن وصاحب الصلاحية
     )
     if not allowed: raise HTTPException(403, "غير مسموح لك بالحذف")
 
@@ -370,7 +368,7 @@ async def delete_comment(request: Request, article_id: int, comment_id: int):
     ArticleService.delete_comment(comment_id)
 
     # 🌟 تسجيل النشاط
-    log_action(
+    AnalyticsService.log_action(
         user_id=user["id"],
         action="حذف تعليق",
         details=f"قام {user['username']} بحذف تعليق في المقال ({article_id}). نص التعليق: {comment['content'][:30]}..."

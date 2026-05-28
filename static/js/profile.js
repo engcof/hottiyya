@@ -1,5 +1,6 @@
-// static/js/profile.js
-
+// ==========================================
+// 1. منطق قراءة وإدارة الرسائل والمودال
+// ==========================================
 function handleOpenMessage(button) {
     if (!button) return;
     
@@ -8,23 +9,19 @@ function handleOpenMessage(button) {
     const fullText = button.getAttribute('data-message') || "";
     const isRead = button.getAttribute('data-is-read') === 'true';
 
-    // 1. عرض البيانات بأمان تام (XSS Protection)
     const modalSender = document.getElementById('modalSender');
     const fullMessageText = document.getElementById('fullMessageText');
     
     if (modalSender) modalSender.innerText = "رسالة من: " + sender;
     
-    // استخدام تكتيك التطهير النصي الآمن مع الحفاظ على الأسطر الجديدة
     if (fullMessageText) {
         fullMessageText.innerText = fullText;
-        fullMessageText.style.whiteSpace = "pre-line"; // ميزة CSS مذهلة تحول \n لأسطر جديدة دون استخدام innerHTML الخطر
+        fullMessageText.style.whiteSpace = "pre-line"; 
     }
     
-    // 2. إظهار النافذة
     const modal = document.getElementById('messageModal');
     if (modal) modal.style.display = "block";
 
-    // 3. التحديث الصامت عبر السيرفر (AJAX Fetch)
     if (!isRead && msgId) {
         fetch(`/profile/mark-read/${msgId}`, {
             method: 'POST',
@@ -44,10 +41,36 @@ function closeModal() {
     if (modal) modal.style.display = "none";
 }
 
-// [تصحيح جوهري] استخدام استماع الأحداث لتجنب قتل الأكواد الأخرى في الموقع من قِبل window.onclick
+// استماع للنقر خارج المودال لإغلاقه بأمان
 window.addEventListener('click', function(event) {
     const modal = document.getElementById('messageModal');
     if (event.target === modal) {
         closeModal();
     }
 });
+
+// ==========================================
+// 2. منطق فحص تطابق كلمتي المرور (لحظياً)
+// ==========================================
+function validatePasswordsMatch() {
+    const newPwdField = document.getElementById('new_password');
+    const confirmPwdField = document.getElementById('confirm_password');
+    const errorLabel = document.getElementById('match-error');
+
+    // تأكيد دفاعي في حال كان الحساب أدمن ولم تظهر الحقول أصلاً في الصفحة
+    if (!newPwdField || !confirmPwdField) return true;
+
+    const newPwd = newPwdField.value;
+    const confirmPwd = confirmPwdField.value;
+
+    if (newPwd !== confirmPwd) {
+        if (errorLabel) {
+            errorLabel.innerText = "❌ خطأ: الحقلان غير متطابقين، يرجى كتابة تأكيد كلمة المرور بشكل صحيح.";
+            errorLabel.style.display = "block";
+        }
+        return false;
+    }
+    
+    if (errorLabel) errorLabel.style.display = "none";
+    return true;
+}

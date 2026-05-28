@@ -1,6 +1,8 @@
+# auth_service.py
 import re
 import html
 from typing import Optional, Tuple
+from fastapi import  Request
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
 from security.hash import hash_password, check_password
@@ -109,26 +111,85 @@ class AuthService:
             return False, f"فشل في الحذف: {str(e)}"
 
     @classmethod
-    def change_password(cls, user_id: int, new_password: str) -> Tuple[bool, str]:
-        """تم نقلها داخل الكلاس وتحويلها لـ classmethod"""
-        if len(new_password) < cls.PASSWORD_MIN_LENGTH:
-            return False, f"كلمة المرور يجب ألا تقل عن {cls.PASSWORD_MIN_LENGTH} أحرف."
+    def change_password(
+        cls, 
+        user_id: int, 
+        new_password: str, 
+        current_password: Optional[str] = None, 
+        request: Optional[Request] = None
+    ) -> Tuple[bool, str]:
+        """
+        دالة شاملة وذكية لتغيير كلمة المرور:
+        - تفحص القواعد الأمنية ونمط كلمة المرور الجديدة.
+        - تفحص كلمة المرور القديمة اختياريًا (إذا تم تمريرها للمستخدم العادي).
+        - تكتشف المنفذ تلقائيًا (المستخدم نفسه أو الإدارة) وتقيد العملية في السجل الأمني الشخصي.
+        """
+        # 1. الفحوصات الأساسية لطول ونمط كلمة المرور الجديدة
+        if not new_password or len(new_password) < cls.PASSWORD_MIN_LENGTH:
+            return False, f"كلمة المرور الجديدة يجب ألا تقل عن {cls.PASSWORD_MIN_LENGTH} أحرف."
+
+        # نمط منع البدء برموز أو مسافات (تم نقله هنا لتوحيد الشروط)
+        symbol_start_pattern = r"^[-\s_\.\@\#\!\$\%\^\&\*\(\)\{\}\[\]\<\>]"
+        if re.match(symbol_start_pattern, new_password):
+            return False, "كلمة المرور الجديدة لا يجب أن تبدأ برمز أو مسافة."
             
         try:
-            hashed_password = hash_password(new_password)
             with get_db_context() as conn:
                 with conn.cursor() as cur:
-                    cur.execute("SELECT username FROM users WHERE id = %s", (user_id,))
+                    # 2. جلب بيانات المستخدم الحالية (كلمة السر، الدور، واسم المستخدم)
+                    cur.execute("SELECT password, role, username FROM users WHERE id = %s", (user_id,))
                     user_record = cur.fetchone()
                     if not user_record:
-                        return False, "المستخدم غير موجود."
+                        return False, "المستخدم غير موجود بالنظام."
 
-                    username_to_update = user_record[0]
+                    db_password, db_role, username_to_update = user_record[0], user_record[1], user_record[2]
+
+                    # 3. المنطق الذكي عند طلب فحص كلمة المرور القديمة (حساب المستخدم العادي)
+                    if current_password is not None:
+                        # حماية مضاعفة: منع الأدمن من استخدام واجهة المستخدم الشخصية لتغيير كلمته
+                        if db_role == 'admin':
+                            return False, "إجراء محظور: لا يمكن للمسؤول تغيير كلمة مروره من هذه الواجهة."
+                        
+                        # التحقق من كلمة السر الحالية
+                        if not check_password(current_password, db_password):
+                            return False, "كلمة السر الحالية غير صحيحة."
+
+                    # 4. تحديث كلمة المرور في جدول المستخدمين بعد اجتياز الفحوصات
+                    hashed_password = hash_password(new_password)
                     cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, user_id))
+                    
+                    # 5. التحديد الديناميكي لهوية المنفذ للسجل الأمني
+                    ip = "0.0.0.0 (الإدارة)"
+                    user_agent = "System Admin Tool"
+                    path = "/admin-changed-your-password"
+
+                    if request:
+                        current_logged_user = request.session.get("user", {})
+                        current_logged_id = current_logged_user.get("id")
+
+                        if current_logged_id == user_id:
+                            ip = request.client.host
+                            user_agent = request.headers.get("user-agent", "unknown")
+                            path = "/profile/change-password"
+                        else:
+                            ip = f"{request.client.host} (الأدمن)"
+                            user_agent = request.headers.get("user-agent", "unknown")
+                            path = "/admin-changed-your-password"
+
+                    # 6. حقن العملية فوراً في جدول الـ visits ليراها المستخدم في صفحته
+                    import uuid
+                    security_session = f"sec-mod-{uuid.uuid4()}"
+                    
+                    cur.execute("""
+                        INSERT INTO visits (session_id, user_id, username, ip, user_agent, path)
+                        VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (security_session, user_id, username_to_update, ip, user_agent, path))
+                    
                     conn.commit()
-                    return True, f"تم تغيير كلمة مرور ({username_to_update}) بنجاح."
+                    return True, "تم تحديث كلمة المرور بنجاح وقيدها في السجل الأمني."
         except Exception as e:
-            return False, f"فشل في تغيير كلمة المرور: {str(e)}"
+            print(f"❌ Error in AuthService.change_password: {e}")
+            return False, "حدث خطأ في النظام أثناء تحديث كلمة المرور."
         
     @classmethod
     def give_permission(cls, user_id: int, permission_id: int) -> Tuple[bool, str]:
@@ -164,20 +225,34 @@ class AuthService:
             return False, f"فشل في إزالة الصلاحية: {str(e)}"
         
     @classmethod
-    def get_admin_dashboard_data(cls, page: int, users_per_page: int = 10):
-        """جلب بيانات الجدول الرئيسي في صفحة الإدارة"""
+    def get_admin_dashboard_data(cls, page: int, users_per_page: int = 10, search_query: str = ""):
+        """جلب بيانات الجدول الرئيسي في صفحة الإدارة مع دعم البحث الذكي"""
         offset = (page - 1) * users_per_page
+        search_query_clean = f"%{search_query.strip()}%" if search_query else None
+        
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                # جلب المستخدمين
-                cursor.execute("SELECT id, username, role FROM users ORDER BY id DESC LIMIT %s OFFSET %s", (users_per_page, offset))
+                
+                # 1. جلب المستخدمين بناءً على وجود بحث أو بدونه
+                if search_query_clean:
+                    cursor.execute("""
+                        SELECT id, username, role FROM users 
+                        WHERE username ILIKE %s 
+                        ORDER BY id DESC LIMIT %s OFFSET %s
+                    """, (search_query_clean, users_per_page, offset))
+                else:
+                    cursor.execute("SELECT id, username, role FROM users ORDER BY id DESC LIMIT %s OFFSET %s", (users_per_page, offset))
                 users = cursor.fetchall()
                 
-                # جلب الصلاحيات المتاحة
+                # 2. جلب الصلاحيات المتاحة
                 cursor.execute("SELECT id, name, category FROM permissions")
                 all_permissions = cursor.fetchall()
                 
-                # جلب صلاحيات كل مستخدم
+                for perm in all_permissions:
+                    if not perm.get('category'):
+                        perm['category'] = "عام"
+                
+                # 3. جلب صلاحيات مستخدمي الصفحة الحالية
                 user_permissions_map = {}
                 for u in users:
                     cursor.execute("""
@@ -187,10 +262,15 @@ class AuthService:
                     """, (u['id'],))
                     user_permissions_map[u['id']] = [p['name'] for p in cursor.fetchall()]
                 
-                # حساب الإجمالي للترقيم
-                cursor.execute("SELECT COUNT(*) as total FROM users")
+                # 4. حساب الإجمالي الكلي للترقيم بناءً على البحث
+                if search_query_clean:
+                    cursor.execute("SELECT COUNT(*) as total FROM users WHERE username ILIKE %s", (search_query_clean,))
+                else:
+                    cursor.execute("SELECT COUNT(*) as total FROM users")
+                    
                 total_count = cursor.fetchone()['total']
                 total_pages = (total_count + users_per_page - 1) // users_per_page
+                total_pages = max(1, total_pages)
                 
                 return {
                     "users": users,
@@ -198,7 +278,7 @@ class AuthService:
                     "user_permissions": user_permissions_map,
                     "total_pages": total_pages
                 }
-
+            
     @classmethod
     def get_permissions_page_data(cls):
         """جلب بيانات صفحة الصلاحيات المنفصلة"""
@@ -215,4 +295,18 @@ class AuthService:
                 assignments = cur.fetchall()
                 return perms, assignments
 
-    
+    @classmethod
+    def get_user_permissions_list(cls, user_id: int) -> list:
+        """جلب قائمة بأسماء الصلاحيات الممنوحة لمستخدم معين بشكل مباشر ونظيف"""
+        try:
+            with get_db_context() as conn:
+                with conn.cursor() as cursor:
+                    cursor.execute("""
+                        SELECT p.name FROM permissions p
+                        JOIN user_permissions up ON p.id = up.permission_id
+                        WHERE up.user_id = %s
+                    """, (user_id,))
+                    return [row[0] for row in cursor.fetchall()]
+        except Exception as e:
+            print(f"❌ Error in AuthService.get_user_permissions_list: {e}")
+            return []

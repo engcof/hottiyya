@@ -12,10 +12,9 @@ from dotenv import load_dotenv
 
 # المكتبات المحلية (Local Imports)
 from core.templates import templates
-from security.csrf import  verify_csrf_token
-from security.session import set_cache_headers,get_page_context
+from security.session import SessionService
 from utils.time_utils import calculate_age_details
-from services.analytics import log_action
+from services.analytics_service import AnalyticsService
 from services.family_service import FamilyService
 
 import urllib.parse
@@ -43,7 +42,7 @@ async def show_family(
     q: str = Query(None),
     success: Optional[str] = Query(None)
 ):
-    cxt = get_page_context(request, additional_perms=["view_tree", "add_member", "edit_member", "delete_member"])
+    cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "add_member", "edit_member", "delete_member"])
     
     if not cxt or not cxt.get("user"):
         return RedirectResponse("/auth/login?error=unauthorized")
@@ -95,7 +94,7 @@ async def show_family(
     })
     
     response = templates.TemplateResponse("family/family.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response 
 
 # ====================== تفاصيل العضو ======================
@@ -107,7 +106,7 @@ async def name_details(
     q: str = Query("")    # استقبال نص البحث من الرابط للمحافظة على حالة التصفح
 ):
     
-    cxt = get_page_context(request, additional_perms=["view_tree", "edit_member"])
+    cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "edit_member"])
     user = cxt["user"]
     if not user: 
         return RedirectResponse("/auth/login")
@@ -146,13 +145,13 @@ async def name_details(
     })
     
     response = templates.TemplateResponse("family/details.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response  
 
 # ====================== إضافة عضو جديد ======================
 @router.get("/add", response_class=HTMLResponse)
 async def add_name_form(request: Request):
-    cxt = get_page_context(request, additional_perms=["view_tree", "add_member"])
+    cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "add_member"])
     if not cxt:
         return RedirectResponse(url="/family/?error=unauthorized", status_code=303)
 
@@ -173,7 +172,7 @@ async def add_name_form(request: Request):
         "form_data": empty_form_data
     })
     response = templates.TemplateResponse("family/add_name.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
   
 
@@ -199,7 +198,7 @@ async def add_name(
     status: Optional[str] = Form(None),
     picture: Optional[UploadFile] = File(None)
 ):
-    cxt = get_page_context(request, additional_perms=["add_member"])
+    cxt = SessionService.get_page_context(request, additional_perms=["add_member"])
     user = cxt.get("user")
     if not user:
         return RedirectResponse("/family", status_code=303)
@@ -209,7 +208,7 @@ async def add_name(
         raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
     
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     # غسيل وتنظيف البيانات الصارم لمنع ثغرات الحشو وXSS وقيم الفراغات النصية
     code = code.strip().upper() if code else ""
@@ -344,7 +343,7 @@ async def add_name(
             }
 
             FamilyService.add_new_member(member_data, picture, ext)
-            log_action(user['id'], "إضافة فرد", f"تم إضافة {html.unescape(name)}")
+            AnalyticsService.log_action(user['id'], "إضافة فرد", f"تم إضافة {html.unescape(name)}")
 
             success = f"تم حفظ {html.unescape(name)} بنجاح!"
             
@@ -358,7 +357,7 @@ async def add_name(
                 "error": None, "success": success, "form_data": empty_form_data 
             })
             response = templates.TemplateResponse("family/add_name.html", context)
-            set_cache_headers(response)
+            SessionService.set_cache_headers(response)
             return response
            
         except Exception as e:
@@ -381,7 +380,7 @@ async def add_name(
         }
     })
     response = templates.TemplateResponse("family/add_name.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 
@@ -403,7 +402,7 @@ async def check_code(code: str):
 
 @router.get("/edit/{code}", response_class=HTMLResponse)
 async def edit_name_form(request: Request, code: str):
-    cxt = get_page_context(request, additional_perms=["view_tree", "edit_member"])
+    cxt =   SessionService.get_page_context(request, additional_perms=["view_tree", "edit_member"])
     if not cxt:
         return RedirectResponse(url="/family/?error=unauthorized", status_code=303)
 
@@ -429,7 +428,7 @@ async def edit_name_form(request: Request, code: str):
         "error": None
     })
     response = templates.TemplateResponse("family/edit_name.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 @router.post("/edit/{code}")
@@ -447,14 +446,14 @@ async def update_name(request: Request,
                       page: int = Form(1),    
                       q: str = Form("")):
     
-    cxt = get_page_context(request, additional_perms=["edit_member"])
+    cxt = SessionService.get_page_context(request, additional_perms=["edit_member"])
     user = cxt["user"]
     edited = cxt.get("perms", {}).get("edit_member", False)
     if not edited:
         raise HTTPException(status_code=403, detail="لا تملك صلاحية التعديل")
 
     form = await request.form()
-    verify_csrf_token(request, form.get("csrf_token"))
+    SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
     error = None
     level_int = None 
@@ -554,7 +553,7 @@ async def update_name(request: Request,
             # 💡 تم الإصلاح: حذف سطر ext = None الكارثي الذي كان يصفر الامتداد
             FamilyService.update_member_data(code, member_data, picture, ext)
             
-            log_action(
+            AnalyticsService.log_action(
                 user_id=user['id'], 
                 action="تعديل فرد", 
                 details=f"تم تعديل بيانات العضو {name} (الكود: {code}) بنجاح"
@@ -622,7 +621,7 @@ async def delete_name(
     current_page: int = Form(1),    # 💡 استلام رقم الصفحة
    q: str = Form("")
 ):
-    cxt = get_page_context(request, additional_perms=["delete_member"])
+    cxt = SessionService.get_page_context(request, additional_perms=["delete_member"])
     
     # 1. التحقق من الصلاحية
     if not cxt.get("perms", {}).get("delete_member", False):
@@ -631,14 +630,14 @@ async def delete_name(
     # 2. التحقق من CSRF
     try:
         form = await request.form()
-        verify_csrf_token(request, form.get("csrf_token"))
+        SessionService.verify_csrf_token(request, form.get("csrf_token"))
     except Exception:
         raise HTTPException(status_code=400, detail="خطأ في تحقق CSRF")
 
     try:
         # 3. الحذف والتسجيل
         FamilyService.delete_member(code)
-        log_action(cxt["user"]['id'], "حذف فرد", f"الكود: {code}")
+        AnalyticsService.log_action(cxt["user"]['id'], "حذف فرد", f"الكود: {code}")
         
         # 4. إعادة التوجيه مع استخدام & بدلاً من الفاصلة
         redirect_url = f"/family?page={current_page}"

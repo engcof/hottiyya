@@ -15,13 +15,13 @@ from psycopg2.extras import RealDictCursor
 from postgresql import init_database, get_db_context
 
 # استيراد الدوال الأمنية والمساعدة
-from security.session import set_cache_headers,get_page_context
-from security.rate_limit import initialize_rate_limiter
-from utils.has_permissions import can
+from security.session import SessionService
+from security.rate_limit import RateLimitService
+
 
 # استيراد الخدمات والراوترات
-from services.analytics import log_visit, get_total_visitors, get_today_visitors, get_online_count, get_online_users
-from utils.has_permissions import can
+from services.analytics_service import AnalyticsService
+
 from services.google_service import GoogleService
 from services.home_service import HomeService
 from routers import auth, admin, family, articles, news, permissions, data, profile,gallery,video,library,about
@@ -64,7 +64,7 @@ async def lifespan(app: FastAPI):
     init_database()
     
     # 2. تهيئة مقيد المعدل
-    initialize_rate_limiter()
+    RateLimitService.initialize_rate_limiter()
     
     # 3. 🧹 تشغيل التنظيف التلقائي للمكتبة (سجلات pending و error)
     # هذا سيحذف السجلات العالقة وينظف السحاب (Cloudinary/Drive)
@@ -92,7 +92,7 @@ app = FastAPI(
     lifespan=lifespan, # 💡 تم إضافة lifespan لتهيئة قاعدة البيانات
 )
 
-templates.env.globals.update(can=can)
+templates.env.globals.update(can=SessionService.can)
 
 # =========================================
 # Middleware Logic - تحليلات الزوار
@@ -102,7 +102,6 @@ async def analytics_middleware(request: Request, call_next):
     if request.url.path.startswith("/static") or request.url.path in ("/favicon.ico", "/robots.txt", "/sitemap.xml"):
         return await call_next(request)
     
-
     # الوصول إلى الجلسة آمن هنا بسبب ترتيب الإضافة
     user = request.session.get("user")
 
@@ -110,7 +109,7 @@ async def analytics_middleware(request: Request, call_next):
         request.session["session_id"] = str(uuid.uuid4())
 
     try:
-        log_visit(request, user)
+        AnalyticsService.log_visit(request, user)
     except Exception as e:
         print(f"تحذير مؤقت في log_visit: {e}")
 
@@ -171,28 +170,29 @@ app.include_router(video.router)
 app.include_router(library.router)
 app.include_router(about.router)
 #app.include_router(test.router)
+
 # =========================================
 #         الصفحة الرئيسية
 # =========================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     # 1. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context = get_page_context(request)
+    context = SessionService.get_page_context(request)
     
     # لا نحتاج لتعريف user أو unread_count هنا، فالسياق الموحد سيتكفل بهما
     home_data = HomeService.get_homepage_data()
     # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     
     context.update({
-        "today_visitors": get_today_visitors(),
-        "total_visitors": get_total_visitors(),
-        "online_count": get_online_count(),
-        "online_users": get_online_users()[:18],
+        "today_visitors": AnalyticsService.get_today_visitors(),
+        "total_visitors": AnalyticsService.get_total_visitors(),
+        "online_count": AnalyticsService.get_online_count(),
+        "online_users": AnalyticsService.get_online_users()[:18],
         "latest_article": home_data['latest_article'],
         "latest_book": home_data['latest_book']
     })
     response = templates.TemplateResponse("index.html", context)
-    set_cache_headers(response)
+    SessionService.set_cache_headers(response)
     return response
 
 @app.get("/debug/db-count")
@@ -226,7 +226,7 @@ async def debug_db_count():
 # =========================================
 @app.exception_handler(404)
 async def not_found(request: Request, exc):
-    context = get_page_context(request)
+    context = SessionService.get_page_context(request)
     return templates.TemplateResponse("404.html", context, status_code=404)
 
 @app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)
@@ -257,11 +257,11 @@ async def sitemap():
     
     return Response(content="".join(xml_lines), media_type="application/xml")
 
-
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
     content = "User-agent: *\nAllow: /\nSitemap: https://hottiyya.onrender.com/sitemap.xml"
     return content.strip() # استخدام strip لضمان عدم وجود سطر فارغ في البداية
+
 # =========================================
 # تشغيل التطبيق
 # =========================================

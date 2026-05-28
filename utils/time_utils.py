@@ -1,5 +1,4 @@
 # utils/time_utils.py
-
 from datetime import date
 from typing import Optional, Dict, Any
 
