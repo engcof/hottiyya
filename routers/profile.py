@@ -16,12 +16,13 @@ router = APIRouter(prefix="/profile", tags=["Profile"])
 async def profile_page(request: Request, page: int = Query(1, ge=1)):
     # 1. تحديد قائمة الصلاحيات الحيوية التي نريد فحصها لبناء لوحة الأزرار السريعة
     required_quick_actions = [
-        "view_login_logs",        # 💡 تم تصحيح الاسم هنا ليتطابق مع السجلات بدقة وبدون s زائدة
+        "view_logins_logs",      
         "view_system_logs",  
         "view_tree",       
         "change_user_password", 
+        "grant_permissions",
+        "add_users", 
         "edit_users", 
-        "grant_permissions", 
         "delete_users"
     ]
     

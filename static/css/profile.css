@@ -281,7 +281,40 @@
     animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1);
     overflow: hidden;
 }
+/* تنسيق بطاقات الأدوار في الهيدر */
+.badge-role {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
 
+.badge-role i {
+    margin-left: 5px; /* مسافة للأيقونة باللغة العربية */
+}
+
+/* لون مدير النظام (ذهبي/ملكي) */
+.admin-bg {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+/* لون المشرف (أزرق وقور) */
+.manager-bg {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+}
+
+/* لون العضو العادي (أخضر هادئ) */
+.user-bg {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
 @keyframes slideUp {
     from { transform: translateY(20px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }

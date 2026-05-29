@@ -104,34 +104,25 @@
 }
 
 /* --- 4. الصلاحيات (Permissions Dropdown) --- */
-.permissions-dropdown {
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 5px;
-}
-
-.permissions-summary {
-    cursor: pointer;
+/* تنسيق خاص بالقوائم المنسدلة المخصصة للقراءة فقط */
+.read-only-select {
+    background-color: #f1f5f9 !important; /* لون خلفية رمادي هادئ يوضح أنها للقراءة */
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    cursor: default;
     font-weight: 700;
-    color: var(--accent);
-    padding: 5px;
-    list-style: none;
 }
 
-.permission-list-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    padding-top: 10px;
+/* تحسين مظهر الخيارات الإدارية بالداخل عند فتح القائمة */
+.read-only-select optgroup {
+    font-weight: bold;
+    color: #0f172a;
+    background: #ffffff;
 }
 
-.perm-tag {
-    background: #e0f2f1;
-    color: #00796b;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: 700;
+.read-only-select option {
+    background: #ffffff;
+    padding: 6px;
 }
 
 /* --- 5. المدخلات الصغيرة داخل الجدول (Inline Edits) --- */

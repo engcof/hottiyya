@@ -273,7 +273,7 @@ async def export_data_post(request: Request, password: str = Form(...)):
             path=export_path,
             filename=download_filename,
             media_type="application/octet-stream",
-            background=BackgroundTask(SessionService.cleanup_file, export_path)
+            background=BackgroundTask(cleanup_file, export_path)
         )
 
     except Exception as e:

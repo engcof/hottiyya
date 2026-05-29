@@ -69,30 +69,37 @@
 
             </div>
         </nav>
-        <div class="user-dropdown" id="userDropdown">
-            <div class="user-dropdown-header">
-                {% if user and user.username %}
-                    <span class="user-avatar big">{{ user.username[0] | upper }}</span>
-                    <div>
-                        <div class="user-name">{{ user.username }}</div>
-                        <div class="user-role">
-                            {% if user.role == 'admin' %}مدير النظام
-                            {% elif user.role == 'manager' %}مدير
-                            {% else %}عضو{% endif %}
-                        </div>
-                    </div>
-                {% else %}
-                    <div class="user-name">زائر</div>
-                {% endif %}
+       <div class="user-dropdown" id="userDropdown">
+    <div class="user-dropdown-header">
+        {% if user and user.username %}
+            <span class="user-avatar big">{{ user.username[0] | upper }}</span>
+            <div>
+                <div class="user-name">{{ user.username }}</div>
+                <div class="user-role">
+                    {# 1. إذا كان الحساب يمتلك دور الـ admin الحصري #}
+                    {% if user.role == 'admin' %}
+                        مدير النظام
+                    {# 2. إذا كان الحساب 'user' ولكنه يمتلك أي من صلاحيات الإشراف الإدارية #}
+                    {% elif perms.edit_users or perms.grant_permissions or perms.view_system_logs %}
+                        مشرف
+                    {# 3. إذا كان حساباً عادياً يمتلك صلاحيات تصفح أو شجرة العائلة والمقالات فقط #}
+                    {% else %}
+                        عضو
+                    {% endif %}
+                </div>
             </div>
-            <a href="/profile" class="user-dropdown-link">
-                <span>صفحتي الشخصية</span>
-                {% if unread_count and unread_count > 0 %}
-                <span class="notification-badge-inline">{{ unread_count }}</span>
-                {% endif %}
-            </a>
-            <a href="/auth/logout" class="user-dropdown-link logout">تسجيل الخروج</a>
-        </div>
+        {% else %}
+            <div class="user-name">زائر</div>
+        {% endif %}
+    </div>
+    <a href="/profile" class="user-dropdown-link">
+        <span>صفحتي الشخصية</span>
+        {% if unread_count and unread_count > 0 %}
+        <span class="notification-badge-inline">{{ unread_count }}</span>
+        {% endif %}
+    </a>
+    <a href="/auth/logout" class="user-dropdown-link logout">تسجيل الخروج</a>
+</div>
         <div class="mobile-nav" id="mobileNav">
             <a href="/">الرئيسية</a>
             <a href="/news">الأخبار</a>

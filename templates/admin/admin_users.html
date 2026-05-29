@@ -9,7 +9,6 @@
 {% block content %}
 <section class="all-page">
     <div class="container">
-        
         <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; flex-wrap: wrap; gap: 15px;">
             <h1 class="page-title">قائمة المستخدمين والصلاحيات</h1>
             <div class="header-actions">
@@ -49,7 +48,6 @@
                     <thead>
                         <tr>
                             <th>اسم المستخدم</th>
-                            <th>الدور</th>
                             <th>الصلاحيات الحالية</th>
                             
                             {% if is_admin or perms.edit_users %}
@@ -69,31 +67,44 @@
                     <tbody>
                         {% for u in users %}
                         <tr>
-                            <td><strong>{{ u.username }}</strong></td>
-                            
                             <td>
-                                <span class="role-badge {{ u.role }}">
-                                    {% if u.role == 'manager' %} مدير {% else %} مستخدم {% endif %}
-                                </span>
+                                <strong>{{ u.username }}</strong>
                             </td>
                             
                             <td>
                                 {% if user_permissions[u.id] %}
-                                <details class="permissions-dropdown">
-                                    <summary class="permissions-summary">
-                                        <i class="fas fa-key"></i> {{ user_permissions[u.id]|length }} صلاحيات
-                                    </summary>
-                                    <div class="permission-list-content">
-                                        {% for perm in user_permissions[u.id] %}
-                                        <span class="perm-tag">{{ perm }}</span>
+                                    <select class="small-select read-only-select" style="max-width: 180px;">
+                                        <option value="" disabled selected>🔒 {{ user_permissions[u.id]|length }} صلاحيات مفعلة</option>
+                                        
+                                        {% set current_cat_view = namespace(name='') %}
+                                        
+                                        {# نستخدم مصفوفة الصلاحيات لتنظيم الأقسام، ولكن نفحص الوجود الفعلي للمستخدم #}
+                                        {% for perm in permissionss%}
+                                            {% if perm.name in user_permissions[u.id] %}
+                                                
+                                                {# فتح وإغلاق المجموعات تلقائياً بناءً على القسم المكتوب في قاعدة البيانات #}
+                                                {% if perm.category != current_cat_view.name %}
+                                                    {% if current_cat_view.name != '' %}
+                                                        </optgroup>
+                                                    {% endif %}
+                                                    {% set current_cat_view.name = perm.category %}
+                                                    <optgroup label="📁 قسم: {{ perm.category }}">
+                                                {% endif %}
+                                                
+                                                <option disabled style="color: var(--text-main); font-weight: 500;">🔹 {{ perm.name }}</option>
+                                            {% endif %}
+                                            
+                                            {# إغلاق المجموعة المفتوحة بشكل ذكي في نهاية الحلقة #}
+                                            {% if loop.last and current_cat_view.name != '' %}
+                                                </optgroup>
+                                            {% endif %}
                                         {% endfor %}
-                                    </div>
-                                </details>
+                                    </select>
                                 {% else %}
                                     <em style="color: var(--text-lighter); font-size: 0.85rem;">لا توجد صلاحيات</em>
                                 {% endif %}
                             </td>
-                            
+
                             {% if is_admin or perms.edit_users %}
                             <td>
                                 <form method="post" action="/admin/edit_user" class="inline-form">
@@ -102,7 +113,12 @@
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
                                     
                                     <input type="text" name="username" value="{{ u.username }}" class="small-input">
-                                  
+                                    {% if user.username == 'admin' %}
+                                   <select name="role" class="small-select">
+                                        <option value="admin" {% if u.role == 'admin' %}selected{% endif %}>أدمن تنفيذي</option>
+                                        <option value="user" {% if u.role == 'user' %}selected{% endif %}>مستخدم</option>
+                                    </select>
+                                         {% endif %}
                                     <button type="submit" class="btn-small edit" style="background-color: var(--primary);"><i class="fas fa-save"></i> حفظ</button>
                                 </form>
                             </td>

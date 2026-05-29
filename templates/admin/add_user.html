@@ -28,18 +28,20 @@
 
             <form method="post" action="/admin/add_user" class="news-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                
+                <input type="hidden" name="from" value="{{ from_page }}">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>اسم المستخدم <span class="required">*</span></label>
-                        <input type="text" name="username" class="input-field" placeholder="أدخل اسم المستخدم بالكامل..." required>
+                        <input type="text" name="username" class="input-field" placeholder="أدخل اسم المستخدم..." required>
                     </div>
 
                     <div class="form-group">
                         <label>دور المستخدم (الصلاحية) <span class="required">*</span></label>
                         <select name="role" class="input-field">
-                            <option value="user" selected>مستخدم عادي</option>
-                            <option value="manager">مدير نظام</option>
+                            <option value="user" selected>مستخدم </option>
+                           {% if user.username == 'admin' %}
+                                <option value="admin">أدمن تنفيذي</option>
+                          {% endif %}
                         </select>
                     </div>
                 </div>
@@ -59,8 +61,8 @@
                 </div>
 
                 <div class="form-footer">
-                    <a href="/admin" class="btn-back">
-                        <i class="fas fa-arrow-right"></i> الرجوع للوحة التحكم
+                    <a href="{{ back_url }}" class="btn-back" style="background-color: var(--slate); display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 8px 15px; border-radius: 4px;">
+                    <i class="{{ back_icon }}"></i> {{ back_text }}
                     </a>
                 </div>
             </form>

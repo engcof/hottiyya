@@ -79,6 +79,7 @@ async def admin_users_page(request: Request, page: int = 1, search: str = ""):
     context.update({
         "users": users,
         "permissions": filtered_permissions, 
+        "permissionss": all_permissions, 
         "user_permissions": dashboard_data['user_permissions'],
         "current_page": current_page,
         "total_pages": dashboard_data['total_pages'],
@@ -200,14 +201,30 @@ async def remove_permission(request: Request, user_id: int = Form(...), permissi
 
 @router.get("/add_user")
 async def show_add_user_page(request: Request):
+    from_page = request.query_params.get("from", "admin") 
     cxt = SessionService.get_page_context(request, additional_perms=["add_users"])
     user = cxt["user"]
     
     if not user or (not cxt["is_admin"] and not cxt["perms"].get("add_users")):
         return RedirectResponse("/auth/login?error=unauthorized", status_code=303)
-        
+
+    if from_page == "profile":
+        back_url = "/profile"
+        back_text = "العودة للصفحة الشخصية"
+        back_icon = "fas fa-user"
+    else:
+        back_url = "/admin"
+        back_text = "العودة للوحة الإدارة"
+        back_icon = "fas fa-home"
+
     context = {**cxt}
-    context.update({"error": request.session.pop("error", None)})
+    context.update({
+        "error": request.session.pop("error", None),
+        "from_page": from_page,
+        "back_url": back_url,   
+        "back_text": back_text, 
+        "back_icon": back_icon,
+        })
     response = templates.TemplateResponse("admin/add_user.html", context)
     SessionService.set_cache_headers(response)
     return response
@@ -235,6 +252,7 @@ async def process_add_user(request: Request, username: str = Form(...), password
 
 @router.get("/change_password")
 async def show_change_password_page(request: Request):
+    from_page = request.query_params.get("from", "admin")
     cxt = SessionService.get_page_context(request, additional_perms=["change_user_password"])
     user = cxt["user"]
     
@@ -243,14 +261,33 @@ async def show_change_password_page(request: Request):
     
     data = AuthService.get_admin_dashboard_data(page=1, users_per_page=1000)
     
+    # 🔒 [الفصل البصري الفولاذي في الـ GET]
     if user["username"] == "admin":
+        # 1. الأدمن الأساسي (admin) يرى كل الحسابات في النظام بما فيها حسابه وحسابات الأدمنية التنفيذيين
+        users = data['users']
+    elif user.get("role") == "admin":
+        # 2. الأدمن التنفيذي (role == admin ولكن الاسم ليس admin) يرى الجميع ليعمل، ويُحجب عنه حساب الأدمن الأساسي فقط لحمايته
         users = [u for u in data['users'] if u['username'] != "admin"]
     else:
+        # 3. المشرف العادي (Manager/User ذو صلاحية) يُحجب عنه حساب الأدمن الأساسي وجميع الحسابات التي تحمل رتبة أدمن
         users = [u for u in data['users'] if u['username'] != "admin" and u['role'] != "admin"]
+    
+    if from_page == "profile":
+        back_url = "/profile"
+        back_text = "العودة للصفحة الشخصية"
+        back_icon = "fas fa-user"
+    else:
+        back_url = "/admin"
+        back_text = "العودة للوحة الإدارة"
+        back_icon = "fas fa-home"
     
     context = {**cxt}
     context.update({
-       "users": users, 
+        "users": users, 
+        "from_page": from_page,
+        "back_url": back_url,   
+        "back_text": back_text, 
+        "back_icon": back_icon,
         "error": request.session.pop("error", None)
     })
     response = templates.TemplateResponse("admin/change_password.html", context)
@@ -259,7 +296,12 @@ async def show_change_password_page(request: Request):
    
 
 @router.post("/change_password")
-async def process_change_password(request: Request, user_id: int = Form(...), new_password: str = Form(...), csrf_token: str = Form(...)):
+async def process_change_password(
+    request: Request, 
+    user_id: int = Form(...), 
+    new_password: str = Form(...), 
+    csrf_token: str = Form(...)
+):
     SessionService.verify_csrf_token(request, csrf_token)
     
     user = request.session.get("user")
@@ -267,20 +309,30 @@ async def process_change_password(request: Request, user_id: int = Form(...), ne
         return RedirectResponse("/admin?error=Forbidden", status_code=303)
         
     target_user = AuthService.get_user_by_id(user_id)
+    
+    # 🔒 [الحماية الفولاذية في الـ POST في الخلفية لمنع أي تلاعب]
+    if target_user and target_user["username"] == "admin":
+        # إذا كان الحساب المستهدف هو الأدمن الأساسي (admin)، نتحقق: هل الذي يحاول التعديل هو الأدمن الأساسي نفسه؟
+        if user["username"] != "admin":
+            # إذا كان أدمن تنفيذي أو أي دور آخر، يتم حظره وطرده فوراً
+            request.session["error"] = "خطأ أمني صارم: لا يحق للأدمن التنفيذي أو المشرفين تغيير كلمة مرور الأدمن الأساسي للموقع."
+            return RedirectResponse("/admin/change_password", status_code=303)
+            
+    # الفحص الافتراضي المعتاد لبقية الأدوار لمنع التداخل والتعارض
     try:
         SessionService.verify_manager_is_not_touching_admin(user, target_user, "تعديل كلمة مرور مسؤول")
     except HTTPException as e:
-        # 💡 تم تعديل المفتاح هنا إلى "error" ليتوافق مع استقبال القالب المعتمد بالباكيند والفرونت
         request.session["error"] = e.detail
         return RedirectResponse("/admin/change_password", status_code=303)
    
+    # تنفيذ عملية التحديث الفعلي في قاعدة البيانات
     success, message = AuthService.change_password(user_id, new_password, request=request)
     if success:
         request.session["success_message"] = "تم تحديث كلمة المرور بنجاح."
         return RedirectResponse("/admin", status_code=303)
+        
     request.session["error"] = message
     return RedirectResponse("/admin/change_password", status_code=303)
-
 
 # --- صفحات السجلات والرقابة المفتوحة ---
 

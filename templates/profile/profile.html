@@ -15,7 +15,18 @@
                 <span class="avatar-icon">👤</span>
             </div>
             <h2 class="welcome-text">أهلاً بك، <span class="username-highlight">{{ user.username }}</span></h2>
-            <p class="profile-subtitle">هذه مساحتك الخاصة لإدارة الرسائل والأمان</p>
+            
+            <div class="user-profile-badge" style="margin-top: 8px;">
+                {% if user.role == 'admin' %}
+                    <span class="badge-role admin-bg"><i class="fas fa-crown"></i> مدير النظام</span>
+                {% elif perms.edit_users or perms.grant_permissions or perms.view_system_logs %}
+                    <span class="badge-role manager-bg"><i class="fas fa-user-shield"></i> مشرف</span>
+                {% else %}
+                    <span class="badge-role user-bg"><i class="fas fa-user"></i> عضو</span>
+                {% endif %}
+            </div>
+            
+            <p class="profile-subtitle" style="margin-top: 10px;">هذه مساحتك الخاصة لإدارة الرسائل والأمان</p>
         </div>
 
         {% if success_msg %}
@@ -135,35 +146,34 @@
     </p>
 
     <div class="quick-actions-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-        
-    
-
         {% if is_admin or perms.grant_permissions%}
         <a href="/admin/users?from=profile" class="action-btn" style="background: linear-gradient(135deg, #059669, #10b981); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
             <i class="fas fa-user-shield" style="font-size: 1.2rem;"></i>
             <span>لوحة الصلاحيات</span>
         </a>
         {% endif %}
+        
         {% if is_admin or perms.edit_users%}
-            <a href="/admin/users?from=profile" class="action-btn" style="background: linear-gradient(135deg, #0d9488, #14b8a6); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
-                <i class="fas fa-users-cog" style="font-size: 1.2rem;"></i>
-                <span>لوحة إدارة الأعضاء</span>
-            </a>
-            {% endif %}
+        <a href="/admin/users?from=profile" class="action-btn" style="background: linear-gradient(135deg, #0d9488, #14b8a6); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+            <i class="fas fa-users-cog" style="font-size: 1.2rem;"></i>
+            <span>لوحة إدارة الأعضاء</span>
+        </a>
+        {% endif %}
+        
+        {% if is_admin or perms.change_user_password %}
+        <a href="/admin/change_password?from=profile" class="action-btn" style="background: linear-gradient(135deg, #ea580c, #f97316); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+            <i class="fas fa-key" style="font-size: 1.2rem;"></i>
+            <span>تغيير كلمات مرور الأعضاء</span>
+        </a>
+        {% endif %}
 
-            {% if is_admin or perms.change_user_password %}
-            <a href="/admin/change_password?from=profile" class="action-btn" style="background: linear-gradient(135deg, #ea580c, #f97316); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
-                <i class="fas fa-key" style="font-size: 1.2rem;"></i>
-                <span>تغيير كلمات مرور الأعضاء</span>
-            </a>
-            {% endif %}
-
-            {% if is_admin or perms.view_system_logs %}
-            <a href="/admin/logs?from=profile" class="action-btn" style="background: linear-gradient(135deg, #4b5563, #6b7280); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
-                <i class="fas fa-database" style="font-size: 1.2rem;"></i>
-                <span>مشاهدة سجلات السيستم</span>
-            </a>
-            {% endif %}
+        {% if is_admin or perms.add_users %}
+        <a href="/admin/add_user?from=profile" class="action-btn" style="background: linear-gradient(135deg, #4b5563, #6b7280); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+            <i class="fas fa-database" style="font-size: 1.2rem;"></i>
+            <span>إضافة مستخدمين</span>
+        </a>
+        {% endif %}
+        
         {% if can_view %}
         <a href="/family" class="action-btn" style="background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
             <i class="fas fa-network-wired" style="font-size: 1.2rem;"></i>
@@ -171,21 +181,21 @@
         </a>
         {% endif %}
 
-        {% if is_admin or perms.send_broadcast %}
+        {% if is_admin or perms.view_logins_logs %}
         <a href="/admin/broadcast" class="action-btn" style="background: linear-gradient(135deg, #d97706, #f59e0b); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
             <i class="fas fa-bullhorn" style="font-size: 1.2rem;"></i>
             <span>إرسال تعميم جماعي</span>
         </a>
         {% endif %}
 
-        {% if is_admin or perms.view_audit_logs %}
+        {% if is_admin or perms.view_system_logs %}
         <a href="/admin/logs" class="action-btn" style="background: linear-gradient(135deg, #dc2626, #ef4444); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
             <i class="fas fa-history" style="font-size: 1.2rem;"></i>
             <span>سجلات النظام العامة</span>
         </a>
         {% endif %}
 
-        {% if not is_admin and not perms.view_admin_dashboard and not perms.manage_permissions and not perms.send_broadcast and not perms.view_audit_logs and not can_view %}
+        {% if not is_admin and not perms.change_user_password and not perms.grant_permissions and not perms.add_users and not perms.view_system_logs and not can_view %}
         <div style="grid-column: 1 / -1; text-align: center; padding: 20px; background-color: var(--background); border-radius: 8px; border: 1px dashed var(--border); color: var(--text-light);">
             <i class="fas fa-user-clock" style="font-size: 1.5rem; margin-bottom: 8px; display: block;"></i>
             حسابك حالياً بصلاحيات قياسية. سيتم تفعيل الأزرار المخصصة فور منحك صلاحيات جديدة من الإدارة.
