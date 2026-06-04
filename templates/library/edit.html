@@ -14,14 +14,17 @@
             <p class="form-subtitle">تحديث المعلومات الأساسية وصلاحيات التحميل</p>
         </div>
 
-        {% if error %}
-        <div class="alert-error-box">
-            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+        {% if error or request.query_params.get('error_msg') %}
+        <div class="alert error" style="margin-bottom: 20px;">
+            <i class="fas fa-exclamation-triangle"></i> 
+            <span>{{ error or request.query_params.get('error_msg') }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
 
         <form action="/library/edit/{{ book.id }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="from" value="{{ from_page }}">
             
             <div class="form-grid">
                 <div class="form-group">
@@ -44,42 +47,48 @@
                 </div>
             </div>
 
-            <div class="success-container">
+            <div class="success-container" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div>
                         <label style="margin-bottom: 0; color: #166534; font-weight: bold;">
                             <i class="fas fa-check-circle"></i> إتاحة الكتاب للتحميل المباشر
                         </label>
-                        <small style="color: #4b6354; display: block; margin-top: 4px;">في حال إلغاء التفعيل، سيتم إخفاء زر التحميل للعامة</small>
+                        <small style="color: #4b6354; display: block; margin-top: 4px;">في حال إلغاء التفعيل، سيتم إخفاء زر التحميل للعامة ويتاح للقراءة أونلاين فقط</small>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" name="allow_download" id="allow_download" {% if book.allow_download %}checked{% endif %}>
+                        <input type="checkbox" name="allow_download" id="allow_download" value="on" {% if book.allow_download %}checked{% endif %}>
                         <span class="slider"></span>
                     </label>
                 </div>
             </div>
 
-            <div class="alert-info-box">
-                <i class="fas fa-lightbulb"></i> ملاحظة: التعديل يشمل النصوص فقط. لتغيير ملف الـ PDF، يرجى حذف السجل وإعادة رفع الملف.
+            <div class="alert-info-box" style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 6px; margin-bottom: 25px; color: #475569; font-size: 0.9rem;">
+                <i class="fas fa-lightbulb" style="color: #eab308; margin-left: 5px;"></i> 
+                <strong>ملاحظة:</strong> التعديل الحالي يشمل النصوص وصلاحيات التحميل فقط. لتغيير ملف الـ PDF أو الغلاف، يرجى حذف هذا السجل وإعادة رفع الملف من جديد.
             </div>
             
             <button type="submit" class="btn-submit-main">
-                <i class="fas fa-save"></i> حفظ التعديلات
+                <i class="fas fa-save"></i> حفظ التعديلات الجديدة
             </button>
         </form>
 
         <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e2e8f0;">
 
         <div class="admin-danger-zone">
-            <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('هل أنت متأكد من حذف هذا الكتاب نهائياً؟');">
+            <form action="/library/delete/{{ book.id }}" method="POST" onsubmit="return confirm('⚠️ تحذير: هل أنت متأكد من حذف هذا الكتاب نهائياً من الخوادم وقواعد البيانات؟');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" class="btn-delete-form">
+                <input type="hidden" name="from" value="{{ from_page }}">
+                <button type="submit" class="btn-delete-form" style="background-color: #dc2626; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">
                     <i class="fas fa-trash-alt"></i> حذف الكتاب نهائياً
                 </button>
             </form>
         </div>
              
-        <a href="/library" class="cancel-text-link">إلغاء والعودة للمكتبة</a>
+        <div style="margin-top: 20px;">
+            <a href="{% if from_page == 'profile' %}/profile{% else %}/library{% endif %}" class="cancel-text-link" style="text-decoration: none; color: #64748b;">
+                <i class="fas fa-arrow-right"></i> إلغاء والعودة للخلف
+            </a>
+        </div>
     </div>
 </section>
 {% endblock %}

@@ -7,11 +7,11 @@
 <section class="all-page">
      <div class="container">    
         {% if success %}
-            <div class="alert alert-success" id="success-alert"role="alert"> {{ success }}</div>
+            <div class="alert alert-success" id="success-alert" role="alert"> {{ success }}</div>
         {% endif %}
         <div class="page-header">
             <h1 class="page-title">شجرة الحوطية</h1>
-            {% if perms.add_member%}
+            {% if perms.add_member %}
             <a href="/family/add" class="btn-add">
                 <svg viewBox="0 0 24 24" width="20" height="20">
                     <path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
@@ -21,14 +21,14 @@
             {% endif %}
         </div>
 
-        <!-- شريط البحث -->
-        <div class="search-container  glass">
+        <!-- شريط البحث الفعال -->
+        <div class="search-container glass">
             <form action="/family" method="get" class="search-form">
                 <input type="text" 
                     name="q" 
                     class="search-input" 
                     placeholder="ابحث بالكود أو الاسم..."
-                   value="{{ q or '' }}"
+                    value="{{ q if q and q != 'None' else '' }}"
                     autocomplete="off">
                 
                 <button type="submit" class="search-submit-btn">
@@ -40,17 +40,16 @@
                 </button>
             </form>
             
-            {% if q%}
-                <div style="text-align: center;">
-                    <a href="/family" class="clear-search-link">
+            {% if q and q != 'None' %}
+                <div style="text-align: center; margin-top: 10px;">
+                    <a href="/family" class="clear-search-link" style="color: #ef4444; text-decoration: none; font-size: 0.9rem;">
                         ✕ إلغاء البحث والعودة للكل
                     </a>
                 </div>
             {% endif %}
         </div>
         
-
-        <!-- جدول الأعضاء (بطاقات على الموبايل، جدول على الكمبيوتر) -->
+        <!-- عرض الأعضاء -->
         <div class="members-list">
             {% for m in members %}
             <div class="member-card glass">
@@ -65,18 +64,18 @@
                     {% endif %}
                 </div>
                 
+                <!-- 🔒 تأمين معاملات روابط التنقل وتوحيد متغير الاستعلام ليكون q دائماً -->
                 <div class="member-actions">
-                    <a href="/family/details/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-view">التفاصيل</a>
+                    <a href="/family/details/{{ m.code }}?page={{ current_page }}&q={{ q if q and q != 'None' else '' }}" class="btn-f-action btn-f-view">التفاصيل</a>
                     {% if perms.edit_member %}
-                        <a href="/family/edit/{{ m.code }}?page={{ current_page }}&q={{ q }}" class="btn-f-action btn-f-edit">تعديل</a>
+                        <a href="/family/edit/{{ m.code }}?page={{ current_page }}&q={{ q if q and q != 'None' else '' }}" class="btn-f-action btn-f-edit">تعديل</a>
                     {% endif %}
                     {% if perms.delete_member %}
                         <form method="post" action="/family/delete/{{ m.code }}" style="display:inline;" 
                               onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <!-- إرسال الصفحة الحالية والبحث لضمان العودة الصحيحة -->
                             <input type="hidden" name="current_page" value="{{ current_page }}">
-                            <input type="hidden" name="q" value="{{ q or '' }}">
+                            <input type="hidden" name="q" value="{{ q if q and q != 'None' else '' }}">
                             <button type="submit" class="btn-f-action btn-f-delete">حذف</button>
                         </form>
                     {% endif %}
@@ -84,11 +83,13 @@
             </div>
             {% endfor %}
         </div>
+
+        <!-- أرقام الصفحات والتنقل الشامل -->
         {% if totals_pages > 1 %}
-        <div class="card-footer d-flex justify-content-center">
+        <div class="card-footer d-flex justify-content-center" style="margin-top: 30px;">
             <nav aria-label="ترقيم الأسماء">
                 <ul class="pagination">
-                    {% set query_params = "&q=" + q if q else "" %} 
+                    {% set query_params = "&q=" + q if q and q != 'None' else "" %} 
                     
                     <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
                         <a class="page-link" href="/family?page={{ current_page - 1 }}{{ query_params }}">السابق</a>
@@ -96,14 +97,13 @@
                    
                     {% for p in page_numbers %}
                         <li class="page-item {% if p == current_page %}active{% endif %} 
-                            {# الإخفاء الصارم في الموبايل #}
                             {% if p != 1 and p != totals_pages and p != current_page %}
                                 d-none d-md-inline-block 
                             {% endif %}">
-                            
                             <a class="page-link" href="/family?page={{ p }}{{ query_params }}">{{ p }}</a>
                         </li>
                     {% endfor %}
+
                     <li class="page-item {% if current_page == totals_pages %}disabled{% endif %}">
                         <a class="page-link" href="/family?page={{ current_page + 1 }}{{ query_params }}">التالي</a>
                     </li>
@@ -114,4 +114,3 @@
     </div>
 </section>
 {% endblock %}
-

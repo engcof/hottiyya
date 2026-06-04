@@ -4,11 +4,10 @@
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
     <style>
         .input-with-status { position: relative; width: 100%; }
-        /* سحب أيقونة التنبيه إلى اليسار قليلاً بما يتوافق مع حقول الإدخال العربية RTL */
+        /* سحب أيقونة التنبيه إلى اليسار بما يتوافق مع حقول الإدخال العربية RTL */
         .status-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; z-index: 5; }
         .feedback-text { font-weight: 700; margin-top: 5px; display: block; }
         
-        /* كلاس الاستجابة الشامل المخصص المأمون لعرض الهواتف والشاشات */
         @media (min-width: 768px) {
             .grid-full-width { grid-column: span 2; }
         }

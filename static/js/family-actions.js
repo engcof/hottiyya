@@ -1,22 +1,29 @@
+
 /**
- * سكربت إدارة أعضاء الشجرة - موقع الحوطية
+ * سكربت إدارة أعضاء الشجرة - موقع الحوطية - النسخة المؤمنة والمحسنة
  */
 document.addEventListener('DOMContentLoaded', () => {
     const codeInput = document.getElementById('memberCode');
     const statusIcon = document.getElementById('codeStatusIcon');
     const feedback = document.getElementById('codeFeedback');
+    
+    // 🔒 وحدة التحكم في الإلغاء لمنع سباق طلبات الشبكة العشوائية (Race Conditions)
+    let abortController = null;
 
     if (codeInput) {
-        // 1. ميزة الاقتراح التلقائي والاختصار المدمجة والمحمية من التكرار
         codeInput.addEventListener('input', async function(e) {
             let val = e.target.value.trim().toUpperCase();
             e.target.value = val;
 
+            // إلغاء الطلب المعلق السابق إن وجد فوراً بسبب إدخال حرف جديد
+            if (abortController) abortController.abort();
+            abortController = new AbortController();
+            const { signal } = abortController;
+
             // الحالة أ: إذا كتب المستخدم حرفاً واحداً كبادئة أولية (مثل: A)
             if (val.length === 1 && /^[A-Z]$/.test(val)) {
                 try {
-                    // تم توحيد الإرسال لـ prefix لتوافق تام مع الباكيند المحدث
-                    const res = await fetch(`/family/get-next-code?prefix=${val}`);
+                    const res = await fetch(`/family/get-next-code?prefix=${val}`, { signal });
                     const data = await res.json();
                     if (data.next_code) {
                         e.target.value = data.next_code;
@@ -24,38 +31,34 @@ document.addEventListener('DOMContentLoaded', () => {
                         validateCode(data.next_code);
                     }
                 } catch (err) { 
-                    console.error("Error fetching next code by letter:", err); 
+                    if (err.name !== 'AbortError') console.error("Error fetching next code by letter:", err); 
                 }
             }
-            // الحالة ب: إذا كتب المستخدم بادئة كاملة أو مخصصة (مثل: A0-005) طولها 6 محارف وتحتوي على شرطة
+            // الحالة ب: إذا كتب المستخدم بادئة كاملة أو مخصصة طولها 6 محارف وتحتوي على شرطة
             else if (val.length === 6 && val.includes('-')) {
                 try {
-                    const response = await fetch(`/family/get-next-code?prefix=${val}`);
+                    const response = await fetch(`/family/get-next-code?prefix=${val}`, { signal });
                     const data = await response.json();
                     if (data.next_code) {
                         e.target.value = data.next_code;
                         validateCode(data.next_code); 
                     }
                 } catch (error) {
-                    console.error("خطأ في جلب الكود بالبادئة:", error);
+                    if (error.name !== 'AbortError') console.error("خطأ في جلب الكود بالبادئة:", error);
                 }
             }
         });
 
-        // 2. التحقق الفوري عند خروج مؤشر الكتابة من الحقل (Blur)
         codeInput.addEventListener('blur', function() {
             validateCode(this.value);
         });
     }
 
-    /**
-     * دالة التحقق من توفر الكود عبر السيرفر وتحديث الواجهة بصرياً
-     */
     async function validateCode(code) {
         if (code.length < 3 || !statusIcon || !feedback || !codeInput) return;
 
         try {
-            const response = await fetch(`/family/check-code-availability?code=${code}`);
+            const response = await fetch(`/family/check-code-availability?code=${encodeURIComponent(code)}`);
             const data = await response.json();
 
             if (data.available) {

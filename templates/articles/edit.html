@@ -5,7 +5,6 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
     <style>
-        /* تحسين إضافي مخصص لعرض غلاف المقال الحالي ليتناسب مع أبعاد المقالات */
         .current-image img {
             width: 180px;
             height: 100px;
@@ -24,7 +23,6 @@
             <p class="form-subtitle">تحديث وتطوير محتوى المقال المنشور</p>
         </div>
 
-        {# التنبيه الموحد المتناسق مع السكربت العام للاختفاء التلقائي #}
         {% if error %}
         <div class="alert error" id="error-alert">
             <i class="fas fa-exclamation-circle"></i>
@@ -82,13 +80,13 @@
                     </div>
                 </div>
 
+                <!-- الحقل المخفي الذي سنقوم بمزامنته إجبارياً قبل تقديم الفورم للباكيند -->
                 <input type="hidden" name="content" id="content_hidden">
             </div>
 
-            {# توحيد مظهر حقل رفع وتحديث غلاف المقال #}
             <div class="form-group">
                 <label>صورة غلاف المقال</label>
-                <div class="file-input-wrapper" style="padding: 25px 20px;">
+                <div class="file-input-wrapper" style="padding: 25px 20px; position: relative;">
                     {% if article.image_url %}
                     <div class="current-image" style="margin-bottom: 15px;">
                         <img src="{{ article.image_url }}" alt="غلاف المقال الحالي">
@@ -98,9 +96,9 @@
                     <i class="fas fa-image fa-2x" style="color: #cbd5e0; margin-bottom: 10px; display: block;"></i>
                     {% endif %}
                     
-                    <span>اسحب صورة جديدة هنا أو اضغط للتحديث</span>
+                    <span id="file-chosen-text">اسحب صورة جديدة هنا أو اضغط للتحديث</span>
                     <p class="feedback-text" style="color: #94a3b8; font-weight: 500; font-size: 0.8rem; margin-top: 5px;">(اتركه فارغاً إذا كنت تريد الاحتفاظ بالغلاف الحالي)</p>
-                    <input type="file" name="image" accept="image/*" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+                    <input type="file" name="image" id="image-upload" accept="image/*" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
                 </div>
             </div>
 
@@ -110,7 +108,6 @@
                 </button>
             </div>
             
-            {# وضع زر التراجع داخل حاوية التذييل الموحدة #}
             <div class="form-footer">
                 <a href="/articles/{{ article.id }}" class="cancel-text-link">
                     <i class="fas fa-arrow-right" style="font-size: 0.8rem; margin-left: 5px;"></i> إلغاء والرجوع للمقال
@@ -121,4 +118,5 @@
 </section>
 
 <script src="{{ url_for('static', path='js/article-editor.js') }}"></script>
+
 {% endblock %}

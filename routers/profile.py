@@ -23,7 +23,8 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)):
         "grant_permissions",
         "add_users", 
         "edit_users", 
-        "delete_users"
+        "delete_users",
+        "add_member"
     ]
     
     # 2. جلب السياق الشامل مع فحص الصلاحيات المحددة أعلاه تلقائياً

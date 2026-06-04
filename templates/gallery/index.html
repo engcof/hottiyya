@@ -20,30 +20,37 @@
             {% endif %}
         </div>
 
-      <div class="filter-container">
-            <a href="/gallery/" class="btn-f-action {% if not selected_category %}btn-f-view{% else %}glass{% endif %}" style="text-decoration: none;">الكل</a>
+        <div class="filter-container">
+            <a href="/gallery/" class="btn-f-action {% if not selected_category or selected_category == 'None' %}btn-f-view{% else %}glass{% endif %}" style="text-decoration: none;">الكل</a>
             
             {% for cat in categories %}
-            <a href="/gallery/?category={{ cat }}" 
-            class="btn-f-action {% if selected_category == cat %}btn-f-view{% else %}glass{% endif %}" 
-            style="text-decoration: none;">
-            {{ cat }}
+            {# استدعاء الفلتر urlencode لضمان سلامة قراءة التصنيفات العربية في الرابط #}
+            <a href="/gallery/?category={{ cat | urlencode }}" 
+               class="btn-f-action {% if selected_category == cat %}btn-f-view{% else %}glass{% endif %}" 
+               style="text-decoration: none;">
+               {{ cat }}
             </a>
             {% endfor %}
         </div>
+
         <div class="gallery-grid">
             {% for image in images %}
             <div class="gallery-item">
-            
                 {% if perms.delete_gallery %}
-                    <form action="/gallery/delete/{{ image.id }}?page={{ current_page }}{% if selected_category %}&category={{ selected_category }}{% endif %}" 
-                        method="POST" 
-                        onsubmit="return confirm('هل أنت متأكد من الحذف؟')">
+                    <form action="/gallery/delete/{{ image.id }}?page={{ current_page }}{% if selected_category %}&category={{ selected_category | urlencode }}{% endif %}" 
+                          method="POST" 
+                          onsubmit="return confirm('هل أنت متأكد من الحذف؟')" 
+                          style="margin: 0;">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button type="submit" class="btn-delete-small">حذف</button>
                     </form>
                 {% endif %}
-                <div onclick="openModal('{{ image.image_url }}', '{{ image.title }}')" style="cursor: pointer;">
+                
+              {# نمرر البيانات عبر data-attributes ونضع كلاس للتحكم بالحدث #}
+                <div class="gallery-clickable-item" 
+                    data-url="{{ image.image_url }}" 
+                    data-title="{{ image.title }}" 
+                    style="cursor: pointer;">
                     <div class="gallery-img-wrapper">
                         <img src="{{ image.image_url }}" alt="{{ image.title }}" class="gallery-img" loading="lazy">
                     </div>
@@ -56,27 +63,24 @@
                 </div>
             </div>
             {% else %}
-            <div class="empty-video-state">
+            <div class="empty-video-state" style="width:100%; text-align:center; padding: 40px 0;">
                 <p class="text-lighter">لا توجد صور في هذا القسم حالياً.</p>
             </div>
             {% endfor %}
         </div>
+
         {% if total_pages > 1 %}
-        <div class="card-footer d-flex justify-content-center mt-4">
+        <div class="card-footer d-flex justify-content-center mt-4" style="display:flex; justify-content:center; margin-top:25px;">
             <nav aria-label="ترقيم معرض الصور">
-                <ul class="pagination">
-                    {# الحفاظ على التصنيف عند التنقل بين الصفحات #}
-                    {% set cat_param = "&category=" + selected_category if selected_category else "" %} 
+                <ul class="pagination" style="display:flex; list-style:none; gap:8px; padding:0;">
+                    {% set cat_param = "&category=" + (selected_category | urlencode) if selected_category and selected_category != 'None' else "" %} 
                     
                     <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
                         <a class="page-link" href="/gallery/?page={{ current_page - 1 }}{{ cat_param }}">السابق</a>
                     </li>
                 
                     {% for p in page_numbers %}
-                        <li class="page-item {% if p == current_page %}active{% endif %} 
-                            {% if p != 1 and p != total_pages and (p < current_page - 1 or p > current_page + 1) %}
-                                d-none d-md-inline-block 
-                            {% endif %}">
+                        <li class="page-item {% if p == current_page %}active{% endif %}">
                             <a class="page-link" href="/gallery/?page={{ p }}{{ cat_param }}">{{ p }}</a>
                         </li>
                     {% endfor %}
@@ -91,14 +95,13 @@
     </div>
 </section>
 
-<div id="imageModal" class="image-modal">
-    <span class="modal-close" onclick="closeModal()">&times;</span>
-    <div class="modal-content-wrapper">
-        <img class="modal-image" id="img01" alt="Full size image">
-        <div id="caption" class="modal-caption"></div>
+<div id="imageModal" class="image-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); justify-content:center; align-items:center; z-index:99999;">
+    <span class="modal-close" onclick="closeModal()" style="position:absolute; top:20px; left:20px; color:#fff; font-size:2rem; cursor:pointer;">&times;</span>
+    <div class="modal-content-wrapper" style="text-align:center; max-width:90%; max-height:90%;">
+        <img class="modal-image" id="img01" alt="Full size image" style="max-width:100%; max-height:80vh; border-radius:8px;">
+        <div id="caption" class="modal-caption" style="color:#fff; margin-top:15px; font-size:1.1rem; font-weight:bold;"></div>
     </div>
 </div>
 
 <script src="{{ url_for('static', path='js/gallery.js') }}"></script>
 {% endblock %}
-

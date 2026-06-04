@@ -14,12 +14,21 @@
             <p class="form-subtitle">شارك لحظات مميزة في المعرض المرئي</p>
         </div>
 
+        {# عرض الأخطاء المباشرة المرتجعة من السيرفر إن وجدت #}
+        {% if error %}
+        <div class="alert error" style="background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold;">
+            {% if error == 'upload_failed' %} فشل رفع الملف إلى السحابة.
+            {% elif error == 'system_error' %} حدث خطأ في النظام أثناء معالجة الملف.
+            {% else %} حدث خطأ غير متوقع. {% endif %}
+        </div>
+        {% endif %}
+
         <form action="/video/add" method="POST" enctype="multipart/form-data" class="news-form" id="videoForm">
             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
             <div class="form-group">
                 <label>عنوان الفيديو <span class="required">*</span></label>
-                <input type="text" name="title" class="input-field" placeholder="مثال: مقتطفات من اجتماع العيد 1445هـ" required minlength="3">
+                <input type="text" name="title" class="input-field" placeholder="مثال: مقتطفات من اجتماع العيد 1445هـ" required minlength="3" autocomplete="off">
             </div>
 
             <div class="form-group">
@@ -35,47 +44,52 @@
 
            <div class="form-group grid-full-width">
                 <label>ملف الفيديو <span class="required">*</span></label>
-                <div class="file-input-wrapper video-upload-wrapper">
-                    <input type="file" id="video_file" name="video_file" accept="video/mp4,video/x-m4v,video/*" required class="hidden-file-input">
+                <div class="file-input-wrapper video-upload-wrapper" style="position: relative; border: 2px dashed #cbd5e1; padding: 30px; border-radius: 12px; text-align: center; background: #f8fafc; transition: all 0.3s ease;">
+                    {# تقييد أنواع ملفات الفيديو المدعومة بصرامة #}
+                    <input type="file" id="video_file" name="video_file" accept="video/mp4,video/x-m4v,video/quicktime,video/webm" required 
+                           style="opacity: 0; position: absolute; inset: 0; cursor: pointer; z-index: 10;">
                     
                     <div id="uploadContent">
-                        <i class="fas fa-video fa-3x upload-icon"></i>
-                        <p id="fileStatusText" class="upload-main-text">اضغط هنا أو اسحب ملف الفيديو لرفعه</p>
-                        <small class="upload-hint-text">الحجم الأقصى المفضل: أقل من 20 ميجابايت</small>
+                        <i class="fas fa-video fa-3x upload-icon" style="color: var(--accent); margin-bottom: 10px;"></i>
+                        <p id="fileStatusText" class="upload-main-text" style="margin: 0; color: #64748b; font-weight: 500;">اضغط هنا أو اسحب ملف الفيديو لرفعه</p>
+                        <small class="upload-hint-text" style="color: #94a3b8; display: block; margin-top: 5px;">الصيغ المدعومة: MP4, MOV, WEBM (الحد الأقصى المفضل: 40MB)</small>
                     </div>
 
-                    <div id="videoPreview" class="video-preview-box" style="display: none;">
-                        <video id="previewVid" class="video-preview-element" muted controls></video>
-                        <p class="video-ready-status">
-                            <i class="fas fa-check-circle"></i> ملف الفيديو جاهز للرفع
+                    <div id="videoPreview" class="video-preview-box" style="display: none; margin-top: 10px;">
+                        <video id="previewVid" class="video-preview-element" muted controls style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 2px solid var(--accent);"></video>
+                        <p class="video-ready-status" style="color: #10b981; font-weight: 600; margin-top: 8px; font-size: 0.9rem;">
+                            <i class="fas fa-check-circle"></i> ملف الفيديو جاهز وآمن للرفع
                         </p>
                     </div>
                 </div>
             </div>
-            <!-- شريط التقدم (مخفي افتراضياً) -->
-            <div id="progressContainer" style="display: none; margin-bottom: 20px;">
+
+            <div id="progressContainer" style="display: none; margin-bottom: 20px; background: #f1f5f9; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-                    <span style="font-size: 0.9rem; color: var(--primary);">جاري الرفع...</span>
+                    <span style="font-size: 0.9rem; color: var(--primary); font-weight: 500;">جاري رفع الملف...</span>
                     <span id="percentText" style="font-size: 0.9rem; font-weight: bold; color: var(--accent);">0%</span>
                 </div>
                 <div style="width: 100%; background: #e2e8f0; height: 10px; border-radius: 10px; overflow: hidden;">
-                    <div id="progressBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+                    <div id="progressBar" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.2s ease;"></div>
                 </div>
-                <p id="uploadStatus" style="font-size: 0.8rem; color: #64748b; margin-top: 5px; text-align: center;">يرجى عدم إغلاق الصفحة حتى اكتمال العملية</p>
+                <p id="uploadStatus" style="font-size: 0.85rem; color: #64748b; margin-top: 8px; text-align: center; margin-bottom: 0;">يرجى عدم إغلاق أو تحديث الصفحة حتى اكتمال العملية.</p>
             </div>
+
             <div class="form-actions" style="margin-top: 35px;">
                 <button type="submit" class="btn-submit-main" id="uploadBtn">
                     <i class="fas fa-cloud-upload-alt"></i> بدء رفع الفيديو
                 </button>
             </div>
-                <div class="form-footer">
-                    <a href="/video"  class="cancel-text-link">
-                        <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>إلغاء والعودة للمعرض
-                    </a>
-                </div>
+
+            <div class="form-footer">
+                <a href="/video" class="cancel-text-link">
+                    <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i> إلغاء والعودة للمعرض
+                </a>
+            </div>
         </form>
     </div>
 </section>
 
+{# ربط الملف المحدث المصحح تلقائياً #}
 <script src="{{ url_for('static', path='js/video-handler.js') }}"></script>
 {% endblock %}

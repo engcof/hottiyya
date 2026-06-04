@@ -1,46 +1,37 @@
 import re
 from typing import Optional
-from urllib import request, request, response
 from fastapi import APIRouter, Request, Form, HTTPException, Query, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse
-from services.gallery_service import GalleryService
-from urllib.parse import urlparse
+from services.gallery_service import GalleryService, upload_to_cloudinary
 from core.templates import templates
 from security.session import SessionService
-from services.gallery_service import upload_to_cloudinary, GalleryService
 from services.analytics_service import AnalyticsService
 
 router = APIRouter(prefix="/gallery", tags=["gallery"])
 
+# قائمة بالامتدادات المسموح بها أمنياً لمعرض الصور
+ALLOWED_IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
+ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 
-# 1. عرض المعرض 
 @router.get("/", response_class=HTMLResponse)
 async def get_gallery(
     request: Request, 
     category: str = Query(None), 
-    page: int = Query(1, ge=1), # استقبال رقم الصفحة
+    page: int = Query(1, ge=1),
     success: Optional[str] = Query(None)
 ):
-    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_gallery", "delete_gallery"])
+    cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "add_gallery", "delete_gallery"])
     per_page = 12
     
-    # جلب الصور والإجمالي من السيرفس
     images, total_images = GalleryService.get_all_images(category, page, per_page)
-    
-    # حساب إجمالي الصفحات
-    total_pages = (total_images + per_page - 1) // per_page
-    
-    # جلب التصنيفات
+    total_pages = (total_images + per_page - 1) // per_page if total_images > 0 else 1
     categories = GalleryService.get_categories()
 
     messages = {"added": "✅ تم إضافة الصورة بنجاح.", "deleted": "✅ تم حذف الصورة بنجاح."}
     
-    # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
     context = {**cxt}
-    
-    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
     context.update({
-       "images": images,
+        "images": images,
         "selected_category": category,
         "categories": categories,
         "current_page": page,
@@ -55,145 +46,111 @@ async def get_gallery(
 @router.get("/add", response_class=HTMLResponse)
 async def add_image_page(request: Request):
     cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "add_gallery"])
-    if not cxt:
+    if not cxt or not cxt.get("perms", {}).get("add_gallery", False):
         return RedirectResponse(url="/gallery/?error=unauthorized", status_code=303)
 
-    # التحقق من الصلاحية
-    added = cxt.get("perms", {}).get("add_gallery", False)
-    if not added:
-         return RedirectResponse(url="/gallery/?error=unauthorized", status_code=303)
-
-    response = templates.TemplateResponse("gallery/add.html", cxt) # نمرر cxt مباشرة لأنه يحتوي على csrf_token
+    response = templates.TemplateResponse("gallery/add.html", cxt)
     SessionService.set_cache_headers(response)
     return response
 
-   
 @router.post("/add")
 async def add_new_image(
     request: Request,
     title: str = Form(...),
-    image: UploadFile = File(...), # تغيير من str إلى UploadFile
+    image: UploadFile = File(...),
     category: str = Form(None),
     csrf_token: str = Form(...)
 ):
-    cxt = SessionService.get_page_context(request,additional_perms=[ "add_gallery"])
+    cxt = SessionService.get_page_context(request, additional_perms=["add_gallery"])
     user = cxt["user"]
-    edited = cxt.get("perms", {}).get("add_gallery", False)
-    if not edited:
+    if not cxt.get("perms", {}).get("add_gallery", False):
         raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
     
     form = await request.form()
     SessionService.verify_csrf_token(request, form.get("csrf_token"))
 
-    # 2. تنظيف العنوان والتحقق منه
     title = title.strip()
     if not title or len(title) < 3:
-         # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-        context =   {**cxt}
-        
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-          "error": "العنوان قصير جداً", 
-        })
-        
-        response = templates.TemplateResponse("gallery/add.html",  context)
-        SessionService.set_cache_headers(response)
-        return response
+        return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "العنوان قصير جداً"})
       
     if title[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", title):
-        raise HTTPException(status_code=400, detail="العنوان لا يجب أن يبدأ برمز أو رقم (ابدأ بوصف واضح)")
+        raise HTTPException(status_code=400, detail="العنوان لا يجب أن يبدأ برمز أو رقم")
     
+    # 🔒 فحص الامتداد ونوع الملف (مهم جداً لسد ثغرة رفع الملفات الخبيثة)
+    file_ext = f".{image.filename.split('.')[-1]}".lower() if "." in image.filename else ""
+    if file_ext not in ALLOWED_IMAGE_EXTENSIONS or image.content_type not in ALLOWED_MIME_TYPES:
+        return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "نوع الملف غير مدعوم! يسمح فقط بالصور المعتادة."})
 
-    # 3. الرفع إلى Cloudinary أولاً
-    # نمرر ملف الصورة المرفوع إلى الدالة التي أنشأناها في gallery_service
+    cloudinary_url = None
+    image_id = None
     try:
-        # تأكيد العودة لبداية الملف لضمان قراءة البيانات كاملة
         await image.seek(0)
-        
-        # نمرر الملف للدالة المحسنة
+        # رفع الصورة للسحابة
         cloudinary_url = upload_to_cloudinary(image.file)
         
         if not cloudinary_url:
-            # في حال فشل الرفع، نرجع المستخدم لصفحة الإضافة مع رسالة واضحة
-            # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-            context =   {**cxt}
-            
-            # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-            context.update({
-              "error": "فشل الاتصال بـ Cloudinary، يرجى المحاولة مرة أخرى",
-            })
-            
-            response = templates.TemplateResponse("gallery/add.html",  context)
-            SessionService.set_cache_headers(response)
-            return response
+            return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "فشل الاتصال بالسحابة، حاول مجدداً"})
           
-        # 4. الحفظ في قاعدة البيانات باستخدام الرابط الناتج
-        GalleryService.add_image(
+        # الحفظ في قاعدة البيانات
+        image_id = GalleryService.add_image(
             title=title, 
-            image_url=cloudinary_url, # الرابط الذي جاء من Cloudinary
+            image_url=cloudinary_url, 
             user_id=user['id'], 
             category=category
         )
 
-        # 5. تسجيل النشاط (البصمة الاحترافية لـ engcof)
         AnalyticsService.log_action(
             user_id=user['id'],
             action="إضافة صورة",
             details=f"تم رفع صورة بعنوان '{title}' بنجاح إلى المعرض"
         )
-
         return RedirectResponse(url="/gallery?success=added", status_code=303)
 
     except Exception as e:
-        print(f"Server Internal Error: {e}")
-        # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-        context =   {**cxt}
-        
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-           "error": "حدث خطأ فني غير متوقع"
-        })
-        
-        response = templates.TemplateResponse("gallery/add.html",  context)
-        SessionService.set_cache_headers(response)
-        return response
-       
+        print(f"🔥 Server Internal Error: {e}")
+        # 🧹 حماية المنظومة من الملفات اليتيمة إذا فشلت قاعدة البيانات بعد الرفع
+        if cloudinary_url:
+            try:
+                from services.gallery_service import extract_public_id
+                import cloudinary.uploader
+                pub_id = extract_public_id(cloudinary_url)
+                if pub_id:
+                    cloudinary.uploader.destroy(pub_id)
+            except Exception as clean_err:
+                print(f"⚠️ فشل تنظيف السحابة: {clean_err}")
+
+        return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "حدث خطأ فني أثناء حفظ البيانات"})
 
 @router.post("/delete/{image_id}")
 async def delete_photo(
     request: Request, 
     image_id: int, 
-    page: int = Query(1), # استقبال رقم الصفحة الحالية
-    category: str = Query(None) # استقبال التصنيف الحالي إن وجد
+    page: int = Query(1), 
+    category: str = Query(None)
 ):
-    cxt = SessionService.get_page_context(request,additional_perms=[ "delete_gallery"])
+    cxt = SessionService.get_page_context(request, additional_perms=["delete_gallery"])
     user = cxt["user"]
-    perms = cxt.get("perms", {})
-    deleted = perms.get("delete_gallery", False)
-    # 1. فحص الصلاحية
-    if not deleted :
+    if not cxt.get("perms", {}).get("delete_gallery", False):
         raise HTTPException(status_code=403, detail="لا تملك الصلاحية لحذف الصورة.")
     
-    # 2. التحقق من CSRF
     form = await request.form()
     SessionService.verify_csrf_token(request, form.get("csrf_token"))
     
     try:
         if GalleryService.delete_image(image_id):
-            # تسجيل النشاط
             AnalyticsService.log_action(
                 user_id=user['id'],
                 action="حذف صورة",
-                details=f"تم حذف مادة من المعرض (ID: {image_id}) وإزالتها من السحابة"
+                details=f"تم حذف مادة من المعرض (ID: {image_id})"
             )
             
-            # بناء رابط العودة الذكي
+            # بناء رابط رجوع آمن وخالٍ من المشاكل البصرية
             redirect_url = f"/gallery?success=deleted&page={page}"
             if category and category != "None":
-                redirect_url += f"&category={category}"
+                from urllib.parse import quote
+                redirect_url += f"&category={quote(category)}"
                 
             return RedirectResponse(url=redirect_url, status_code=303)
-            
     except Exception as e:
         print(f"Delete Error: {e}")
-        raise HTTPException(status_code=500, detail=f"فشل الحذف للصورة {image_id}.")
+        raise HTTPException(status_code=500, detail="فشل الحذف الفني للصورة.")

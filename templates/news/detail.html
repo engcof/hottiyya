@@ -32,7 +32,8 @@
                             <line x1="8" y1="2" x2="8" y2="6"></line>
                             <line x1="3" y1="10" x2="21" y2="10"></line>
                         </svg>
-                        {{ item.created_at.strftime('%d %B %Y') }}
+                        {# تعديل صيغة التاريخ لتجنب انهيار النظام عند اختلاف لغة السيرفر الافتراضية #}
+                        {{ item.created_at.strftime('%Y/%m/%d') }}
                     </span>
                 </div>
             </header>
@@ -40,7 +41,7 @@
             {% if item.image_url %}
             <div class="featured-media">
                 {% if item.image_url.lower().endswith(('.mp4', '.mov', '.avi', '.webm')) %}
-                    <video controls preload="metadata" poster="">
+                    <video controls preload="metadata" style="max-width:100%; border-radius:12px;">
                         <source src="{{ item.image_url }}" type="video/mp4">
                         المتصفح لا يدعم تشغيل الفيديو.
                     </video>
@@ -51,11 +52,12 @@
             {% endif %}
 
             <div class="article-content ql-editor">
+                {# محتوى مطهر وآمن بالكامل بفضل استدعاء مكتبة nh3 في الباكيند #}
                 {{ item.content | safe }}
             </div>
 
             {% if perms.edit_news or perms.delete_news %}
-            <div class="news-article-actions">
+            <div class="news-article-actions" style="margin-top: 40px; display: flex; gap: 15px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
                 {% if perms.edit_news %}
                 <a href="/news/edit/{{ item.id }}" class="btn-edit">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -67,7 +69,7 @@
                 {% endif %}
 
                 {% if perms.delete_news %}
-                <form action="/news/delete/{{ item.id }}" method="post" onsubmit="return confirm('هل أنت متأكد من حذف هذا الخبر نهائيًا؟');">
+                <form action="/news/delete/{{ item.id }}" method="post" onsubmit="return confirm('هل أنت متأكد من حذف هذا الخبر نهائيًا؟');" style="margin: 0;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn-delete">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

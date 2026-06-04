@@ -19,14 +19,14 @@
             </a>
             {% endif %}
         </div>
-          <!-- شريط البحث -->
-        <div class="search-container  glass">
+
+        <div class="search-container glass">
             <form action="/news" method="get" class="search-form">
                 <input type="text" 
                     name="q" 
                     class="search-input" 
                     placeholder="ابحث في الأخبار..."
-                   value="{{ q or '' }}"
+                    value="{{ q or '' }}"
                     autocomplete="off">
                 
                 <button type="submit" class="search-submit-btn">
@@ -38,8 +38,8 @@
                 </button>
             </form>
             
-            {% if q%}
-                <div style="text-align: center;">
+            {% if q %}
+                <div style="text-align: center; margin-top: 10px;">
                     <a href="/news" class="clear-search-link">
                         ✕ إلغاء البحث والعودة للكل
                     </a>
@@ -47,7 +47,6 @@
             {% endif %}
         </div>
         
-      
         {% if not news %}
         <div class="empty-state">
             <div class="empty-icon">Newspaper</div>
@@ -86,13 +85,14 @@
                                 <line x1="8" y1="2" x2="8" y2="6"></line>
                                 <line x1="3" y1="10" x2="21" y2="10"></line>
                             </svg>
-                            {{ item.created_at.strftime('%d/%m/%Y') }}
+                            {{ item.created_at.strftime('%Y/%m/%d') }}
                         </span>
                     </div>
 
                     <h3 class="news-title">{{ item.title }}</h3>
                     <p class="news-excerpt">
-                        {{ item.content|striptags|truncate(120) }}
+                        {# تم معالجة إزالة وسوم التعديل وقص النص بشكل آمن ومحمي #}
+                        {{ item.content | striptags | truncate(120, True, '...') }}
                     </p>
 
                     <a href="/news/{{ item.id }}" class="read-more">
@@ -106,19 +106,22 @@
             </article>
             {% endfor %}
         </div>
+
         {% if total_pages > 1 %}
         <div class="pagination">
             {% if current_page > 1 %}
-                <a href="/news/?page={{ current_page - 1 }}{% if q %}&q={{ q }}{% endif %}" class="prev">السابق</a>
+                {# استخدام |urlencode لحماية معاملات البحث في الرابط #}
+                <a href="/news/?page={{ current_page - 1 }}{% if q %}&q={{ q | urlencode }}{% endif %}" class="prev">السابق</a>
             {% endif %}
 
             <span class="current">صفحة {{ current_page }} من {{ total_pages }}</span>
 
             {% if current_page < total_pages %}
-                <a href="/news/?page={{ current_page + 1 }}{% if q %}&q={{ q }}{% endif %}" class="next">التالي</a>
+                <a href="/news/?page={{ current_page + 1 }}{% if q %}&q={{ q | urlencode }}{% endif %}" class="next">التالي</a>
             {% endif %}
         </div>
         {% endif %}
+
         {% endif %}
     </div>
 </section>

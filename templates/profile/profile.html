@@ -180,7 +180,12 @@
             <span>استعراض الشجرة</span>
         </a>
         {% endif %}
-
+        {% if is_admin or perms.add_member %}
+        <a href="/family/add" class="action-btn" style="background: linear-gradient(135deg, #2563eb, #3b82f6); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
+            <i class="fas fa-network-wired" style="font-size: 1.2rem;"></i>
+            <span>إضافة عضو</span>
+        </a>
+        {% endif %}
         {% if is_admin or perms.view_logins_logs %}
         <a href="/admin/broadcast" class="action-btn" style="background: linear-gradient(135deg, #d97706, #f59e0b); color: white; padding: 15px; border-radius: 8px; text-decoration: none; display: flex; align-items: center; gap: 10px; font-weight: bold; transition: transform 0.2s;">
             <i class="fas fa-bullhorn" style="font-size: 1.2rem;"></i>

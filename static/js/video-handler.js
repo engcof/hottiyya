@@ -1,6 +1,4 @@
-/**
- * سكربت معالجة رفع الفيديوهات مع شريط التقدم المطور - موقع الحوطية
- */
+/* ========== ✅ سكربت معالجة رفع الفيديوهات مع شريط التقدم - موقع الحوطية ========== */
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('videoForm');
     const videoInput = document.getElementById('video_file');
@@ -15,25 +13,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const percentText = document.getElementById('percentText');
     const uploadStatus = document.getElementById('uploadStatus');
 
-    // دالة مساعدة لحقن التنبيهات الاحترافية ديناميكياً أعلى الاستمارة في حال حدوث خطأ
+    // القيود البرمجية المتوافقة مع السيرفر
+    const MAX_VIDEO_SIZE = 40 * 1024 * 1024; // الحد الأقصى 40 ميجابايت مثلاً
+    const ALLOWED_EXTENSIONS = ['mp4', 'm4v', 'mov', 'avi', 'webm'];
+
     function showDynamicAlert(message) {
-        // التحقق من عدم وجود تنبيه حالي معروض لمنع التكرار
         const existingAlert = document.getElementById('dynamic-video-alert');
         if (existingAlert) existingAlert.remove();
 
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert error';
         alertDiv.id = 'dynamic-video-alert';
+        alertDiv.style.cssText = "background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px; border-radius: 8px; margin-bottom: 20px; position: relative;";
         alertDiv.innerHTML = `
-            <i class="fas fa-exclamation-circle"></i>
-            <span>${message}</span>
-            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>${message}</span>
+                <button type="button" style="margin-right: auto; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #991b1b;" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
         `;
         
-        // إدخال التنبيه قبل حقول الاستمارة مباشرةً
         form.insertBefore(alertDiv, form.firstChild);
 
-        // جعل التنبيه يختفي تلقائياً بعد 6 ثوانٍ
         setTimeout(() => {
             alertDiv.style.transition = 'opacity 0.6s ease';
             alertDiv.style.opacity = '0';
@@ -41,16 +42,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 6000);
     }
 
-    // مراقبة تغيير حقل إدخال الفيديو وتحديث المعاينة
+    // مراقبة تغيير حقل إدخال الفيديو وتحديث المعاينة الذكية
     if (videoInput) {
         videoInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (file) {
+                const extension = file.name.split('.').pop().toLowerCase();
+                
+                // 🔒 فحص الامتداد قبل البدء بالرفع
+                if (!ALLOWED_EXTENSIONS.includes(extension)) {
+                    showDynamicAlert("❌ صيغة الفيديو غير مدعومة! يرجى اختيار ملف بصيغة (MP4, MOV, WEBM).");
+                    this.value = '';
+                    return;
+                }
+
+                // 🔒 فحص الحجم لتجنب رفض السيرفر لاحقاً
+                if (file.size > MAX_VIDEO_SIZE) {
+                    showDynamicAlert("❌ حجم الفيديو كبير جداً! الحد الأقصى المسموح به هو 40 ميجابايت.");
+                    this.value = '';
+                    return;
+                }
+
                 statusText.innerText = "تم اختيار: " + file.name;
                 const url = URL.createObjectURL(file);
                 previewVideo.src = url;
                 
-                // التحكم بالظهور والاختفاء عبر كتل العرض النظيفة
                 if (previewContainer) previewContainer.style.display = 'block';
                 if (uploadContent) uploadContent.style.display = 'none';
             }
@@ -63,15 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const formData = new FormData(form);
-            console.log("CSRF Token being sent:", formData.get('csrf_token'));
-
             const xhr = new XMLHttpRequest();
        
-            // تهيئة واجهة أزرار الرفع (تعطيل الزر لمنع نقرات متعددة)
+            // تهيئة واجهة أزرار الرفع
             uploadBtn.disabled = true;
-            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع...';
+            uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الرفع والاتصال...';
             
-            // إظهار حاوية شريط التقدم الموحدة
             if (progressContainer) progressContainer.style.display = 'block';
             if (uploadStatus) uploadStatus.innerText = 'يرجى عدم إغلاق الصفحة حتى اكتمال العملية';
 
@@ -83,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (percentText) percentText.innerText = percent + '%';
                     
                     if (percent === 100 && uploadStatus) {
-                        uploadStatus.innerText = 'تم الرفع بنجاح! جاري معالجة الفيديو سحابياً وحفظ السجل...';
+                        uploadStatus.innerText = '⏳ تم الرفع بنجاح! جاري المعالجة السحابية وحفظ البيانات (قد يستغرق ذلك دقيقة)...';
                     }
                 }
             });
@@ -91,35 +104,30 @@ document.addEventListener('DOMContentLoaded', () => {
             // معالجة استجابة السيرفر بعد انتهاء الرفع بالكامل
             xhr.onreadystatechange = function() {
                 if (xhr.readyState === 4) {
-                    if (xhr.status === 200 || xhr.status === 303) {
-                        // التحقق من وجود رابط إعادة توجيه من السيرفر، وإلا الذهاب للرابط الافتراضي لمعرض الفيديوهات
-                        const redirectUrl = xhr.getResponseHeader('Location') || "/video/?success=added";
-                        window.location.href = redirectUrl;
+                    // إذا نجح الطلب أو أعاد التوجيه بنجاح، نقوم بنقل المستخدم لصفحة المعرض الرئيسية مع رسالة النجاح
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        window.location.href = "/video/?success=added";
                     } else {
-                        console.error("Upload Failed. Status:", xhr.status, "Response:", xhr.responseText);
+                        console.error("Upload Failed. Status:", xhr.status);
                         
-                        // معالجة الأخطاء الشائعة وحقن التنبيه الذكي ديناميكياً
                         if (xhr.status === 413) {
-                            showDynamicAlert("فشل الرفع: حجم ملف الفيديو كبير جداً ويتجاوز الحد المسموح به للسيرفر.");
+                            showDynamicAlert("فشل الرفع: حجم ملف الفيديو يتجاوز الحد الأقصى المسموح به للسيرفر.");
                         } else if (xhr.status === 403) {
-                            showDynamicAlert("فشل الرفع: انتهت صلاحية الجلسة أو توكن الأمان (CSRF) غير صالح.");
+                            showDynamicAlert("فشل الرفع: انتهت صلاحية الجلسة أو توكن الأمان (CSRF) غير صالح. يرجى تحديث الصفحة.");
                         } else {
-                            showDynamicAlert(`حدث خطأ غير متوقع أثناء الرفع (كود: ${xhr.status}). يرجى إعادة المحاولة.`);
+                            showDynamicAlert("حدث خطأ أثناء معالجة أو رفع الفيديو على السيرفر. يرجى المحاولة مجدداً.");
                         }
                         
-                        // إعادة تهيئة زر الإرسال للسماح للمستخدم بالمحاولة مرة أخرى
+                        // إعادة تهيئة الزر للمحاولة مرة أخرى
                         uploadBtn.disabled = false;
                         uploadBtn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> بدء رفع الفيديو';
-                        
-                        // إخفاء شريط التقدم وتصفيره في حال حدوث خطأ لإتاحة المحاولة من جديد
                         if (progressContainer) progressContainer.style.display = 'none';
-                        if (progressBar) progressBar.style.width = '0%';
-                        if (percentText) percentText.innerText = '0%';
                     }
                 }
             };
 
             xhr.open('POST', form.action, true);
+            // نرسل الطلب، وسيتكفل الـ Backend الجديد بمعالجة الملف تدفقياً دون سحق الذاكرة
             xhr.send(formData);
         };
     }

@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}{{ article.title }} - المقالات{% endblock %}
+
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/articles.css') }}">
 {% endblock %}
@@ -29,7 +30,7 @@
                 <form action="/articles/delete/{{ article.id }}" method="post" style="display:inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <button type="submit" class="btn-delete"
-                            onclick="return confirm('متأكد 100% من حذف المقال نهائيًا؟ لا رجعة!');">
+                            onclick="return confirm('هل أنت متأكد 100% من حذف المقال نهائيًا؟ لن تتمكن من استعادته!');">
                         <svg viewBox="0 0 24 24" width="18" height="18">
                             <path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
                         </svg>
@@ -69,13 +70,13 @@
                 </div>
             </div>
 
-            <!-- المحتوى -->
-          <div class="article-content ql-editor">
+            <!-- المحتوى (تم تمريره عبر فلتر safe بعد التطهير الصارم بالباكيند لمنع ثغرات XSS المستهدفة) -->
+            <div class="article-content ql-editor">
                 {{ article.content | safe }}
             </div>
         </article>
 
-           <!-- التعليقات -->
+        <!-- التعليقات -->
         <section class="comments-section glass" id="comments">
             <h2 class="section-title">
                 التعليقات
@@ -100,7 +101,7 @@
                     </form>
                 </div>
             {% elif user %}
-                <!-- الحالة 2: مسجل دخول ولكن ليس لديه صلاحية perms.add_comment -->
+                <!-- الحالة 2: مسجل دخول ولكن ليس لديه صلاحية لـ add_comment -->
                 <div class="permission-prompt glass">
                     <div class="prompt-icon">
                         <svg viewBox="0 0 24 24" width="40" height="40">
@@ -121,8 +122,7 @@
                 </div>
             {% endif %}
 
-    <!-- قائمة التعليقات المتبقية كما هي في كودك... -->
-
+            <!-- قائمة التعليقات -->
             {% if comments %}
             <div class="comments-list">
                 {% for c in comments %}
@@ -132,15 +132,17 @@
                             <strong>{{ c.username }}</strong>
                             <span class="comment-date">{{ c.created_at.strftime('%d/%m/%Y في %I:%M %p') }}</span>
                         </div>
-                         {% if user and (user.role == "admin" or user.id == c.user_id or perms.delete_comment) %}
+                        {# التحقق الصارم من ملكية التعليق أو صلاحية حذفه العامة لإدارة المنصة #}
+                        {% if user and (user.role == "admin" or user.id == c.user_id or perms.delete_comment) %}
                             <form action="/articles/{{ article.id }}/comment/{{ c.id }}/delete" method="post" style="display:inline;">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                 <button type="submit" class="btn-delete-comment" title="حذف التعليق"
-                                    onclick="return confirm('متأكد من حذف التعليق؟');">حذف</button>
+                                    onclick="return confirm('هل أنت متأكد من حذف هذا التعليق نهائياً؟');">حذف</button>
                             </form>
                         {% endif %}
                     </div>
                     <div class="comment-body">
+                        {# الباكيند يمرر النصوص المحمية بفلتر الهروب الآمن، وهنا يتم عرضها بالأسطر المنسقة #}
                         {{ c.content | newline_to_br | safe }}
                     </div>
                 </div>
@@ -157,15 +159,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const textarea = document.querySelector('textarea[name="content"]');
-    if (textarea) {
-        const counter = document.querySelector('.char-counter');
-        textarea.addEventListener('input', () => {
-            counter.textContent = textarea.value.length + '/1000';
-        });
-    }
-});
-</script>
+<script src="{{ url_for('static', path='js/article-editor.js') }}"></script>
 {% endblock %}

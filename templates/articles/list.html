@@ -18,6 +18,15 @@
             {% endif %}
         </div>
 
+        {# عرض التنبيهات والأخطاء القادمة من الباكيند إن وجدت #}
+        {% if error %}
+        <div class="alert error" id="error-alert" style="margin-bottom: 20px;">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{% if error == 'unauthorized' %}غير مصرح لك بالقيام بهذا الإجراء.{% else %}{{ error }}{% endif %}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+        </div>
+        {% endif %}
+
         <!-- حالة عدم وجود مقالات -->
         {% if not articles %}
         <div class="empty-state glass">
@@ -57,11 +66,12 @@
                     </div>
                     {% if a.image_url %}
                     <div class="articles-thumbnail-wrapper">
-                        <img src="{{ a.image_url }}" alt="{{ a.title }}" class="articles-thumb">
+                        <img src="{{ a.image_url }}" alt="{{ a.title }}" class="articles-thumb" loading="lazy">
                     </div>
                     {% endif %}
                 </div>
                 <div class="articles-excerpt">
+                    {# تنظيف آمن للنصوص قبل البتر لمنع كسر عناصر HTML #}
                     {{ a.content|striptags|truncate(200) }}
                 </div>
                 <div class="articles-footer">
@@ -85,7 +95,6 @@
                     </a>
                   </div>
             </article>
-           
             {% endfor %}
         </div>
         
@@ -105,5 +114,4 @@
         {% endif %}
     </div>
 </section>
-
 {% endblock %}

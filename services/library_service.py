@@ -19,6 +19,10 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.discovery import build
 from psycopg2.extras import RealDictCursor
 from postgresql import get_db_context
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 # إجبار النظام على استخدام IPv4 فقط لاتصالات Google API لضمان الاستقرار في Render
 orig_getaddrinfo = socket.getaddrinfo
@@ -29,8 +33,8 @@ socket.getaddrinfo = getaddrinfo_ipv4
 class LibraryService:
     SCOPES = ['https://www.googleapis.com/auth/drive.file']
     TOKEN_FILE = 'token.json'
-    GOOGLE_DRIVE_FOLDER_ID = '1nbegMhH8rIQf7mRiNHkv4P5wamwFMbeZ'
-
+    GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
+   
     @staticmethod
     def get_drive_service():
         """بناء خدمة مع تعطيل إعادة التوجيه التلقائي واستخدام الملفات السرية في الإنتاج"""

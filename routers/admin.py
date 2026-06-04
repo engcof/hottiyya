@@ -100,13 +100,13 @@ async def admin_users_page(request: Request, page: int = 1, search: str = ""):
 
 @router.post("/edit_user")
 async def edit_user(request: Request, user_id: int = Form(...), username: str = Form(...), 
-                    role: str = Form(...), current_page: int = Form(1), csrf_token: str = Form(...)):
+                    role: str = Form(...), current_page: int = Form(1), from_page: str = Form("admin", alias="from"), csrf_token: str = Form(...)):
     SessionService.verify_csrf_token(request, csrf_token)
     
     user = request.session.get("user")
     if not SessionService.can(user, "edit_users"):
         request.session["error_message"] = "خطأ أمني: لا تملك صلاحية تعديل بيانات الأعضاء!"
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
     
     target_user = AuthService.get_user_by_id(user_id)
     
@@ -114,88 +114,88 @@ async def edit_user(request: Request, user_id: int = Form(...), username: str = 
         SessionService.verify_manager_is_not_touching_admin(user, target_user, "تعديل بيانات")
     except HTTPException as e:
         request.session["error_message"] = e.detail
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
     # 🔒 حماية إضافية: منع المشرفين من تغيير أدوار الحسابات إلى أدمن، أو التلاعب بأدوار الأدمنية القائمين
     if user["username"] != "admin":
         if role == "admin" or target_user.get("role") == "admin":
             request.session["error_message"] = "إجراء محظور: الصلاحية الحصرية لتعيين أو تعديل رتب المسؤولين تتبع للإدارة العليا فقط!"
-            return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+            return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
     success, message = AuthService.update_user(user_id, html.escape(username.strip()), role)
     request.session["success_message" if success else "error_message"] = message
-    return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+    return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
 
 @router.post("/delete_user")
 async def delete_user(request: Request, user_id: int = Form(...), 
-                      current_page: int = Form(1), csrf_token: str = Form(...)):
+                      current_page: int = Form(1), from_page: str = Form("admin", alias="from"), csrf_token: str = Form(...)):
     SessionService.verify_csrf_token(request, csrf_token)
     
     user = request.session.get("user")
     if not SessionService.can(user, "delete_users"):
         request.session["error_message"] = "خطأ أمني: لا تملك صلاحية حذف الحسابات!"
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
         
     target_user = AuthService.get_user_by_id(user_id)
     try:
         SessionService.verify_manager_is_not_touching_admin(user, target_user, "حذف حساب مسؤول")
     except HTTPException as e:
         request.session["error_message"] = e.detail
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
         
     if user and user.get("id") == user_id:
         request.session["error_message"] = "لا يمكنك حذف حسابك الشخصي وأنت متصل!"
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
     success, message = AuthService.delete_user(user_id)
     request.session["success_message" if success else "error_message"] = message
-    return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+    return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
 
 @router.post("/give_permission")
 async def give_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), 
-                         current_page: int = Form(1), csrf_token: str = Form(...)):
+                         current_page: int = Form(1), from_page: str = Form("admin", alias="from"), csrf_token: str = Form(...)):
     SessionService.verify_csrf_token(request, csrf_token)
     
     user = request.session.get("user")
     if not SessionService.can(user, "grant_permissions"):
         request.session["error_message"] = "خطأ أمني: غير مصرح لك بمنح صلاحيات للأعضاء."
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
     target_user = AuthService.get_user_by_id(user_id)
     try:
         SessionService.verify_manager_is_not_touching_admin(user, target_user, "منح صلاحية لمسؤول")
     except HTTPException as e:
         request.session["error_message"] = e.detail
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
     success, message = AuthService.give_permission(user_id, permission_id)
     request.session["success_message" if success else "error_message"] = message
-    return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+    return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
 
 @router.post("/remove_permission")
 async def remove_permission(request: Request, user_id: int = Form(...), permission_id: int = Form(...), 
-                           current_page: int = Form(1), csrf_token: str = Form(...)):
+                           current_page: int = Form(1), from_page: str = Form("admin", alias="from"), csrf_token: str = Form(...)):
     SessionService.verify_csrf_token(request, csrf_token)
     
     user = request.session.get("user")
     if not SessionService.can(user, "grant_permissions"):
         request.session["error_message"] = "خطأ أمني: غير مصرح لك بسحب صلاحيات الأعضاء."
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
     
     target_user = AuthService.get_user_by_id(user_id)
     try:
         SessionService.verify_manager_is_not_touching_admin(user, target_user, "سحب صلاحية من مسؤول")
     except HTTPException as e:
         request.session["error_message"] = e.detail
-        return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
+        return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
     
     success, message = AuthService.remove_permission(user_id, permission_id)
     request.session["success_message" if success else "error_message"] = message
-    return RedirectResponse(f"/admin/users?page={current_page}", status_code=303)
-
+    
+    return RedirectResponse(f"/admin/users?page={current_page}&from={from_page}", status_code=303)
 
 # --- صفحات الإضافة وتغيير كلمة المرور للمشرفين المخولين ---
 
@@ -205,8 +205,13 @@ async def show_add_user_page(request: Request):
     cxt = SessionService.get_page_context(request, additional_perms=["add_users"])
     user = cxt["user"]
     
-    if not user or (not cxt["is_admin"] and not cxt["perms"].get("add_users")):
+    if not user :
         return RedirectResponse("/auth/login?error=unauthorized", status_code=303)
+    
+    # التحقق من الصلاحية
+    added = cxt.get("perms", {}).get("add_users", False)
+    if not added:
+        return RedirectResponse("/auth/login?error=unauthorized2", status_code=303)
 
     if from_page == "profile":
         back_url = "/profile"
@@ -232,7 +237,7 @@ async def show_add_user_page(request: Request):
 
 @router.post("/add_user")
 async def process_add_user(request: Request, username: str = Form(...), password: str = Form(...), 
-                          role: str = Form(...), csrf_token: str = Form(...)):
+                          role: str = Form(...), from_page: str = Form("admin", alias="from"), csrf_token: str = Form(...)):
     SessionService.verify_csrf_token(request, csrf_token)
     
     user = request.session.get("user")
@@ -245,9 +250,9 @@ async def process_add_user(request: Request, username: str = Form(...), password
     success, message = AuthService.add_new_user(html.escape(username.strip()), password, role)
     if success:
         request.session["success_message"] = message
-        return RedirectResponse("/admin", status_code=303)
+        return RedirectResponse("/admin/add_user", status_code=303)
     request.session["error"] = message
-    return RedirectResponse("/admin/add_user", status_code=303)
+    return RedirectResponse("/admin/add_user?from=" + from_page, status_code=303)
 
 
 @router.get("/change_password")
@@ -300,6 +305,7 @@ async def process_change_password(
     request: Request, 
     user_id: int = Form(...), 
     new_password: str = Form(...), 
+    from_page: str = Form("admin", alias="from"), 
     csrf_token: str = Form(...)
 ):
     SessionService.verify_csrf_token(request, csrf_token)
@@ -316,23 +322,23 @@ async def process_change_password(
         if user["username"] != "admin":
             # إذا كان أدمن تنفيذي أو أي دور آخر، يتم حظره وطرده فوراً
             request.session["error"] = "خطأ أمني صارم: لا يحق للأدمن التنفيذي أو المشرفين تغيير كلمة مرور الأدمن الأساسي للموقع."
-            return RedirectResponse("/admin/change_password", status_code=303)
+            return RedirectResponse("/admin/change_password?from=" + from_page, status_code=303)
             
     # الفحص الافتراضي المعتاد لبقية الأدوار لمنع التداخل والتعارض
     try:
         SessionService.verify_manager_is_not_touching_admin(user, target_user, "تعديل كلمة مرور مسؤول")
     except HTTPException as e:
         request.session["error"] = e.detail
-        return RedirectResponse("/admin/change_password", status_code=303)
+        return RedirectResponse("/admin/change_password?from=" + from_page, status_code=303)
    
     # تنفيذ عملية التحديث الفعلي في قاعدة البيانات
     success, message = AuthService.change_password(user_id, new_password, request=request)
     if success:
         request.session["success_message"] = "تم تحديث كلمة المرور بنجاح."
-        return RedirectResponse("/admin", status_code=303)
+        return RedirectResponse("/admin/change_password?from=" + from_page, status_code=303)
         
     request.session["error"] = message
-    return RedirectResponse("/admin/change_password", status_code=303)
+    return RedirectResponse("/admin/change_password?from=" + from_page, status_code=303)
 
 # --- صفحات السجلات والرقابة المفتوحة ---
 

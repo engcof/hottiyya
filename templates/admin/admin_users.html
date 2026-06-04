@@ -111,7 +111,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    
+                                     <input type="hidden" name="from" value="{{ from_page }}">
                                     <input type="text" name="username" value="{{ u.username }}" class="small-input">
                                     {% if user.username == 'admin' %}
                                    <select name="role" class="small-select">
@@ -130,7 +130,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    
+                                     <input type="hidden" name="from" value="{{ from_page }}">
                                     <select name="permission_id" class="small-select" style="max-width: 180px;" required>
                                         <option value="" disabled selected>اختر صلاحية...</option>
                                         
@@ -164,7 +164,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
-                                    
+                                    <input type="hidden" name="from" value="{{ from_page }}">
                                     <select name="permission_id" class="small-select" style="max-width: 180px;" required>
                                         {% if user_permissions[u.id] %}
                                             <option value="" disabled selected>اختر لسحبها...</option>
@@ -213,6 +213,7 @@
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                     <input type="hidden" name="current_page" value="{{ current_page }}"> 
                                     <input type="hidden" name="user_id" value="{{ u.id }}">
+                                    <input type="hidden" name="from" value="{{ from_page }}">
                                     <button type="submit" class="btn-small delete" style="background-color: var(--danger);"
                                         onclick="return confirm('⚠️ هل أنت متأكد من حذف هذا المستخدم نهائياً من النظام؟');">
                                         <i class="fas fa-trash-alt"></i> حذف

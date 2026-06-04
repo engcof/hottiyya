@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}إضافة كتاب جديد{% endblock %}
+{% block title %}إضافة كتاب جديد - المكتبة الرقمية{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
 {% endblock %}
 
 {% block content %}
-<div id="overlay">
+<div id="overlay" style="display: none;">
     <div class="spinner"></div>
     <p class="upload-status-text">جاري معالجة الكتاب ورفعه... يرجى الانتظار</p>
 </div>
@@ -16,12 +16,14 @@
     <div class="form-card">
         <div class="form-header">
             <h2 class="form-title">إضافة كتاب جديد</h2>
-            <p class="form-subtitle">شارك المعرفة والمراجع</p>
+            <p class="form-subtitle">شارك المعرفة والمراجع والكتب الرقمية</p>
         </div>
 
         {% if error %}
-        <div class="alert-error-box">
-            <i class="fas fa-exclamation-triangle"></i> {{ error }}
+        <div class="alert error" style="margin-bottom: 20px;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>{{ error }}</span>
+            <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
         </div>
         {% endif %}
 
@@ -36,13 +38,13 @@
 
                 <div class="form-group">
                     <label>اسم المؤلف</label>
-                    <input type="text" name="author" class="input-field" placeholder="اسم الكاتب" value="{{ author if author else '' }}">
+                    <input type="text" name="author" class="input-field" placeholder="اسم الكاتب أو الجهة المصدرة" value="{{ author if author else '' }}">
                 </div>
 
                 <div class="form-group">
                     <label>تصنيف الكتاب <span class="required">*</span></label>
                     <select name="category" class="input-field" required>
-                        <option value="">-- اختر التصنيف --</option>
+                        <option value="" disabled selected>-- اختر التصنيف المناسب --</option>
                         {% for cat in categories %}
                         <option value="{{ cat }}">{{ cat }}</option>
                         {% endfor %}
@@ -50,16 +52,16 @@
                 </div>
             </div>
 
-            <div class="success-container">
+            <div class="success-container" style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                     <div>
                         <label style="margin-bottom: 0; color: #166534; font-weight: bold;">
-                            <i class="fas fa-check-circle"></i> إتاحة الكتاب للتحميل المباشر
+                            <i class="fas fa-check-circle"></i> إتاحة الكتاب للتحميل المباشر للأعضاء
                         </label>
-                        <small style="color: #4b6354; display: block; margin-top: 4px;">يمكنك تغيير هذا الخيار لاحقاً من صفحة التعديل.</small>
+                        <small style="color: #4b6354; display: block; margin-top: 4px;">عند إيقافه، سيتمكن الأعضاء من تصفح الكتاب وقراءته أونلاين فقط دون تحميله.</small>
                     </div>
                     <label class="switch">
-                        <input type="checkbox" name="allow_download" checked>
+                        <input type="checkbox" name="allow_download" value="on" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -70,24 +72,26 @@
                 <div class="file-input-wrapper">
                     <input type="file" name="book_file" 
                         accept=".pdf,.doc,.docx,.ppt,.pptx" 
-                        required style="width: 100%;">
-                    <p class="file-hint">الحد الأقصى للملف 40 ميجابايت (يدعم PDF, Word, PowerPoint)</p>
+                        required style="width: 100%; padding: 8px; border: 1px dashed #cbd5e1; border-radius: 4px;">
+                    <p class="file-hint" style="color: #64748b; font-size: 0.8rem; margin-top: 6px;">ℹ️ الحد الأقصى المسموح به للملف 40 ميجابايت (يدعم الامتدادات القياسية للوثائق).</p>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>صورة الغلاف (اختياري)</label>
+                <label>صورة الغلاف مخصصة (اختياري)</label>
                 <input type="file" name="cover_image" class="input-field" accept="image/*">
+                <p class="file-hint" style="color: #64748b; font-size: 0.8rem; margin-top: 6px;">💡 إذا لم تقم برفع صورة، سيقوم النظام تلقائياً باستخراج الصفحة الأولى كغلاف للكتاب.</p>
             </div>
+
             <div style="margin-top: 35px;">
                 <button type="submit" class="btn-submit-main">
-                    <i class="fas fa-cloud-upload-alt"></i> رفع الكتاب الآن
+                    <i class="fas fa-cloud-upload-alt"></i> رفع ومعالجة الكتاب الآن
                 </button>
             </div>
 
             <div class="form-footer">
-                <a href="/library" class="cancel-text-link">
-                    <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i>إلغاء والعودة للمكتبة
+                <a href="{% if from_page == 'profile' %}/profile{% else %}/library{% endif %}" class="cancel-text-link">
+                    <i class="fas fa-arrow-right" style="font-size: 0.8rem;"></i> إلغاء والعودة للخلف
                 </a>
             </div>
         </form>
@@ -95,11 +99,10 @@
 </section>
 
 <script>
-    // تفعيل شاشة التحميل عند الضغط على زر الرفع
     document.getElementById('uploadForm').onsubmit = function() {
         document.getElementById('overlay').style.display = 'flex';
         const statusText = document.querySelector('.upload-status-text');
-        statusText.innerHTML = "جاري تحضير الكتاب... سيتم تحويلك للمكتبة خلال لحظات";
+        statusText.innerHTML = "🚀 جاري فحص وضغط الملف محلياً واستخراج الغلاف... سيتم توجيهك فوراً للمكتبة ليعمل الرفع في الخلفية.";
     };
 </script>
 {% endblock %}

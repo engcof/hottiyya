@@ -1,38 +1,33 @@
-import re  
-from fastapi import BackgroundTasks
-from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse,StreamingResponse
-from urllib.parse import quote
+from fastapi import APIRouter, Request, Form, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
+import re
+import html 
+import os
+from typing import Optional
+
+import urllib
+
+import httpx
 from security.session import SessionService
 from services.analytics_service import AnalyticsService
 from services.library_service import LibraryService
-import shutil
-import os
 from core.templates import templates
-import html 
-import httpx
-import urllib.parse
 
 router = APIRouter(prefix="/library", tags=["Library"])
 
-# التصنيفات المعتمدة
-CATEGORIES = ["كتب دينية", "كتب علمية", "كتب طبية", "كتب هندسية", "كتب ثقافية","مقرارات ومناهج سودانية", "روايات"]
-# التعبير النمطي الجديد يدعم العربية والإنجليزية والأرقام وعلامات الترقيم الشائعة
-VALID_TITLE_REGEX = r"[\u0600-\u06FFa-zA-Z\s\d\.\,\!\؟\-\(\)]+"
+CATEGORIES = ["كتب دينية", "كتب علمية", "كتب طبية", "كتب هندسية", "كتب ثقافية", "مقرارات ومناهج سودانية", "روايات"]
+VALID_TITLE_REGEX = r"^[\u0600-\u06FFa-zA-Z0-9\s\.\,\!\؟\-\(\)\[\]\{\}]+$"
+ALLOWED_EXTENSIONS = {'.pdf', '.doc', '.docx', '.ppt', '.pptx'}
+MAX_FILE_SIZE_BYTES = 40 * 1024 * 1024  # 40 ميجابايت كحد أقصى للحماية
 
 @router.get("/", response_class=HTMLResponse)
 async def list_library(request: Request, category: str = "الكل", page: int = 1, q: str = None):
-    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_book", "edit_book", "delete_book"])
+    cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "add_book", "edit_book", "delete_book"])
     
     PER_PAGE = 10
-    # تمرير نص البحث للسيرفس
-    books, total_pages , page_numbers= LibraryService.get_books_paginated(category, page, PER_PAGE, q)
+    books, total_pages, page_numbers = LibraryService.get_books_paginated(category, page, PER_PAGE, q)
    
-
-   # 2. تجهيز السياق الموحد (سيحتوي على user و can_view و unread_count)
-    context ={**cxt}
-    
-    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context = {**cxt}
     context.update({
         "books": books, 
         "categories": CATEGORIES,
@@ -48,29 +43,23 @@ async def list_library(request: Request, category: str = "الكل", page: int =
     return response
     
 @router.get("/add", response_class=HTMLResponse)
-async def add_book_page(request: Request):
-    cxt = SessionService.get_page_context(request,additional_perms=["view_tree", "add_book"])
+async def add_book_page(request: Request, from_page: str = "library"):
+    cxt = SessionService.get_page_context(request, additional_perms=["view_tree", "add_book"])
     user = cxt["user"]
     if not user:
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
 
-    # التحقق من الصلاحية
-    added = cxt.get("perms", {}).get("add_book", False)
-    if not added:
+    if not cxt.get("perms", {}).get("add_book", False):
         return RedirectResponse(url=f"/library?error=unauthorized", status_code=303)
    
-   
-    context =   {**cxt}
-    
-    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    context = {**cxt}
     context.update({
-         "categories": CATEGORIES  
+         "categories": CATEGORIES,
+         "from_page": from_page
     })
     response = templates.TemplateResponse("library/add.html", context)
     SessionService.set_cache_headers(response)
     return response
-    
-   
 
 @router.post("/add")
 async def add_book(
@@ -79,123 +68,123 @@ async def add_book(
     title: str = Form(...),
     author: str = Form(None),
     category: str = Form(...),
-    allow_download: bool = Form(True),
+    allow_download: Optional[str] = Form(None), # 💡 إصلاح ثغرة الـ Checkbox بالاستقبال النصي المرن
     book_file: UploadFile = File(...),
     cover_image: UploadFile = File(None)
 ):
-    cxt = SessionService.get_page_context(request,additional_perms=[ "add_book"])
+    cxt = SessionService.get_page_context(request, additional_perms=["add_book"])
     user = cxt["user"]
-    if not user :
+    if not user:
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
 
-    added = cxt.get("perms", {}).get("add_book", False)
-    if not added:
+    if not cxt.get("perms", {}).get("add_book", False):
         raise HTTPException(status_code=403, detail="لا تملك صلاحية الإضافة")
 
-    
     form = await request.form()
     SessionService.verify_csrf_token(request, form.get("csrf_token"))
     
+    # تحويل حالة الـ Checkbox إلى متغيّر منطقي حقيقي
+    is_download_allowed = True if allow_download == "on" else False
+    
     title_stripped = title.strip()
-    title_safe = html.escape(title_stripped)
-    author_safe = html.escape(author.strip()) if author else "غير معروف"
+    author_stripped = author.strip() if author else "غير معروف"
     
-    error = None
+    # 🚨 1. جدار الحماية للباكيند: فحص الامتداد والحجم قبل استهلاك الموارد
+    file_ext = os.path.splitext(book_file.filename).lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        return await return_with_error(request, cxt, "صيغة الملف غير مدعومة! المسموح: PDF, Word, PowerPoint", title_stripped, author_stripped)
+        
+    # قراءة حجم الملف التقريبي لحماية الهارد ديسك
+    book_file.file.seek(0, os.SEEK_END)
+    file_size = book_file.file.tell()
+    book_file.file.seek(0)  # إعادة المؤشر للبداية لقراءته لاحقاً
+    
+    if file_size > MAX_FILE_SIZE_BYTES:
+        return await return_with_error(request, cxt, "حجم الملف كبير جداً! الحد الأقصى المسموح به هو 40 ميجابايت.", title_stripped, author_stripped)
+
+    # 🚨 2. فحص نمط العنوان ضد محاولات الحقن
     if not title_stripped:
-        error = "عنوان الكتاب مطلوب."
+        return await return_with_error(request, cxt, "عنوان الكتاب مطلوب.", title_stripped, author_stripped)
     elif not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
-        error = "العنوان يحتوي على رموز غير مسموح بها."
+        return await return_with_error(request, cxt, "العنوان يحتوي على رموز غير مسموح بها.", title_stripped, author_stripped)
     
-    if error:
-        context =   {**cxt}
-    
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-            "categories": CATEGORIES, 
-             "error": error, 
-            "title": title, "author": author
-        })
-        response = templates.TemplateResponse("library/add.html", context)
-        SessionService.set_cache_headers(response)
-        return response
-     
+    if category not in CATEGORIES:
+        return await return_with_error(request, cxt, "التصنيف المختار غير مدرج بالنظام.", title_stripped, author_stripped)
 
     try:
-        # 1. المرحلة السريعة: ضغط الملف واستخراج الغلاف (تعيد المسار المحلي للملف)
-        # تم استبدال upload_file بـ process_and_get_metadata
+        # معالجة سريعة واستخراج البيانات الوصفية محلياً
         local_file_path, auto_cover_url, actual_size_str = await LibraryService.process_and_get_metadata(book_file)
 
-        # 2. تحديد الغلاف النهائي (يدوي أو تلقائي)
         final_cover_url = auto_cover_url
         if cover_image and cover_image.filename:
             manual_cover = await LibraryService.upload_cover(cover_image)
             if manual_cover:
                 final_cover_url = manual_cover
 
-        # 3. حفظ البيانات في القاعدة فوراً برابط مؤقت (pending)
-        # ملاحظة: حذفنا السطر المكرر لـ file_url
+        # تخزين البيانات نظيفة في قاعدة البيانات
         book_id = await LibraryService.add_book(
-            title=title_safe,
-            author=author_safe,
+            title=title_stripped,
+            author=author_stripped,
             category=category,
-            allow_download=allow_download,
-            file_url="pending", # سيتغير لاحقاً في الخلفية
+            allow_download=is_download_allowed,
+            file_url="pending", 
             cover_url=final_cover_url,
             uploader_id=user["id"],
             file_size=actual_size_str 
         )
 
-        # 4. تشغيل الرفع الحقيقي للسحابة في الخلفية (لن ينتظر المستخدم)
+        # الترحيل الفوري للمهمة الثقيلة لتعمل في الخلفية
         background_tasks.add_task(
             LibraryService.background_upload, 
-            local_file_path,   # المسار المحلي الذي نتج عن المعالجة
+            local_file_path,   
             book_file.filename, 
             book_id
         )
 
-        # 5. تسجيل النشاط
-        AnalyticsService.log_action(user["id"], "إضافة كتاب", f"بدأ {user['username']} رفع كتاب: {title_safe}")
-
-        # إعادة المستخدم للمكتبة فوراً
+        AnalyticsService.log_action(user["id"], "إضافة كتاب", f"بدأ {user['username']} رفع كتاب: {title_stripped}")
         return RedirectResponse("/library", status_code=303)
 
     except Exception as e:
         print(f"❌ Error during processing: {e}")
-        context =   {**cxt}
-    
-        # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
-        context.update({
-            "error": "حدث خطأ أثناء معالجة الملف، تأكد من صلاحية الملف والتوكن.",
-            "categories": CATEGORIES
-        })
-        response = templates.TemplateResponse("library/add.html", context)
-        SessionService.set_cache_headers(response)
-        return response
-        
+        return await return_with_error(request, cxt, "حدث خطأ غير متوقع في الخادم أثناء معالجة الملف.", title_stripped, author_stripped)
+
+async def return_with_error(request, cxt, error_msg, title, author):
+    """دالة مساعدة لإرجاع رسالة الخطأ مع الحفاظ على المدخلات واضحة"""
+    context = {**cxt}
+    context.update({
+        "categories": CATEGORIES, 
+        "error": error_msg, 
+        "title": title, 
+        "author": author,
+        "from_page": request.query_params.get("from", "library")
+    })
+    response = templates.TemplateResponse("library/add.html", context)
+    SessionService.set_cache_headers(response)
+    return response
 
 @router.get("/edit/{book_id}", response_class=HTMLResponse)
 async def edit_book_page(request: Request, book_id: int):
-    cxt = SessionService.get_page_context(request,additional_perms=["edit_book"])
+    cxt = SessionService.get_page_context(request, additional_perms=["edit_book"])
     user = cxt["user"]
-    if not user :
+    if not user:
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
-    # التحقق من الصلاحية
-    edited = cxt.get("perms", {}).get("edit_book", False)
-    if not edited:
-        return RedirectResponse(url=f"/library?error=unauthorized", status_code=303)
+        
+    if not cxt.get("perms", {}).get("edit_book", False):
+        return RedirectResponse(url="/library?error=unauthorized", status_code=303)
     
-    # جلب بيانات الكتاب الحالية من قاعدة البيانات
     book = LibraryService.get_book_by_id(book_id)
-    
     if not book:
         raise HTTPException(status_code=404, detail="الكتاب غير موجود")
 
-    context =   {**cxt}
-    
-    # 3. تحديث السياق بالبيانات الخاصة بالصفحة الرئيسية
+    # التقاط مسار العودة الذكي (من الصفحة الشخصية أو المكتبة)
+    from_page = request.query_params.get("from", "library")
+
+    context = {**cxt}
     context.update({
         "book": book,
-        "categories": CATEGORIES 
+        "categories": CATEGORIES,
+        "from_page": from_page,
+        "error": request.query_params.get("error_msg", None) # عرض الأخطاء المرتدة إن وجدت
     })
     response = templates.TemplateResponse("library/edit.html", context)
     SessionService.set_cache_headers(response)
@@ -209,33 +198,47 @@ async def edit_book(
     title: str = Form(...),
     author: str = Form(None),
     category: str = Form(...),
-    allow_download: bool = Form(False)
+    allow_download: Optional[str] = Form(None), # 💡 تم الإصلاح: استقبال نصي مرن لحل مشكلة الـ Checkbox
+    from_page: str = Form("library", alias="from") # 💡 حفظ مسار العودة الذكي بعد ضغط الحفظ
 ):
-    cxt = SessionService.get_page_context(request,additional_perms=[ "edit_book"])
+    cxt = SessionService.get_page_context(request, additional_perms=["edit_book"])
     user = cxt["user"]
-    if not user :
+    if not user:
         return RedirectResponse(url="/auth/login/?error=unauthorized", status_code=303)
-    # 🛡️ خط الدفاع الأخير: إذا حاول شخص تجاوز الـ GET وإرسال الطلب مباشرة
-    is_allowed = cxt.get("perms", {}).get("edit_book", False)
-    if not is_allowed:
+        
+    if not cxt.get("perms", {}).get("edit_book", False):
         raise HTTPException(status_code=403, detail="لا تملك صلاحية التعديل")
 
-    
     form = await request.form()
     SessionService.verify_csrf_token(request, form.get("csrf_token"))
     
-    # تنظيف البيانات
-    title_safe = html.escape(title.strip())
-    author_safe = html.escape(author.strip()) if author else "غير معروف"
+    # تحويل حالة صندوق الاختيار منطقياً
+    is_download_allowed = True if allow_download == "on" else False
+    
+    title_stripped = title.strip()
+    author_stripped = author.strip() if author else "غير معروف"
 
-    # استدعاء دالة التحديث من السيرفس (التي أضفناها سابقاً)
-    success = LibraryService.update_book(book_id, title_safe, author_safe, category, allow_download)
+    # 🚨 جدار الحماية: التحقق من صحة المدخلات ونظافتها
+    if not title_stripped:
+        return RedirectResponse(f"/library/edit/{book_id}?from={from_page}&error_msg=عنوان الكتاب مطلوب", status_code=303)
+    
+    if not re.fullmatch(VALID_TITLE_REGEX, title_stripped):
+        return RedirectResponse(f"/library/edit/{book_id}?from={from_page}&error_msg=العنوان يحتوي على رموز غير مسموح بها", status_code=303)
+        
+    if category not in CATEGORIES:
+        return RedirectResponse(f"/library/edit/{book_id}?from={from_page}&error_msg=التصنيف غير مدعوم", status_code=303)
+
+    # 🚨 حفظ البيانات نظيفة دون حشو تفادياً لخراب عمليات البحث الذكي
+    success = LibraryService.update_book(book_id, title_stripped, author_stripped, category, is_download_allowed)
     
     if success:
-        AnalyticsService.log_action(user["id"], "تعديل كتاب", f"قام {user['username']} بتعديل بيانات الكتاب رقم: {book_id}")
-        return RedirectResponse("/library?success=updated", status_code=303)
+        AnalyticsService.log_action(user["id"], "تعديل كتاب", f"قام {user['username']} بتعديل بيانات الكتاب: {title_stripped}")
+        
+        # التوجيه الذكي: إذا كان قادماً من الصفحة الشخصية يعود إليها، وإلا يعود للمكتبة
+        target_url = "/profile" if from_page == "profile" else "/library?success=updated"
+        return RedirectResponse(target_url, status_code=303)
     else:
-        return RedirectResponse(f"/library/edit/{book_id}?error=failed", status_code=303)
+        return RedirectResponse(f"/library/edit/{book_id}?from={from_page}&error_msg=failed", status_code=303)
 
 @router.post("/delete/{book_id}")
 async def delete_book(request: Request, book_id: int):
