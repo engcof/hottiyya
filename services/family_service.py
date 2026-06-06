@@ -167,12 +167,18 @@ class FamilyService:
                 google_drive_url = None
 
                 if raw_pic_path:
-                    # إذا كان المخزن هو المعرف (ID) فقط أو يحتوي على رابط، نقوم بصياغته بشكل صحيح
-                    # روابط قوقل درايف تحتاج لمعامل export=view أو uc?id= لتظهر بالمتصفح مباشرة
-                    if "drive.google.com" in raw_pic_path:
-                        google_drive_url = raw_pic_path
-                    else:
-                        google_drive_url = f"https://docs.google.com/uc?export=view&id={raw_pic_path}"
+                    # تنظيف المعرف من أي مسارات كاملة إن وجدت
+                    drive_id = raw_pic_path.strip()
+                    if "id=" in drive_id:
+                        drive_id = drive_id.split("id=")[-1]
+                    elif "/" in drive_id:
+                        drive_id = drive_id.split("/")[-1]
+                    
+                    # صياغة الرابط المباشر عالي الأداء المخصص لوسم الـ img 
+                    google_drive_url = f"https://drive.google.com/thumbnail?id={drive_id}&sz=w500"
+                
+                # تحديثها داخل البيانات الأساسية أيضاً لضمان قراءتها من أي مكان بالقالب
+                member_data["picture_url"] = google_drive_url
                                 
                 for key in ["d_o_b", "d_o_d"]:
                     if isinstance(member_data.get(key), date):
@@ -242,7 +248,7 @@ class FamilyService:
                 }
 
     # ===============================================
-    # 3. جلب البيانات للتعديل
+    # 3. جلب البيانات للتعديل (تعديل صياغة مسار الصورة المباشر)
     # ===============================================
     @staticmethod
     def get_member_for_edit(code: str) -> Optional[Dict[str, Any]]:
@@ -267,10 +273,21 @@ class FamilyService:
                 cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (code.strip().upper(),))
                 pic = cur.fetchone()
                 
+                # ✅ صياغة الرابط المباشر للـ Drive ليعمل بالمتصفح فوراً
+                google_drive_url = None
+                if pic and pic.get("pic_path"):
+                    raw_path = pic["pic_path"].strip()
+                    if "id=" in raw_path:
+                        drive_id = raw_path.split("id=")[-1]
+                    elif "/" in raw_path:
+                        drive_id = raw_path.split("/")[-1]
+                    else:
+                        drive_id = raw_path
+                    google_drive_url = f"https://drive.google.com/thumbnail?id={drive_id}&sz=w500"
+                
                 return {
-                    "member": member, "info": info, "picture_url": pic["pic_path"] if pic else None
+                    "member": member, "info": info, "picture_url": google_drive_url
                 }
-
     # ===============================================
     # 4. الحذف الآمن والمسح النهائي من Google Drive
     # ===============================================
@@ -329,7 +346,7 @@ class FamilyService:
                 next_num = max(nums) + 1 if nums else 1
                 return f"{search_prefix}{str(next_num).zfill(3)}"
             
-    # ===============================================
+   # ===============================================
     # 6. إضافة عضو جديد مع رفع الصورة إلى Google Drive
     # ===============================================
     @staticmethod
@@ -356,7 +373,7 @@ class FamilyService:
                         clean_db_val(data.get('nick_name'))
                     ))
 
-                    # 2. إدخال أو تحديث البيانات الشخصية (مع تأمين التضارب)
+                    # 2. إدخال أو تحديث البيانات الشخصية
                     cur.execute("""
                         INSERT INTO family_info (code_info, gender, email, phone, address, p_o_b, status)
                         VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -369,65 +386,70 @@ class FamilyService:
                         clean_db_val(data.get('status'))
                     ))
 
-                    # 3. إدخال أو تحديث التواريخ (مع تأمين التضارب)
+                    # 3. إدخال أو تحديث التواريخ
                     cur.execute("""
                         INSERT INTO family_age_search (code, d_o_b, d_o_d)
                         VALUES (%s, %s, %s)
                         ON CONFLICT (code) DO UPDATE SET d_o_b = EXCLUDED.d_o_b, d_o_d = EXCLUDED.d_o_d
                     """, (clean_code, clean_db_val(data.get('d_o_b')), clean_db_val(data.get('d_o_d'))))
                    
-                    # 🚀 4. معالجة رفع الصورة إلى Google Drive في حال وجودها
-                    if picture_file and picture_file.filename and extension:
-                        # تصحيح تصفية الامتداد ليقبل الحروف والأرقام والنقطة فقط بشكل سليم
-                        safe_ext = re.sub(r'[^a-zA-Z0-9.]', '', extension)
-                        filename = f"{clean_code}{safe_ext}"
+                    # 🚀 4. معالجة رفع الصورة إلى Google Drive 
+                    # تم تدعيم الشرط بـ (strip) للتأكد من أن اسم الملف ليس فراغات مخفية
+                    if picture_file and picture_file.filename and picture_file.filename.strip() != "" and extension:
                         
-                        # قراءة الملف من الذاكرة مباشرة دون كتابته على القرص
+                        # قراءة الملف من الذاكرة مباشرة
                         file_bytes = picture_file.file.read()
-                        content_type = picture_file.content_type or "image/jpeg"
                         
-                        # جلب خدمة قوقل درايف النظيفة والمباشرة
-                        drive_service = FamilyService.get_drive_service() 
-                        
-                        # إعداد الميتا داتا وتجهيز الرفع السحابي
-                        file_metadata = {
-                            'name': filename, 
-                            'parents': [FamilyService.GOOGLE_DRIVE_FOLDER_ID]
-                        }
-                        media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=content_type, resumable=True)
-                        
-                        # تنفيذ عملية الرفع الفعلي واستخراج معرف الملف الـ ID
-                        drive_file = drive_service.files().create(
-                            body=file_metadata, 
-                            media_body=media, 
-                            fields='id'
-                        ).execute()
-                        
-                        drive_file_id = drive_file.get('id')
-                        
-                        # تعديل الصلاحيات لجعل الملف قابلاً للعرض العام (صورة شخصية للعموم)
-                        if drive_file_id:
-                            try:
-                                drive_service.permissions().create(
-                                    fileId=drive_file_id, 
-                                    body={'type': 'anyone', 'role': 'reader'}
-                                ).execute()
-                            except Exception:
-                                pass # تجنب انهيار العملية لو كانت الصلاحيات موروثة تلقائياً من المجلد الرئيسي
-                        
-                            # حفظ الـ Google Drive ID في جدول الصور الخاص بالقاعدة
-                            cur.execute("""
-                                INSERT INTO family_picture (code_pic, pic_path)
-                                VALUES (%s, %s)
-                                ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
-                            """, (clean_code, drive_file_id))
+                        # الحماية الحديدية: التأكد من أن الملف يحتوي على بيانات فعلاً (أكبر من 0 بايت)
+                        if file_bytes and len(file_bytes) > 0:
+                            
+                            # تصحيح تصفية الامتداد ليقبل الحروف والأرقام والنقطة فقط بشكل سليم
+                            safe_ext = re.sub(r'[^a-zA-Z0-9.]', '', extension)
+                            filename = f"{clean_code}{safe_ext}"
+                            content_type = picture_file.content_type or "image/jpeg"
+                            
+                            # جلب خدمة قوقل درايف النظيفة والمباشرة
+                            drive_service = FamilyService.get_drive_service() 
+                            
+                            # إعداد الميتا داتا وتجهيز الرفع السحابي
+                            file_metadata = {
+                                'name': filename, 
+                                'parents': [FamilyService.GOOGLE_DRIVE_FOLDER_ID]
+                            }
+                            media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=content_type, resumable=True)
+                            
+                            # تنفيذ عملية الرفع الفعلي واستخراج معرف الملف الـ ID
+                            drive_file = drive_service.files().create(
+                                body=file_metadata, 
+                                media_body=media, 
+                                fields='id'
+                            ).execute()
+                            
+                            drive_file_id = drive_file.get('id')
+                            
+                            # تعديل الصلاحيات لجعل الملف قابلاً للعرض العام
+                            if drive_file_id:
+                                try:
+                                    drive_service.permissions().create(
+                                        fileId=drive_file_id, 
+                                        body={'type': 'anyone', 'role': 'reader'}
+                                    ).execute()
+                                except Exception:
+                                    pass 
+                            
+                                # حفظ الـ Google Drive ID في جدول الصور الخاص بالقاعدة
+                                cur.execute("""
+                                    INSERT INTO family_picture (code_pic, pic_path)
+                                    VALUES (%s, %s)
+                                    ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
+                                """, (clean_code, drive_file_id))
 
                     conn.commit()
                     return True
                 except Exception as e:
                     conn.rollback()
                     raise e
-    # ===============================================
+# ===============================================
     # 7. تعديل وتحديث البيانات على السحابة ديركت
     # ===============================================
     @staticmethod
@@ -467,45 +489,49 @@ class FamilyService:
                         ON CONFLICT (code) DO UPDATE SET d_o_b = EXCLUDED.d_o_b, d_o_d = EXCLUDED.d_o_d
                     """, (clean_code, clean_db_val(data.get('d_o_b')), clean_db_val(data.get('d_o_d'))))
                   
-                    # تحديث الصورة في درايف عند رفع صورة جديدة
-                    if picture_file and picture_file.filename and extension:
-                        # حذف الصورة القديمة من درايف إن وجدت لتوفير المساحة
-                        cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (clean_code,))
-                        old_pic = cur.fetchone()
-                        if old_pic and old_pic[0]:
-                            try:
-                                drive_service = FamilyService.get_drive_service()
-                                drive_service.files().delete(fileId=old_pic[0]).execute()
-                            except: pass
-
-                        safe_ext = re.sub(r'[^a-zA-Z0-dict.]', '', extension)
-                        filename = f"{clean_code}{safe_ext}"
+                    # تحديث الصورة في درايف عند رفع صورة جديدة فعلية وغير فارغة
+                    if picture_file and picture_file.filename and picture_file.filename.strip() != "" and extension:
                         
                         file_bytes = picture_file.file.read()
-                        content_type = picture_file.content_type or "image/jpeg"
                         
-                        drive_service = FamilyService.get_drive_service()
-                        file_metadata = {'name': filename, 'parents': [FamilyService.GOOGLE_DRIVE_FOLDER_ID]}
-                        media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=content_type, resumable=True)
-                        drive_file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-                        
-                        try:
-                            drive_service.permissions().create(fileId=drive_file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
-                        except: pass
-                        
-                        if drive_file.get('id'):
-                            cur.execute("""
-                                INSERT INTO family_picture (code_pic, pic_path)
-                                VALUES (%s, %s)
-                                ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
-                            """, (clean_code, drive_file.get('id')))
+                        # 🔒 حماية المساحة: لا تنفذ التعديل السحابي إلا لو كان الملف يحتوي على بيانات
+                        if file_bytes and len(file_bytes) > 0:
+                            
+                            # حذف الصورة القديمة من درايف إن وجدت لتوفير المساحة أولاً بأول
+                            cur.execute("SELECT pic_path FROM family_picture WHERE code_pic = %s", (clean_code,))
+                            old_pic = cur.fetchone()
+                            if old_pic and old_pic[0]:
+                                try:
+                                    drive_service = FamilyService.get_drive_service()
+                                    drive_service.files().delete(fileId=old_pic[0]).execute()
+                                except: pass
+
+                            safe_ext = re.sub(r'[^a-zA-Z0-9.]', '', extension)
+                            filename = f"{clean_code}{safe_ext}"
+                            content_type = picture_file.content_type or "image/jpeg"
+                            
+                            drive_service = FamilyService.get_drive_service()
+                            file_metadata = {'name': filename, 'parents': [FamilyService.GOOGLE_DRIVE_FOLDER_ID]}
+                            media = MediaIoBaseUpload(io.BytesIO(file_bytes), mimetype=content_type, resumable=True)
+                            drive_file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                            
+                            try:
+                                drive_service.permissions().create(fileId=drive_file.get('id'), body={'type': 'anyone', 'role': 'reader'}).execute()
+                            except: pass
+                            
+                            if drive_file.get('id'):
+                                cur.execute("""
+                                    INSERT INTO family_picture (code_pic, pic_path)
+                                    VALUES (%s, %s)
+                                    ON CONFLICT (code_pic) DO UPDATE SET pic_path = EXCLUDED.pic_path
+                                """, (clean_code, drive_file.get('id')))
 
                     conn.commit()
                     return True
                 except Exception as e:
                     conn.rollback()
                     raise e
-    
+                
     @staticmethod
     def is_code_exists(code: str) -> bool:
         if not code or code.strip() == "": return False

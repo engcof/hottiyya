@@ -149,13 +149,26 @@
                     </select>
                 </div>
                 
-                <div class="form-group grid-full-width">
+              <div class="form-group grid-full-width">
                     <label>صورة العضو الشخصية (اختياري)</label>
-                    <div class="file-input-wrapper">
-                        <i class="fas fa-camera fa-2x" style="color: #cbd5e0; margin-bottom: 10px; display: block;"></i>
-                        <span>اسحب الصورة هنا أو اضغط للاختيار</span>
-                        <input type="file" name="picture" accept="image/*" 
-                               style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+                    <div class="file-input-wrapper" id="imageDropZone" style="position: relative; overflow: hidden; min-height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed #cbd5e0; border-radius: 8px; padding: 20px; text-align: center; background: #f8fafc;">
+                        
+                        <!-- واجهة الاختيار الافتراضية -->
+                        <div id="defaultUploadPrompt" style="display: block;">
+                            <i class="fas fa-camera fa-2x" style="color: #cbd5e0; margin-bottom: 10px; display: block;"></i>
+                            <span>اسحب الصورة هنا أو اضغط للاختيار</span>
+                        </div>
+
+                        <!-- حاوية المعاينة المصغرة (مخفية افتراضياً) -->
+                        <div id="imagePreviewContainer" style="display: none; width: 100%; max-width: 150px; position: relative;">
+                            <img id="memberImagePreview" src="" alt="معاينة الصورة" style="width: 130px; height: 130px; border-radius: 50%; object-fit: cover; border: 4px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);" />
+                            <button type="button" id="removeMemberImageBtn" style="position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 26px; height: 26px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgb(0 0 0 / 0.2); font-size: 0.8rem; z-index: 10;" title="إزالة الصورة">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <input type="file" id="memberImageInput" name="picture" accept="image/*" 
+                            style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; z-index: 5;">
                     </div>
                 </div>
             </div>

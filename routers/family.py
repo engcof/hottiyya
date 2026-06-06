@@ -410,9 +410,11 @@ async def update_name(
         if ext not in ALLOWED_IMAGE_EXTENSIONS or picture.content_type not in ALLOWED_IMAGE_MIME_TYPES:
             error = "نوع الصورة غير مدعوم! استخدم: JPG، PNG، WebP فقط"
         else:
-            await picture.seek(0, os.SEEK_END)
-            file_size = await picture.tell()
-            await picture.seek(0)
+            # ✅ الإصلاح: استخدام الـ file القياسي الأساسي لقراءة حجم الملف بدقة دون اعتراض من FastAPI
+            picture.file.seek(0, os.SEEK_END)
+            file_size = picture.file.tell()
+            picture.file.seek(0) # إعادة المؤشر للبداية للقراءة اللاحقة
+            
             if file_size > MAX_IMAGE_SIZE:
                 error = "حجم الصورة كبير جداً! الحد الأقصى 5 ميجابايت"
 

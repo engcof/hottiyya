@@ -33,9 +33,7 @@
             </div>
             {% endif %}
         </div>
-
-        <div class="member-body" style="margin-top: 30px;">
-           {% if picture_url %}
+        {% if picture_url %}
             <div class="profile-picture text-center" style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center;">
                 <div style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); background-color: #f8fafc;">
                     <img src="{{ picture_url }}" 
@@ -46,6 +44,8 @@
                 <p class="img-caption" style="color: #64748b; font-size: 0.85rem; margin-top: 8px; font-weight: 500;">صورة العضو</p>
             </div>
             {% endif %}
+        <div class="member-body" style="margin-top: 30px;">
+         
 
             <div class="info-section">
                 <h2 class="section-title">المعلومات الأساسية</h2>
