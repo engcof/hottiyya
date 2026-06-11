@@ -18,13 +18,13 @@
             </p>
 
             {% if member.nick_name %}
-            <div class="nickname-container" style="margin-top: 8px;">
+            <div class="nickname-container" style="margin-top: 4px;">
                 <span class="nickname-big">{{ member.nick_name }}</span>
             </div>
             {% endif %}
 
             {% if info.status %}
-            <div class="status-display" style="margin-top: 12px;">
+            <div class="status-display" style="margin-top: 4px;">
                 {% if info.status in ["متوفي", "متوفية"] %}
                 <span class="status deceased" style="color: #ef4444; font-weight: bold;">رحمه الله • {{ info.status }}</span>
                 {% else %}
@@ -33,21 +33,21 @@
             </div>
             {% endif %}
         </div>
-        {% if picture_url %}
-            <div class="profile-picture text-center" style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center;">
-                <div style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); background-color: #f8fafc;">
-                    <img src="{{ picture_url }}" 
-                        alt=""  class="profile-img" 
-                        style="width: 100%; height: 100%; object-fit: cover;"
-                        onerror="this.style.display='none'; this.parentElement.style.backgroundImage='url(/static/images/default-avatar.png)';" /> 
-                        </div>
-                <p class="img-caption" style="color: #64748b; font-size: 0.85rem; margin-top: 8px; font-weight: 500;">صورة العضو</p>
-            </div>
-            {% endif %}
-        <div class="member-body" style="margin-top: 30px;">
-         
 
-            <div class="info-section">
+        {% if picture_url %}
+        <div class="profile-picture text-center" style="margin-bottom: 25px; display: flex; flex-direction: column; align-items: center;">
+            <div style="width: 150px; height: 150px; border-radius: 50%; overflow: hidden; border: 4px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); background-color: #f8fafc;">
+                <img src="{{ picture_url }}" 
+                    alt=""  class="profile-img" 
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                    onerror="this.style.display='none'; this.parentElement.style.backgroundImage='url(/static/images/default-avatar.png)';" /> 
+                    </div>
+            <p class="img-caption" style="color: #64748b; font-size: 0.85rem; margin-top: 8px; font-weight: 500;">صورة العضو</p>
+        </div>
+        {% endif %}
+
+        <div class="member-body" style="margin-top: 10px;">
+            <div class="info-section" style="margin-top: 5px;">
                 <h2 class="section-title">المعلومات الأساسية</h2>
                 <div class="info-grid">
                     {% macro info_row(label, value, link=False) %}
@@ -89,10 +89,9 @@
                 </div>
             </div>
 
-            <div class="relations-section" style="margin-top: 40px;">
+            <div class="relations-section" style="margin-top: 5px;">
                 <h2 class="section-title">العلاقات الأسرية</h2>
                 <div class="relations-grid">
-
                    
                     <div class="relation-card mother">
                         <h5>الأم</h5>
@@ -154,7 +153,8 @@
 
         <div class="action-buttons" style="margin-top: 40px; display: flex; gap: 15px; justify-content: center;">
             {% if perms.edit_member %}
-            <a href="/family/edit/{{ member.code }}?page={{ current_page }}&q={{ query_str }}" class="btn-edit" style="padding: 10px 20px; background-color: #2563eb; color: white; border-radius: 6px; text-decoration: none;">
+          
+            <a href="/family/edit/{{ member.code }}?page={{ current_page }}&q={{ query_str if query_str and query_str != 'None' else '' }}" class="btn-edit" style="padding: 10px 20px; background-color: #2563eb; color: white; border-radius: 6px; text-decoration: none;">
                 تعديل البيانات
             </a>
             {% endif %}
