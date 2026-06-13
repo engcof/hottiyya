@@ -5,9 +5,10 @@ import re
 import socket
 import httplib2
 import io
+import logging  # 💡 تم إضافته لعمل الـ logger
+from datetime import date, datetime # 💡 تم إضافة datetime هنا
 from typing import List, Dict, Optional, Tuple, Any
 from psycopg2.extras import RealDictCursor 
-from datetime import date
 import html
 
 from google.oauth2.credentials import Credentials
@@ -18,6 +19,9 @@ from googleapiclient.http import MediaIoBaseUpload
 
 from utils.normalize import normalize_arabic
 from postgresql import get_db_context
+
+# إعداد لورجر محلي للدالة في حال لم يكن لديك لورجر عام ممرر
+logger = logging.getLogger(__name__)
 
 # إجبار النظام على استخدام IPv4 فقط لاتصالات Google API لضمان الاستقرار في Render
 orig_getaddrinfo = socket.getaddrinfo
@@ -657,3 +661,29 @@ class FamilyService:
 
         traverse(code)
         return list(tree_data.values())
+
+
+    # ===============================================
+    # 9. مسار التشخيص الموحد وحالة قاعدة البيانات
+    # ===============================================
+    @staticmethod
+    def get_db_status_diagnostics() -> Dict[str, Any]:
+        """فحص حالة الاتصال بقاعدة البيانات وجلب إحصائيات سريعة للأسماء المضافة"""
+        try:
+            with get_db_context() as conn:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT COUNT(*) AS total FROM family_name")
+                    total = cur.fetchone()["total"]
+
+                    cur.execute("SELECT code, name FROM family_name ORDER BY name DESC LIMIT 15")
+                    latest = cur.fetchall()
+
+            return {
+                "status": "success",
+                "total_names_in_database": total,
+                "latest_15_names": latest,
+                "checked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        except Exception as e:
+            logger.error(f"🔴 خطأ في قاعدة البيانات بمسار التشخيص الموحد: {e}")
+            return {"status": "error", "message": "حدث خطأ داخلي أثناء معالجة البيانات."}    

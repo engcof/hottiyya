@@ -19,7 +19,7 @@
     <title>{% block title %}الحوطية{% endblock %} | موقع الحوطية</title>
 </head>
 <body>
-    <header class="glass-strong">
+   <header class="glass-strong">
         <nav class="header-container">
             <a href="/" class="logo">الحوطية</a>
             <ul class="nav-links">
@@ -29,15 +29,18 @@
                 <li><a href="/gallery">معرض الصور</a></li>
                 <li><a href="/video">معرض الفيديوهات</a></li>
                 <li><a href="/library">المكتبة</a></li>
-                {% if user and can_view %}
+                
+                {# 🔒 تظهر الشجرة فقط إذا كان المستخدم يمتلك الصلاحية ولسنا في بيئة الإنتاج #}
+                {% if user and can_view and not is_prod %}
                 <li><a href="/family">شجرة الحوطية</a></li>
                 {% endif %}
+                
                 {% if user and user.role == "admin" %}
                 <li><a href="/admin">الإدارة</a></li>
                 {% endif %}
             </ul>
             <div class="mobile-header-actions">
-                 {% if user %}
+                {% if user %}
                 <div class="user-area">
                     <button class="user-btn" id="userBtn" aria-haspopup="true" aria-expanded="false">
                         {% if user and user.username %}
@@ -45,7 +48,7 @@
                         {% else %}
                             <span class="user-avatar big">?</span>
                         {% endif %}
-                     
+                    
                         {# استخدام unread_count الممرر من الروتر #}
                         {% if unread_count and unread_count > 0 %}
                         <span class="notification-badge">{{ unread_count }}</span>
@@ -55,11 +58,11 @@
                         </svg>
                     </button>
                 </div>  
-               
+            
                 {% else %}
                     <a href="/auth/login" class="desktop-only-login">دخول</a>
                 {% endif %} 
-               <button class="mobile-menu-toggle" id="mobileToggle" aria-label="القائمة">
+            <button class="mobile-menu-toggle" id="mobileToggle" aria-label="القائمة">
                     <div class="hamburger">
                         <span></span>
                         <span></span>
@@ -69,37 +72,43 @@
 
             </div>
         </nav>
-       <div class="user-dropdown" id="userDropdown">
-    <div class="user-dropdown-header">
-        {% if user and user.username %}
-            <span class="user-avatar big">{{ user.username[0] | upper }}</span>
-            <div>
-                <div class="user-name">{{ user.username }}</div>
-                <div class="user-role">
-                    {# 1. إذا كان الحساب يمتلك دور الـ admin الحصري #}
-                    {% if user.role == 'admin' %}
-                        مدير النظام
-                    {# 2. إذا كان الحساب 'user' ولكنه يمتلك أي من صلاحيات الإشراف الإدارية #}
-                    {% elif perms.edit_users or perms.grant_permissions or perms.view_system_logs %}
-                        مشرف
-                    {# 3. إذا كان حساباً عادياً يمتلك صلاحيات تصفح أو شجرة العائلة والمقالات فقط #}
-                    {% else %}
-                        عضو
-                    {% endif %}
-                </div>
+        <div class="user-dropdown" id="userDropdown">
+            <div class="user-dropdown-header">
+                {% if user and user.username %}
+                    <span class="user-avatar big">{{ user.username[0] | upper }}</span>
+                    <div>
+                        <div class="user-name">{{ user.username }}</div>
+                        <div class="user-role">
+                            {% if user %}
+                                {# 1. إذا كان الحساب يمتلك دور الـ admin الحصري #}
+                                {% if user.role == 'admin' %}
+                                    مدير النظام
+                                {# 2. إذا كان الحساب يمتلك أي من صلاحيات الإشراف الإدارية الممنوحة عبر الـ perms #}
+                                {% elif perms and (perms.edit_users or perms.grant_permissions or perms.view_system_logs) %}
+                                    مشرف
+                                {# 3. إذا كان حساباً عادياً يمتلك صلاحيات تصفح عادية #}
+                                {% else %}
+                                    عضو
+                                {% endif %}
+                            {% else %}
+                                زائر
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="user-name">زائر</div>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="user-name">زائر</div>
-        {% endif %}
-    </div>
-    <a href="/profile" class="user-dropdown-link">
-        <span>صفحتي الشخصية</span>
-        {% if unread_count and unread_count > 0 %}
-        <span class="notification-badge-inline">{{ unread_count }}</span>
-        {% endif %}
-    </a>
-    <a href="/auth/logout" class="user-dropdown-link logout">تسجيل الخروج</a>
-</div>
+            <a href="/profile" class="user-dropdown-link">
+                <span>صفحتي الشخصية</span>
+                {% if unread_count and unread_count > 0 %}
+                <span class="notification-badge-inline">{{ unread_count }}</span>
+                {% endif %}
+            </a>
+            <a href="/auth/logout" class="user-dropdown-link logout">تسجيل الخروج</a>
+        </div>
+        
+        <!-- القائمة الخاصة بالهاتف -->
         <div class="mobile-nav" id="mobileNav">
             <a href="/">الرئيسية</a>
             <a href="/news">الأخبار</a>
@@ -107,13 +116,15 @@
             <a href="/gallery">معرض الصور</a>
             <a href="/video">معرض الفيديوهات</a>
             <a href="/library">المكتبة</a>
-            {% if user and can_view %}
+            
+            {# 🔒 تعديل قائمة الهاتف أيضاً لتختفي في الإنتاج #}
+            {% if user and can_view and not is_prod %}
             <a href="/family">شجرة الحوطية</a>
             {% endif %}
+            
             {% if user and user.role == "admin" %}
             <a href="/admin">الإدارة</a>
             {% endif %}
-       
         </div>
     </header>
 

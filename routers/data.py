@@ -303,3 +303,8 @@ async def export_tree_page(request: Request):
     response = templates.TemplateResponse("data/export_tree.html", context)
     SessionService.set_cache_headers(response)
     return response    
+
+@router.get("/api/diagnostics/db-status")
+def check_database_health():
+    # استدعاء دالة التشخيص مباشرة من السيرفس دون الحاجة لإدارة conn هنا
+    return FamilyService.get_db_status_diagnostics()
