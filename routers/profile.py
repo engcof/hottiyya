@@ -4,9 +4,10 @@ from fastapi import APIRouter, Request, HTTPException, Form, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
 from core.templates import templates
 from security.session import SessionService
-from services.profile_service import ProfileService
+
 from services.auth_service import AuthService
 from services.analytics_service import AnalyticsService
+from services.notification_service import NotificationService
 import html
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
@@ -39,7 +40,7 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)):
 
     PAGE_SIZE = 10
     initial_offset = (page - 1) * PAGE_SIZE
-    inbox_data = ProfileService.get_inbox_data(user["id"], PAGE_SIZE, initial_offset)
+    inbox_data = NotificationService.get_inbox_data(user["id"], PAGE_SIZE, initial_offset)
 
     total_messages = inbox_data["total_count"]
     total_pages = math.ceil(total_messages / PAGE_SIZE) if total_messages > 0 else 1
@@ -48,7 +49,7 @@ async def profile_page(request: Request, page: int = Query(1, ge=1)):
     all_users = []
     # 🔒 إذا كان الحساب يمتلك دور admin (الأساسي أو الاحتياطي) يتم جلب قائمة المستخدمين للمراسلة
     if user.get("role") == "admin":
-        all_users = ProfileService.get_all_users_for_admin()
+        all_users = NotificationService.get_all_users_for_admin()
 
     # جلب السجل الأمني الشخصي للمستخدم العادي فقط
     security_logs = []
@@ -152,7 +153,7 @@ async def send_message_route(
         request.session["profile_error"] = "خطأ: لا يمكن إرسال رسالة فارغة."
         return RedirectResponse("/profile", status_code=303)
 
-    success = ProfileService.send_message(user["id"], target_recipient, clean_message)
+    success = NotificationService.send_notification(user["id"], target_recipient, clean_message)
     
     if success:
         msg = "تم إرسال الرسالة بنجاح للمستخدم." if user.get("role") == "admin" else "تم إرسال رسالتك للإدارة بنجاح."
@@ -175,7 +176,7 @@ async def mark_read(request: Request, notification_id: int, csrf_token: str = Fo
     user = cxt["user"]
     if user:
         # الدالة بالداخل يجب أن تحتوي على شرط: WHERE id = notification_id AND recipient_id = user_id لصد هجمات IDOR
-        ProfileService.mark_as_read(notification_id, user["id"])
+        NotificationService.mark_as_read(notification_id, user["id"])
     return RedirectResponse("/profile", status_code=303)
 
 
@@ -189,7 +190,7 @@ async def delete_msg(request: Request, notification_id: int, csrf_token: str = F
     try:
         SessionService.verify_csrf_token(request, csrf_token)
         # 🔒 التحقق المزدوج: نمرر الـ user_id للسيرفر لمنع تلاعب مستخدم بحذف رسالة مستخدم آخر
-        if ProfileService.delete_message(notification_id, user["id"]):
+        if NotificationService.delete_notification(notification_id, user["id"]):
             request.session["profile_success"] = "تم حذف الرسالة بنجاح."
         else:
             request.session["profile_error"] = "فشل في عملية الحذف (غير مصرح لك أو الرسالة غير موجودة)."

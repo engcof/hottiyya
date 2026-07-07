@@ -1,15 +1,13 @@
 import math
 import os
-import shutil 
 import re
 import socket
 import httplib2
 import io
-import logging  # 💡 تم إضافته لعمل الـ logger
-from datetime import date, datetime # 💡 تم إضافة datetime هنا
+import logging  
+from datetime import date, datetime 
 from typing import List, Dict, Optional, Tuple, Any
 from psycopg2.extras import RealDictCursor 
-import html
 
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
@@ -453,7 +451,7 @@ class FamilyService:
                 except Exception as e:
                     conn.rollback()
                     raise e
-# ===============================================
+    # ===============================================
     # 7. تعديل وتحديث البيانات على السحابة ديركت
     # ===============================================
     @staticmethod
@@ -535,7 +533,9 @@ class FamilyService:
                 except Exception as e:
                     conn.rollback()
                     raise e
-                
+    # ===============================================
+    # 7. تعديل وتحديث البيانات على السحابة ديركت
+    # ===============================================            
     @staticmethod
     def is_code_exists(code: str) -> bool:
         if not code or code.strip() == "": return False
@@ -544,6 +544,9 @@ class FamilyService:
                 cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code.strip().upper(),))
                 return cur.fetchone() is not None
     
+    # ===============================================
+    # 7. تعديل وتحديث البيانات على السحابة ديركت
+    # ===============================================
     @staticmethod       
     def get_family_table_backup_text() -> str:
         with get_db_context() as conn:
