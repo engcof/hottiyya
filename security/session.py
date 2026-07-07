@@ -5,7 +5,7 @@ from typing import Optional, Tuple, Dict, Any, List
 from fastapi import Request, HTTPException, status
 from fastapi.responses import HTMLResponse
 from postgresql import get_db_context
-from services.notification import get_unread_notification_count
+from services.notification_service import NotificationService
 
 class SessionService:
 
@@ -168,7 +168,7 @@ class SessionService:
                 
         unread_count = 0
         if user:
-            unread_count = get_unread_notification_count(user["id"])
+            unread_count = NotificationService.get_unread_count(user["id"])
 
         return {
             "request": request,
@@ -187,7 +187,7 @@ class SessionService:
             "request": request,
             "user": user,
             "can_view": cls.can(user, "view_tree") if user else False,
-            "unread_count": get_unread_notification_count(user["id"]) if user else 0
+            "unread_count":NotificationService.get_unread_count(user["id"]) if user else 0
         }
 
     @staticmethod

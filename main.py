@@ -173,13 +173,8 @@ if not IS_PROD:
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     context = SessionService.get_page_context(request)
-    user = context["user"]
     home_data = HomeService.get_homepage_data()
-    unread_count = 0
-    if user:
-        unread_count = NotificationService.get_unread_count(user["id"])
 
-    
     context.update({
         "today_visitors": AnalyticsService.get_today_visitors(),
         "total_visitors": AnalyticsService.get_total_visitors(),
@@ -187,8 +182,6 @@ async def home(request: Request):
         "online_users": AnalyticsService.get_online_users()[:18],
         "latest_article": home_data.get('latest_article'),
         "latest_book": home_data.get('latest_book'),
-        "unread_count": unread_count,
-        # ✅ سد نقص المتغير الأساسي لعرض الكروت في الواجهة
         "articles_for_homepage": home_data.get('articles_for_homepage', []) 
     })
     
