@@ -20,7 +20,6 @@ from security.session import SessionService
 from security.rate_limit import RateLimitService
 
 # استيراد الخدمات والراوترات
-from services.notification_service import NotificationService
 from services.analytics_service import AnalyticsService
 from services.google_service import GoogleService
 from services.home_service import HomeService

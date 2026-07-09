@@ -13,10 +13,11 @@ from dotenv import load_dotenv
 
 # المكتبات المحلية (Local Imports)
 from core.templates import templates
+
+from utils.time_utils import TimeUtils
 from security.session import SessionService
-from utils.time_utils import calculate_age_details
-from services.analytics_service import AnalyticsService
 from services.family_service import FamilyService
+from services.analytics_service import AnalyticsService
 
 load_dotenv()
 IMPORT_PASSWORD = os.getenv("IMPORT_PASSWORD", "change_me_in_production")
@@ -109,7 +110,7 @@ async def name_details(request: Request, code: str, page: int = Query(1, ge=1), 
         raise HTTPException(status_code=404, detail="العضو غير موجود")
     
     member_data = details["member"] 
-    age_details = calculate_age_details(member_data.get("d_o_b"), member_data.get("d_o_d"))
+    age_details = TimeUtils.calculate_age_details(member_data.get("d_o_b"), member_data.get("d_o_d"))
     db_age = member_data.get("age_at_death")
     if db_age is not None and str(db_age).isdigit():
         age_details["age_at_death"] = int(db_age)

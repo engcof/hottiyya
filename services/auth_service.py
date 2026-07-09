@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 from fastapi import Request
 from postgresql import get_db_context
 from psycopg2.extras import RealDictCursor
-from security.hash import hash_password, check_password
+from security.hash import HashService
 
 class AuthService:
     VALID_USERNAME_REGEX = r"^[a-zA-Z0-9][a-zA-Z0-9_-]{2,29}$"
@@ -46,7 +46,7 @@ class AuthService:
             return False, "اسم المستخدم مسجل بالفعل في النظام، يرجى اختيار اسم آخر."
 
         try:
-            hashed_pwd = hash_password(password)
+            hashed_pwd = HashService.hash_password(password)
             with get_db_context() as conn:
                 with conn.cursor() as cur:
                     # نلزم النظام بحقن دور 'user' الافتراضي للحسابات العامة لحمايتها
@@ -143,10 +143,10 @@ class AuthService:
                     if current_password is not None:
                         if db_role == 'admin':
                             return False, "إجراء محظور: لا يمكن للمسؤول تغيير كلمة مروره من هذه الواجهة."
-                        if not check_password(current_password, db_password):
+                        if not HashService.check_password(current_password, db_password):
                             return False, "كلمة السر الحالية غير صحيحة."
 
-                    hashed_password = hash_password(new_password)
+                    hashed_password = HashService.hash_password(new_password)
                     cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed_password, user_id))
                     
                     ip = "0.0.0.0 (الإدارة)"
@@ -236,14 +236,22 @@ class AuthService:
                     if not perm.get('category'):
                         perm['category'] = "عام"
                 
-                user_permissions_map = {}
-                for u in users:
+                # بدلاً من حلقة الـ for المتكررة، استعلم مرة واحدة لكل مستخدمي الصفحة الحالية
+                user_ids = [u['id'] for u in users]
+                user_permissions_map = {uid: [] for uid in user_ids}
+
+                if user_ids:
+                    # التعديل الدفاعي البسيط والموصى به لسطر الاستعلام:
                     cursor.execute("""
-                        SELECT p.name FROM permissions p
+                        SELECT up.user_id, p.name 
+                        FROM permissions p
                         JOIN user_permissions up ON p.id = up.permission_id
-                        WHERE up.user_id = %s
-                    """, (u['id'],))
-                    user_permissions_map[u['id']] = [p['name'] for p in cursor.fetchall()]
+                        WHERE up.user_id = ANY(%s) -- 👈 استخدام ANY مع مصفوفة يضمن الأمان التام سواء كان هناك مستخدم واحد أو ألف
+                    """, (user_ids,)) # تمرير القائمة كـ list عادية بدون تحويلها لـ tuple
+                                        
+                    # توزيع الصلاحيات المجلوبة بطلب واحد على المستخدمين في الذاكرة
+                    for row in cursor.fetchall():
+                        user_permissions_map[row['user_id']].append(row['name'])
                 
                 if search_query_clean:
                     cursor.execute("SELECT COUNT(*) as total FROM users WHERE username ILIKE %s", (search_query_clean,))

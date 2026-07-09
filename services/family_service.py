@@ -14,8 +14,7 @@ from google.auth.transport.requests import Request
 import google_auth_httplib2
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-
-from utils.normalize import normalize_arabic
+from utils.normalize import NormalizeUtils
 from postgresql import get_db_context
 
 # إعداد لورجر محلي للدالة في حال لم يكن لديك لورجر عام ممرر
@@ -109,7 +108,7 @@ class FamilyService:
         with get_db_context() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 phrase = q.strip()
-                normalized_input = normalize_arabic(phrase)
+                normalized_input = NormalizeUtils.normalize_arabic(phrase)
                 search_term_like = f"%{normalized_input}%"
                 
                 if re.fullmatch(r"^[A-Z]\d{1,3}-\d{3}-\d{3}$", phrase.upper()):
