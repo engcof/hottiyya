@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse
 import re
-from security.hash import check_password
+from security.hash import HashService
 from security.session import SessionService
 from services.auth_service import AuthService
 from core.templates import templates
@@ -48,7 +48,7 @@ async def login(
     # 4. محاولة جلب المستخدم والمصادقة (بالحروف الصغيرة لتجنب الازدواجية)
     user_data = AuthService.get_user("LOWER(username) = %s", (username_input.lower(),))
   
-    if user_data and check_password(password, user_data["password"]):
+    if user_data and HashService.check_password(password, user_data["password"]):
         # إعادة تعيين عداد محاولات التخمين عند النجاح
         RateLimitService.reset_attempts(RateLimitService.get_client_ip(request))
         
