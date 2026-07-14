@@ -198,7 +198,16 @@ async def not_found(request: Request, exc):
 
 @app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)
 async def google_verification():
-    return "google-site-verification: googlea84e43178e487f63.html"
+    # جوجل يبحث عن هذا السطر بالتحديد داخل صفحة HTML نظيفة
+    return """<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Verification</title>
+</head>
+<body>
+    google-site-verification: googlea84e43178e487f63.html
+</body>
+</html>"""
 
 @app.get("/sitemap.xml")
 async def sitemap():
@@ -211,7 +220,8 @@ async def sitemap():
     
     try:
         dynamic_pages = GoogleService.get_all_sitemap_urls(base_url)
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error fetching dynamic sitemap pages: {e}")
         dynamic_pages = []
         
     all_pages = static_pages + dynamic_pages
@@ -219,10 +229,17 @@ async def sitemap():
     xml_lines = ['<?xml version="1.0" encoding="UTF-8"?>']
     xml_lines.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
     for page in all_pages:
-        xml_lines.append(f'<url><loc>{page["loc"]}</loc><changefreq>{page["changefreq"]}</changefreq><priority>{page["priority"]}</priority></url>')
+        # إزالة أي فراغات أو مسافات زائدة في الروابط لضمان سلامة الـ XML
+        loc_clean = page["loc"].strip()
+        xml_lines.append(f'<url><loc>{loc_clean}</loc><changefreq>{page["changefreq"]}</changefreq><priority>{page["priority"]}</priority></url>')
     xml_lines.append('</urlset>')
     
-    return Response(content="".join(xml_lines), media_type="application/xml")
+    # 🎯 هنا الحل الحاسم: إضافة ترميز utf-8 الإجباري ليفهمه Googlebot فوراً
+    headers = {
+        "Content-Type": "application/xml; charset=utf-8",
+        "X-Robots-Tag": "noarchive" # منع الأرشفة المؤقتة للملف لسرعة التحديث
+    }
+    return Response(content="".join(xml_lines), headers=headers)
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
