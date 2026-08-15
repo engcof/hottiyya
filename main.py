@@ -23,7 +23,7 @@ from security.rate_limit import RateLimitService
 from services.analytics_service import AnalyticsService
 from services.google_service import GoogleService
 from services.home_service import HomeService
-from routers import auth, admin, family, articles, news, permissions, data, profile, gallery, video, library, about,data_local
+from routers import auth, admin, family, articles, news, permissions, data, profile, gallery, video, library, about
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -169,7 +169,9 @@ if not IS_PROD:
 
     # استيراد راوتر البيانات المحلي بأمان (لأنه غير موجود في Render)
     try:
-        app.include_router(data_local.router)
+            from routers import data_local
+            app.include_router(data_local.router)
+            logger.info("✅ تم تحميل راوتر data_local بنجاح في البيئة المحلية.")
     except ImportError:
         logger.warning("⚠️ لم يتم العثور على routers.data_local (وهذا طبيعي في بيئة الإنتاج)")
 # =========================================
