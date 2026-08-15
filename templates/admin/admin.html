@@ -48,12 +48,24 @@
                 </div>
             </div>
 
-          <div class="admin-section-card">
+          
+            <div class="admin-section-card">
                 <h3>⚙️ الإعدادات والبيانات</h3>
                 <div class="grid-buttons">
-                    <a href="/data/import-data" class="card-btn green"><i class="fa-brands fa-database"></i> إدارة واستيراد البيانات</a>
-                    <a href="/data/export-tree" class="card-btn slate"><i class="fa-solid fa-network-wired"></i> تصدير شجرة العائلة</a>
-                    <a href="/data/export/table-backup-txt" class="card-btn pink"><i class="fa-solid fa-file-export"></i> تصدير بيانات (TXT)</a>
+                    <!-- شغال في الإنتاج والمحلي عادي -->
+                    <a href="/data/import-data" class="card-btn green">
+                        <i class="fa-brands fa-database"></i> إدارة واستيراد البيانات
+                    </a>
+
+                    <!-- يظهر فقط في البيئة المحلية ويشير إلى راوتر data-local -->
+                    {% if not is_prod %}
+                        <a href="/data-local/export-tree" class="card-btn slate">
+                            <i class="fa-solid fa-network-wired"></i> تصدير شجرة العائلة
+                        </a>
+                        <a href="/data-local/export/table-backup-txt" class="card-btn pink">
+                            <i class="fa-solid fa-file-export"></i> تصدير بيانات (TXT)
+                        </a>
+                    {% endif %}
                 </div>
             </div>
             <div class="admin-section-card">

@@ -30,6 +30,8 @@ templates/test
 routers/test.py
 static/css/test.css
 static/js/test.js
+services/family_service_local.py
+routers/data_local.py
 # IDE & OS
 .vscode/
 .idea/

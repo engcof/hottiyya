@@ -1,18 +1,15 @@
 import os
-import csv
 import subprocess
-from io import StringIO
 from datetime import datetime
-import shutil
-from fastapi import APIRouter, Request, Depends, HTTPException, Form, File, UploadFile, Response
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
+from fastapi import APIRouter, Request, HTTPException, Form, File, UploadFile
+from fastapi.responses import HTMLResponse, FileResponse
 from core.templates import templates
 from dotenv import load_dotenv
 from urllib.parse import quote_plus
 from starlette.background import BackgroundTask 
 from security.session import SessionService
 
-# استيراد خدمات العائلة لجلب البيانات من قاعدة البيانات
+# استيراد خدمات العائلة من سيرفس الإنتاج الخفيف
 from services.family_service import FamilyService
 
 # تحميل متغيرات البيئة من ملف .env
@@ -57,88 +54,7 @@ def get_database_url():
     return None
 
 # =====================================================================
-# 🌳 دالات تصدير شجرة العائلة والنسخ النصي (تم نقلها وتوحيدها هنا)
-# =====================================================================
-
-@router.get("/export/family-tree/{code}")
-@router.get("/export/family-tree/") # مسار إضافي مرن لدعم التصدير الكامل
-async def export_family_tree(request: Request, code: str = None):
-    """توليد وتصدير شجرة العائلة أو فرع محدد كملف CSV منسق ومتوافق مع Excel."""
-    user, _ = SessionService.get_admin_context(request)
-    if not user:
-        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
-        
-    if not code:
-        data = FamilyService.get_all_family_members() 
-        filename = "full_family_tree.csv"
-    else:
-        data = FamilyService.get_full_family_tree_recursive(code)
-        filename = f"family_tree_{code}.csv"
-    
-    if not data:
-        return {"error": "لم يتم العثور على بيانات"}
-    
-    output = StringIO()
-    output.write('\ufeff') # إضافة علامة BOM لدعم اللغة العربية في Excel
-    
-    writer = csv.writer(output)
-    writer.writerow(["sep=,"]) # إجبار إكسيل على استخدام الفاصلة كمحدد للحقول
-    writer.writerow(["الكود", "الاسم الرباعي", "اللقب", "الصلة", "الفئة"])
-    
-    for row in data:
-        db_relation = row.get('relation', '')
-        gender = row.get('gender', '')
-
-        if db_relation in ["ابن", "ابنة"]:
-            relation_label = "حوطاوية" if gender == "أنثى" else "حوطاوي"
-        else:
-            relation_label = "ليست حوطاوية" if gender == "أنثى" else "ليس حوطاوي"
-
-        if code and row.get('code') == code:
-            relation_label = "حوطاوي (داخل الأسرة)" if gender != "أنثى" else "حوطاوية (داخل الأسرة)"
-
-        writer.writerow([
-            row.get('code', ''), 
-            row.get('full_name', ''), 
-            row.get('nick_name', ''), 
-            relation_label, 
-            row.get('category', '')
-        ])
-    
-    output.seek(0)
-    
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv; charset=utf-8-sig",
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}",
-            "Content-Type": "text/csv; charset=utf-8-sig"
-        }
-    )
-
-
-@router.get("/export/table-backup-txt")
-async def export_table_backup(request: Request):
-    """توليد نسخة احتياطية نصية سريعة لجدول العائلة."""
-    user, _ = SessionService.get_admin_context(request)
-    if not user:
-        raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
-        
-    content = FamilyService.get_family_table_backup_text()
-    
-    if not content:
-        return Response(content="الجدول فارغ", media_type="text/plain")
-
-    return Response(
-        content=content,
-        media_type="text/plain; charset=utf-8",
-        headers={
-            "Content-Disposition": "attachment; filename=family_name_backup.txt"
-        }
-    )
-
-# =====================================================================
-# 💾 استيراد وتصدير قاعدة البيانات (البنية التحتية الأساسية)
+# 💾 استيراد وتصدير قاعدة البيانات كاملة (pg_dump / pg_restore)
 # =====================================================================
 
 @router.get("/import-data", response_class=HTMLResponse)
@@ -147,10 +63,9 @@ async def import_page(request: Request):
     if not cxt["is_admin"]:
         raise HTTPException(status_code=403, detail="غير مصرح لك بالوصول")
         
-    context = {**cxt}
-    context.update({"message": None})
+    context = {**cxt, "message": None}
     
-    response = templates.TemplateResponse("data/import_data.html", context) # تم تعديل اسم المجلد الموحد family
+    response = templates.TemplateResponse("data/import_data.html", context)
     SessionService.set_cache_headers(response)
     return response
    
@@ -163,15 +78,13 @@ async def import_data(
 ):
     cxt = SessionService.get_page_context(request)
     if not cxt["is_admin"] or password != IMPORT_PASSWORD:
-        context = {**cxt}
-        context.update({"message": "كلمة المرور غير صحيحة أو ليس لديك صلاحية"})
+        context = {**cxt, "message": "كلمة المرور غير صحيحة أو ليس لديك صلاحية"}
         response = templates.TemplateResponse("data/import_data.html", context)
         SessionService.set_cache_headers(response)
         return response
       
     if not dump_file.filename.lower().endswith(('.dump', '.sql')):
-        context = {**cxt}
-        context.update({"message": "الملف لازم يكون بصيغة .dump أو .sql"})
+        context = {**cxt, "message": "الملف لازم يكون بصيغة .dump أو .sql"}
         response = templates.TemplateResponse("data/import_data.html", context)
         SessionService.set_cache_headers(response)
         return response
@@ -211,8 +124,7 @@ async def import_data(
             except Exception as clean_e:
                 print(f"Failed to remove temp file {file_path}: {clean_e}")
         
-    context = {**cxt}
-    context.update({"message": message})
+    context = {**cxt, "message": message}
     response = templates.TemplateResponse("data/import_data.html", context)
     SessionService.set_cache_headers(response)
     return response
@@ -224,16 +136,14 @@ async def export_data_post(request: Request, password: str = Form(...)):
     cxt = SessionService.get_page_context(request)
     
     if not cxt["is_admin"] or password != IMPORT_PASSWORD:
-        context = {**cxt}
-        context.update({"message": "فشل التصدير: كلمة المرور غير صحيحة أو ليس لديك صلاحية."})
+        context = {**cxt, "message": "فشل التصدير: كلمة المرور غير صحيحة أو ليس لديك صلاحية."}
         response = templates.TemplateResponse("data/import_data.html", context)
         SessionService.set_cache_headers(response)
         return response
  
     database_url = get_database_url()
     if not database_url:
-        context = {**cxt}
-        context.update({"message": "فشل التصدير: DATABASE_URL غير معرّف أو متغيرات القاعدة مفقودة."})
+        context = {**cxt, "message": "فشل التصدير: DATABASE_URL غير معرّف أو متغيرات القاعدة مفقودة."}
         response = templates.TemplateResponse("data/import_data.html", context)
         SessionService.set_cache_headers(response)
         return response
@@ -254,17 +164,15 @@ async def export_data_post(request: Request, password: str = Form(...)):
         if result.returncode != 0:
             error_details = result.stderr.replace(chr(10), '<br>')
             print(f"PG_DUMP FAILED: {result.stderr}") 
-            SessionService.cleanup_file(export_path)
+            cleanup_file(export_path)
             
-            context = {**cxt}
-            context.update({"message": f"فشل التصدير (Code {result.returncode}):<br><pre dir='ltr'>{error_details[-1500:]}</pre>"})
+            context = {**cxt, "message": f"فشل التصدير (Code {result.returncode}):<br><pre dir='ltr'>{error_details[-1500:]}</pre>"}
             response = templates.TemplateResponse("data/import_data.html", context)
             SessionService.set_cache_headers(response)
             return response
          
         if not os.path.exists(export_path) or os.path.getsize(export_path) < 100:
-            context = {**cxt}
-            context.update({"message": "فشل التصدير: ملف النسخة الاحتياطية فارغ أو مفقود."})
+            context = {**cxt, "message": "فشل التصدير: ملف النسخة الاحتياطية فارغ أو مفقود."}
             response = templates.TemplateResponse("data/import_data.html", context)
             SessionService.set_cache_headers(response)
             return response
@@ -277,34 +185,15 @@ async def export_data_post(request: Request, password: str = Form(...)):
         )
 
     except Exception as e:
-        SessionService.cleanup_file(export_path)
-        context = {**cxt}
-        context.update({"message": f"فشل التصدير (خطأ غير متوقع): {str(e)}"})
+        cleanup_file(export_path)
+        context = {**cxt, "message": f"فشل التصدير (خطأ غير متوقع): {str(e)}"}
         response = templates.TemplateResponse("data/import_data.html", context)
         SessionService.set_cache_headers(response)
         return response
-    
-# =====================================================================
-# 🌳 عرض صفحة استمارة تصدير شجرة العائلة (GET)
-# =====================================================================
-@router.get("/export-tree", response_class=HTMLResponse)
-async def export_tree_page(request: Request):
-    """عرض الصفحة المنفصلة المخصصة لإدخال كود وتصدير الشجرة."""
-    cxt = SessionService.get_page_context(request)
-    if not cxt["is_admin"]: 
-        return RedirectResponse("/auth/login", status_code=303)
 
-    context = {**cxt}
-    context.update({
-        "message": request.session.pop("tree_message", None)
-    })
-    
-    # استدعاء التمبليت من مجلد البيانات الموحد
-    response = templates.TemplateResponse("data/export_tree.html", context)
-    SessionService.set_cache_headers(response)
-    return response    
-
+# =====================================================================
+# 🩺 التشخيصات وحالة القاعدة
+# =====================================================================
 @router.get("/api/diagnostics/db-status")
 def check_database_health():
-    # استدعاء دالة التشخيص مباشرة من السيرفس دون الحاجة لإدارة conn هنا
     return FamilyService.get_db_status_diagnostics()

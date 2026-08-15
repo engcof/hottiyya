@@ -1,3 +1,4 @@
+# family_service.py
 import math
 import os
 import re
@@ -450,6 +451,7 @@ class FamilyService:
                 except Exception as e:
                     conn.rollback()
                     raise e
+
     # ===============================================
     # 7. تعديل وتحديث البيانات على السحابة ديركت
     # ===============================================
@@ -533,7 +535,7 @@ class FamilyService:
                     conn.rollback()
                     raise e
     # ===============================================
-    # 7. تعديل وتحديث البيانات على السحابة ديركت
+    # 8. التحقق من وجود الكود
     # ===============================================            
     @staticmethod
     def is_code_exists(code: str) -> bool:
@@ -543,127 +545,7 @@ class FamilyService:
                 cur.execute("SELECT 1 FROM family_name WHERE code = %s", (code.strip().upper(),))
                 return cur.fetchone() is not None
     
-    # ===============================================
-    # 7. تعديل وتحديث البيانات على السحابة ديركت
-    # ===============================================
-    @staticmethod       
-    def get_family_table_backup_text() -> str:
-        with get_db_context() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    SELECT code, name, nick_name, f_code, m_code, relation, level, w_code, h_code 
-                    FROM family_name ORDER BY code ASC
-                """)
-                rows = cur.fetchall()
-                lines = []
-                for row in rows:
-                    formatted_values = []
-                    for val in row:
-                        if val is None: formatted_values.append("NULL")
-                        elif isinstance(val, int): formatted_values.append(str(val))
-                        else: formatted_values.append(f"'{val}'")
-                    lines.append("(" + ", ".join(formatted_values) + "),")
-                return "\n".join(lines)               
-
-    # ===============================================
-    # 8. شجرة العائلة العودية المؤمنة من الحلقات الدائرية (DoS Protected)
-    # ===============================================
-    @staticmethod
-    def get_full_family_tree_recursive(code: str) -> List[Dict[str, Any]]:
-        tree_data = {}
-        global_visited = set()
-
-        def traverse(c, category="الشخص", depth=0):
-            if not c or depth > FamilyService.MAX_TREE_DEPTH: return
-            if c in global_visited: return
-            global_visited.add(c)
-            
-            with get_db_context() as conn:
-                with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute("""
-                        SELECT n.code, public.get_full_name(n.code, 4, FALSE) as full_name, 
-                               n.nick_name, i.gender, n.relation, i.status,
-                               n.f_code, n.m_code, n.w_code, n.h_code
-                        FROM family_name n
-                        LEFT JOIN family_info i ON n.code = i.code_info
-                        WHERE n.code = %s
-                    """, (c,))
-                    member = cur.fetchone()
-                    if not member or member['code'] in tree_data: return
-                    
-                    current_gender = member['gender']
-                    if not current_gender and member['relation']:
-                        rel = member['relation']
-                        if rel in ("ابن", "زوج", "ابن زوج", "ابن زوجة"): current_gender = "ذكر"
-                        elif rel in ("ابنة", "زوجة", "ابنة زوج", "ابنة زوجة"): current_gender = "أنثى"
-                    
-                    member['gender'] = current_gender
-                    tree_data[member['code']] = {**member, "category": category}
-                    
-                    spouse_ids = set()
-                    if member.get("w_code"): spouse_ids.add(member["w_code"])
-                    if member.get("h_code"): spouse_ids.add(member["h_code"])
-                    
-                    if current_gender == "ذكر":
-                        cur.execute("SELECT DISTINCT m_code FROM family_name WHERE f_code = %s AND m_code IS NOT NULL", (c,))
-                    else:
-                        cur.execute("SELECT DISTINCT f_code FROM family_name WHERE m_code = %s AND f_code IS NOT NULL", (c,))
-                    
-                    for r in cur.fetchall():
-                        val = r['m_code'] if current_gender == "ذكر" else r['f_code']
-                        if val: spouse_ids.add(val)
-                    
-                    cur.execute("SELECT code FROM family_name WHERE w_code = %s OR h_code = %s", (c, c))
-                    for r in cur.fetchall():
-                        if r.get("code"): spouse_ids.add(r["code"])
-
-                    for s_id in spouse_ids:
-                        if s_id and s_id not in tree_data and s_id not in global_visited:
-                            cur.execute("""
-                                SELECT n.code, public.get_full_name(n.code, 4, FALSE) as full_name, 
-                                       n.nick_name, i.gender, n.relation 
-                                FROM family_name n
-                                LEFT JOIN family_info i ON n.code = i.code_info
-                                WHERE n.code = %s
-                            """, (s_id,))
-                            s_data = cur.fetchone()
-                            
-                            if s_data:
-                                s_gender = s_data.get('gender') or ("أنثى" if current_gender == "ذكر" else "ذكر")
-                                if depth == 0: cat = "زوجة" if s_gender == "أنثى" else "زوج"
-                                elif depth == 1:
-                                    base = "ابن" if current_gender == "ذكر" else "ابنة"
-                                    cat = f"زوجة {base}" if s_gender == "أنثى" else f"زوج {base}"
-                                else:
-                                    base = "حفيد" if current_gender == "ذكر" else "حفيدة"
-                                    cat = f"زوجة {base}" if s_gender == "أنثى" else f"زوج {base}"
-                                
-                                tree_data[s_id] = {**s_data, "category": cat, "gender": s_gender}
-                        
-                    cur.execute("""
-                        SELECT n.code, i.gender, n.relation
-                        FROM family_name n
-                        LEFT JOIN family_info i ON n.code = i.code_info
-                        WHERE n.f_code = %s OR n.m_code = %s
-                    """, (c, c))
-                    children = cur.fetchall()
-                    
-                    for child in children:
-                        ch_code = child['code']
-                        if ch_code in global_visited: continue
-                        ch_gender = child['gender'] or ("ذكر" if child['relation'] == "ابن" else "أنثى")
-                        
-                        if depth == 0: base = "ابن" if ch_gender == "ذكر" else "ابنة"
-                        elif depth == 1: base = "حفيد" if ch_gender == "ذكر" else "حفيدة"
-                        else:
-                            is_from_female = (current_gender == "أنثى")
-                            base = (f"ابن {'حفيدة' if is_from_female else 'حفيد'}") if ch_gender == "ذكر" else (f"ابنة {'حفيدة' if is_from_female else 'حفيد'}")
-                        
-                        traverse(ch_code, category=base, depth=depth + 1)
-
-        traverse(code)
-        return list(tree_data.values())
-
+    
 
     # ===============================================
     # 9. مسار التشخيص الموحد وحالة قاعدة البيانات
@@ -689,3 +571,5 @@ class FamilyService:
         except Exception as e:
             logger.error(f"🔴 خطأ في قاعدة البيانات بمسار التشخيص الموحد: {e}")
             return {"status": "error", "message": "حدث خطأ داخلي أثناء معالجة البيانات."}    
+
+    

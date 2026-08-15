@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}تصدير شجرة العائلة - الإدارة{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="add-edit-page">
+    <div class="container form-card-auth">
+        
+        <div class="form-card">
+            
+            <div class="form-header">
+                 <h1 class="form-title">تصدير شجرة العائلة</h1>
+                 <p class="form-subtitle">توليد وتحميل فروع شجرة العائلة الرقمية بصيغة Excel أو CSV</p>
+            </div>
+
+            {% if message %}
+            <div class="alert {% if 'نجاح' in message %}success{% else %}error{% endif %} flash-message">
+                <i class="fa-solid {% if 'نجاح' in message %}fa-check-circle{% else %}fa-circle-exclamation{% endif %}"></i>
+                <span>{{ message | safe }}</span>
+                <button type="button" class="alert-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endif %}
+
+            <form onsubmit="event.preventDefault(); exportTree();" class="news-form">
+                
+                <div class="form-group">
+                    <label for="treeCodeInput">كود الشخص المستهدف (اختياري)</label>
+                    <input type="text" id="treeCodeInput" placeholder="أدخل كود الشخص (مثال: A0-000-001)..." class="input-field">
+                    <p class="feedback-text" style="margin-top: 8px; font-size: 0.85rem; color: var(--text-light, #64748b);">
+                        💡 تلميح: اترك الحقل فارغاً لتصدير شجرة العائلة بأكملها دفعة واحدة.
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn-submit-main">
+                        <i class="fa-solid fa-download"></i> توليد وتصدير الشجرة الآن
+                    </button>
+                </div>
+
+                <div class="form-footer">
+                    <a href="/admin" class="btn-back">
+                        <i class="fa-solid fa-arrow-right"></i> العودة للوحة التحكم
+                    </a>
+                </div>
+            </form>
+            
+        </div>
+        
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{{ url_for('static', path='js/admin-actions.js') }}"></script>
+{% endblock %}
