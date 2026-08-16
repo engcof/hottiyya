@@ -41,7 +41,7 @@ async def get_video(
         "total_videos": total_videos,
         "success": messages.get(success)
     })
-    response = templates.TemplateResponse("video/index.html", context)
+    response = templates.TemplateResponse("video/index_video.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -51,7 +51,7 @@ async def add_video_page(request: Request):
     if not cxt or not cxt.get("perms", {}).get("add_video", False):
         return RedirectResponse(url="/video/?error=unauthorized", status_code=303)
 
-    response = templates.TemplateResponse("video/add.html", cxt)
+    response = templates.TemplateResponse("video/add_video.html", cxt)
     SessionService.set_cache_headers(response)
     return response
 

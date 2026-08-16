@@ -38,7 +38,7 @@ async def list_articles(request: Request, page: int = 1):
         "has_next": page < total_pages,
         "error": request.query_params.get("error", None)
     })
-    response = templates.TemplateResponse("articles/list.html", context)
+    response = templates.TemplateResponse("articles/list_article.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -64,7 +64,7 @@ async def view_article(request: Request, id: int):
        "article": article, 
        "comments": comments,
     })
-    response = templates.TemplateResponse("articles/detail.html", context)
+    response = templates.TemplateResponse("articles/detail_article.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -77,7 +77,7 @@ async def add_article_form(request: Request):
   
     context = {**cxt}
     context.update({"form_data": {}})
-    response = templates.TemplateResponse("articles/add.html", context)
+    response = templates.TemplateResponse("articles/add_article.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -132,7 +132,7 @@ async def add_article(
             "error": error,
             "form_data": {"title": title, "content": content} 
         })
-        return templates.TemplateResponse("articles/add.html", context)
+        return templates.TemplateResponse("articles/add_article.html", context)
 
     try:
         # العنوان يتم تخزينه نظيفاً وسيتكفل جينجا بحمايته، والمحتوى يمر مطهراً ومصفى بالكامل
@@ -163,7 +163,7 @@ async def edit_article_form(request: Request, id: int):
                
     context = {**cxt}
     context.update({"article": article})
-    response = templates.TemplateResponse("articles/edit.html", context)
+    response = templates.TemplateResponse("articles/edit_article.html", context)
     SessionService.set_cache_headers(response)
     return response
     
@@ -213,7 +213,7 @@ async def update_article(
         
         context = {**cxt}
         context.update({"article": article, "error": error})
-        return templates.TemplateResponse("articles/edit.html", context)
+        return templates.TemplateResponse("articles/edit_article.html", context)
        
     await ArticleService.update_article(
         article_id=id, 

@@ -48,7 +48,7 @@ async def list_news(request: Request, page: int = Query(1, ge=1), q: str = Query
         "q": q or ""
     })
     
-    response = templates.TemplateResponse("news/list.html", context)
+    response = templates.TemplateResponse("news/list_news.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -64,7 +64,7 @@ async def view_news(request: Request, id: int):
     context = {**cxt}
     context.update({"item": item})
     
-    response = templates.TemplateResponse("news/detail.html", context)
+    response = templates.TemplateResponse("news/detail_news.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -82,7 +82,7 @@ async def add_news_form(request: Request):
     context = {**cxt}
     context.update({"form_data": {}})
     
-    response = templates.TemplateResponse("news/add.html", context)
+    response = templates.TemplateResponse("news/add_news.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -133,7 +133,7 @@ async def add_news(
                 "content": content_stripped
             }
         })
-        response = templates.TemplateResponse("news/add.html", context)
+        response = templates.TemplateResponse("news/add_news.html", context)
         SessionService.set_cache_headers(response)
         return response
       
@@ -173,7 +173,7 @@ async def edit_news_form(request: Request, id: int):
     
     context = {**cxt}
     context.update({"item": item})
-    response = templates.TemplateResponse("news/edit.html", context)
+    response = templates.TemplateResponse("news/edit_news.html", context)
     SessionService.set_cache_headers(response)
     return response
 

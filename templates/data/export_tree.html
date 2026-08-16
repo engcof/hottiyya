@@ -5,6 +5,102 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', path='css/add-edit.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', path='css/admin.css') }}">
+    <style>
+        /* تنسيق كروت الاختيار العصري */
+        .export-options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .export-option-card {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            padding: 14px 16px;
+            background-color: var(--bg-card, #ffffff);
+            border: 2px solid var(--border-color, #e2e8f0);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .export-option-card:hover {
+            border-color: var(--primary-color, #2563eb);
+            background-color: var(--bg-hover, #f8fafc);
+            transform: translateY(-2px);
+        }
+
+        /* اخفاء خيار الراديو الأصلي واستبداله بتصميم مخصص */
+        .export-option-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .custom-radio {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #cbd5e1;
+            border-radius: 50%;
+            margin-left: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: all 0.2s ease;
+        }
+
+        .custom-radio::after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: transform 0.2s ease;
+        }
+
+        /* حالة تحديد الخيار */
+        .export-option-card input[type="radio"]:checked ~ .custom-radio {
+            background-color: var(--primary-color, #2563eb);
+            border-color: var(--primary-color, #2563eb);
+        }
+
+        .export-option-card input[type="radio"]:checked ~ .custom-radio::after {
+            transform: scale(1);
+        }
+
+        .export-option-card.active {
+            border-color: var(--primary-color, #2563eb);
+            background-color: rgba(37, 99, 235, 0.04);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        .option-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .option-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            color: var(--text-main, #1e293b);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .option-desc {
+            font-size: 0.8rem;
+            color: var(--text-light, #64748b);
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
@@ -15,7 +111,7 @@
             
             <div class="form-header">
                  <h1 class="form-title">تصدير شجرة العائلة</h1>
-                 <p class="form-subtitle">توليد وتحميل فروع شجرة العائلة الرقمية بصيغة Excel أو CSV</p>
+                 <p class="form-subtitle">توليد وتحميل فروع شجرة العائلة بعدة صيغ (Excel, Word, Text)</p>
             </div>
 
             {% if message %}
@@ -28,15 +124,66 @@
 
             <form onsubmit="event.preventDefault(); exportTree();" class="news-form">
                 
+                <!-- 1. كود الشخص المستهدف -->
                 <div class="form-group">
-                    <label for="treeCodeInput">كود الشخص المستهدف (اختياري)</label>
+                    <label for="treeCodeInput">كود الشخص المستهدف (اختياري للصيغة المسطحة)</label>
                     <input type="text" id="treeCodeInput" placeholder="أدخل كود الشخص (مثال: A0-000-001)..." class="input-field">
                     <p class="feedback-text" style="margin-top: 8px; font-size: 0.85rem; color: var(--text-light, #64748b);">
-                        💡 تلميح: اترك الحقل فارغاً لتصدير شجرة العائلة بأكملها دفعة واحدة.
+                        💡 تلميح: اترك الحقل فارغاً لتصدير جميع الأسماء (متاح للصيغة المسطحة فقط).
                     </p>
                 </div>
 
-                <div class="form-group">
+                <!-- 2. نوع/صيغة التصدير (خيارات الاختيار الجديدة) -->
+                <div class="form-group" style="margin-top: 20px;">
+                    <label style="margin-bottom: 8px; display: block; font-weight: bold;">اختر صيغة التصدير المطلوبة:</label>
+                    
+                    <div class="export-options-grid">
+                        
+                        <!-- خيار 1: إكسل مسطح -->
+                        <label class="export-option-card active">
+                            <input type="radio" name="exportFormat" value="excel_flat" checked onchange="updateCardStyle(this)">
+                            <span class="custom-radio"></span>
+                            <div class="option-content">
+                                <span class="option-title">📊 إكسل مسطح</span>
+                                <span class="option-desc">جدول شامل بجميع التفاصيل والبيانات (Excel Flat).</span>
+                            </div>
+                        </label>
+
+                        <!-- خيار 2: إكسل شجري -->
+                        <label class="export-option-card">
+                            <input type="radio" name="exportFormat" value="excel_tree" onchange="updateCardStyle(this)">
+                            <span class="custom-radio"></span>
+                            <div class="option-content">
+                                <span class="option-title">🌴 إكسل شجري</span>
+                                <span class="option-desc">هيكل متفرع بالأعمدة والأجيال بالاسم المفرد (Excel Tree).</span>
+                            </div>
+                        </label>
+
+                        <!-- خيار 3: مستند وورد -->
+                        <label class="export-option-card">
+                            <input type="radio" name="exportFormat" value="word_tree" onchange="updateCardStyle(this)">
+                            <span class="custom-radio"></span>
+                            <div class="option-content">
+                                <span class="option-title">📝 مستند وورد</span>
+                                <span class="option-desc">هيكل شجري بالإزاحات والأسماء المفردة (Word Docx).</span>
+                            </div>
+                        </label>
+
+                        <!-- خيار 4: ملف نصي -->
+                        <label class="export-option-card">
+                            <input type="radio" name="exportFormat" value="text_tree" onchange="updateCardStyle(this)">
+                            <span class="custom-radio"></span>
+                            <div class="option-content">
+                                <span class="option-title">📄 ملف نصي</span>
+                                <span class="option-desc">رسم شجري صافي باستخدام رموز ASCII (Text Tree).</span>
+                            </div>
+                        </label>
+
+                    </div>
+                </div>
+
+                <!-- 3. زر التصدير -->
+                <div class="form-group" style="margin-top: 25px;">
                     <button type="submit" class="btn-submit-main">
                         <i class="fa-solid fa-download"></i> توليد وتصدير الشجرة الآن
                     </button>
@@ -58,23 +205,47 @@
 {% block extra_js %}
     <script src="{{ url_for('static', path='js/admin-actions.js') }}"></script>
     <script>
+        // دالة لتحديث الشكل الخارجي للبطاقات المحددة
+        function updateCardStyle(radio) {
+            document.querySelectorAll('.export-option-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            if (radio.checked) {
+                radio.closest('.export-option-card').classList.add('active');
+            }
+        }
+
         function exportTree() {
             const inputVal = document.getElementById("treeCodeInput").value.trim();
             
-            // في حال عدم إدخال كود، يتم إظهار رسالة تأكيد للمستخدم
-            if (!inputVal) {
-                const confirmExport = confirm("⚠️ لم تقم بإدخال كود شخص محدد.\n\nهل تريد طباعة وتصدير شجرة العائلة كاملة بجميع الأسماء؟");
+            // جلب قيمة الصيغة المحددة من خيارات الـ Radio المتاحة
+            const selectedRadio = document.querySelector('input[name="exportFormat"]:checked');
+            const fmtVal = selectedRadio ? selectedRadio.value : "excel_flat";
+            
+            // الصيغ الشجرية (الهيكلية) تتطلب كود شخص محدد لبدء التفرع منه
+            if (!inputVal && fmtVal !== "excel_flat") {
+                alert("⚠️ الصيغ الشجرية (إكسل هرمي، وورد، نصي) تتطلب إدخال كود شخص محدد لبدء الشجرة منه.");
+                return;
+            }
+
+            // في حال عدم إدخال كود واختيار إكسل مسطح
+            if (!inputVal && fmtVal === "excel_flat") {
+                const confirmExport = confirm("⚠️ لم تقم بإدخال كود شخص محدد.\n\nهل تريد تصدير السجل العام لشجرة العائلة بجميع الأسماء؟");
                 if (!confirmExport) {
-                    return; // إلغاء العملية إذا اختار "إلغاء"
+                    return;
                 }
             }
             
+            // بناء رابط الطلب
             let url = "/data-local/export/family-tree/";
             if (inputVal) {
                 url += encodeURIComponent(inputVal);
             }
             
-            // فتح التنزيل
+            // إضافة نوع الصيغة كـ Query Parameter
+            url += "?fmt=" + encodeURIComponent(fmtVal);
+            
+            // فتح التنزيل في المتصفح
             window.location.href = url;
         }
     </script>

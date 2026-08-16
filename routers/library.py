@@ -38,7 +38,7 @@ async def list_library(request: Request, category: str = "الكل", page: int =
         "q": q  
     })
     
-    response = templates.TemplateResponse("library/index.html", context)
+    response = templates.TemplateResponse("library/index_library.html", context)
     SessionService.set_cache_headers(response)
     return response
     
@@ -57,7 +57,7 @@ async def add_book_page(request: Request, from_page: str = "library"):
          "categories": CATEGORIES,
          "from_page": from_page
     })
-    response = templates.TemplateResponse("library/add.html", context)
+    response = templates.TemplateResponse("library/add_library.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -158,7 +158,7 @@ async def return_with_error(request, cxt, error_msg, title, author):
         "author": author,
         "from_page": request.query_params.get("from", "library")
     })
-    response = templates.TemplateResponse("library/add.html", context)
+    response = templates.TemplateResponse("library/add_library.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -186,7 +186,7 @@ async def edit_book_page(request: Request, book_id: int):
         "from_page": from_page,
         "error": request.query_params.get("error_msg", None) # عرض الأخطاء المرتدة إن وجدت
     })
-    response = templates.TemplateResponse("library/edit.html", context)
+    response = templates.TemplateResponse("library/edit_library.html", context)
     SessionService.set_cache_headers(response)
     return response
     
@@ -238,7 +238,7 @@ async def edit_book(
         target_url = "/profile" if from_page == "profile" else "/library?success=updated"
         return RedirectResponse(target_url, status_code=303)
     else:
-        return RedirectResponse(f"/library/edit/{book_id}?from={from_page}&error_msg=failed", status_code=303)
+        return RedirectResponse(f"/library/edit_library/{book_id}?from={from_page}&error_msg=failed", status_code=303)
 
 @router.post("/delete/{book_id}")
 async def delete_book(request: Request, book_id: int):

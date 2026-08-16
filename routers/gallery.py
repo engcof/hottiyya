@@ -39,7 +39,7 @@ async def get_gallery(
         "page_numbers": range(1, total_pages + 1),
         "success": messages.get(success)
     })
-    response = templates.TemplateResponse("gallery/index.html", context)
+    response = templates.TemplateResponse("gallery/index_gallery.html", context)
     SessionService.set_cache_headers(response)
     return response
 
@@ -49,7 +49,7 @@ async def add_image_page(request: Request):
     if not cxt or not cxt.get("perms", {}).get("add_gallery", False):
         return RedirectResponse(url="/gallery/?error=unauthorized", status_code=303)
 
-    response = templates.TemplateResponse("gallery/add.html", cxt)
+    response = templates.TemplateResponse("gallery/add_gallery.html", cxt)
     SessionService.set_cache_headers(response)
     return response
 
@@ -71,7 +71,7 @@ async def add_new_image(
 
     title = title.strip()
     if not title or len(title) < 3:
-        return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "العنوان قصير جداً"})
+        return templates.TemplateResponse("gallery/add_gallery.html", {**cxt, "error": "العنوان قصير جداً"})
       
     if title[0].isdigit() or re.search(r"^[\s\-\_\.\@\#\!\$\%\^\&\*\(\)]", title):
         raise HTTPException(status_code=400, detail="العنوان لا يجب أن يبدأ برمز أو رقم")
@@ -79,7 +79,7 @@ async def add_new_image(
     # 🔒 فحص الامتداد ونوع الملف (مهم جداً لسد ثغرة رفع الملفات الخبيثة)
     file_ext = f".{image.filename.split('.')[-1]}".lower() if "." in image.filename else ""
     if file_ext not in ALLOWED_IMAGE_EXTENSIONS or image.content_type not in ALLOWED_MIME_TYPES:
-        return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "نوع الملف غير مدعوم! يسمح فقط بالصور المعتادة."})
+        return templates.TemplateResponse("gallery/add_gallery.html", {**cxt, "error": "نوع الملف غير مدعوم! يسمح فقط بالصور المعتادة."})
 
     cloudinary_url = None
     image_id = None
@@ -89,7 +89,7 @@ async def add_new_image(
         cloudinary_url = upload_to_cloudinary(image.file)
         
         if not cloudinary_url:
-            return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "فشل الاتصال بالسحابة، حاول مجدداً"})
+            return templates.TemplateResponse("gallery/add_gallery.html", {**cxt, "error": "فشل الاتصال بالسحابة، حاول مجدداً"})
           
         # الحفظ في قاعدة البيانات
         image_id = GalleryService.add_image(
@@ -119,7 +119,7 @@ async def add_new_image(
             except Exception as clean_err:
                 print(f"⚠️ فشل تنظيف السحابة: {clean_err}")
 
-        return templates.TemplateResponse("gallery/add.html", {**cxt, "error": "حدث خطأ فني أثناء حفظ البيانات"})
+        return templates.TemplateResponse("gallery/add_gallery.html", {**cxt, "error": "حدث خطأ فني أثناء حفظ البيانات"})
 
 @router.post("/delete/{image_id}")
 async def delete_photo(

@@ -124,7 +124,7 @@ async def name_details(request: Request, code: str, page: int = Query(1, ge=1), 
         "current_page": page, "search_query": clean_search_query(q)
     })
     
-    response = templates.TemplateResponse("family/details.html", context)
+    response = templates.TemplateResponse("family/details_name.html", context)
     SessionService.set_cache_headers(response)
     return response  
 
