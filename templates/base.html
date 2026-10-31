@@ -30,8 +30,8 @@
                 <li><a href="/video">معرض الفيديوهات</a></li>
                 <li><a href="/library">المكتبة</a></li>
                 
-                {# 🔒 تظهر الشجرة فقط إذا كان المستخدم يمتلك الصلاحية ولسنا في بيئة الإنتاج #}
-                {% if user and can_view and not is_prod %}
+                {# 🔒 تظهر الشجرة فقط إذا كان المستخدم يمتلك الصلاحية #}
+                {% if user and can_view %}
                 <li><a href="/family">شجرة الحوطية</a></li>
                 {% endif %}
                 
@@ -117,8 +117,8 @@
             <a href="/video">معرض الفيديوهات</a>
             <a href="/library">المكتبة</a>
             
-            {# 🔒 تعديل قائمة الهاتف أيضاً لتختفي في الإنتاج #}
-            {% if user and can_view and not is_prod %}
+          
+            {% if user and can_view  %}
             <a href="/family">شجرة الحوطية</a>
             {% endif %}
             

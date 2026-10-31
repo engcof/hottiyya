@@ -163,10 +163,9 @@ app.include_router(gallery.router)
 app.include_router(video.router)
 app.include_router(library.router)
 app.include_router(about.router)
-# 🔒 حماية بيانات العائلة: تشغيل الشجرة والبيانات فقط في السيرفر المحلي
+app.include_router(family.router)
+# 🔒 حماية بيانات : تشغيل البيانات فقط في السيرفر المحلي
 if not IS_PROD:
-    app.include_router(family.router)
-
     # استيراد راوتر البيانات المحلي بأمان (لأنه غير موجود في Render)
     try:
             from routers import data_local
