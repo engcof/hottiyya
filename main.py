@@ -242,7 +242,12 @@ async def sitemap():
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
 async def robots():
-    content = "User-agent: *\nAllow: /\nSitemap: https://hottiyya.onrender.com/sitemap.xml"
+    content = (
+        "User-agent: *\n"
+        "Disallow:\n"
+        "Allow: /\n\n"
+        "Sitemap: https://hottiyya.onrender.com/sitemap.xml"
+    )
     return content.strip()
 
 if __name__ == "__main__":
