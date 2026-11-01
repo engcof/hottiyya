@@ -203,19 +203,10 @@ async def not_found(request: Request, exc):
     context = SessionService.get_page_context(request)
     return templates.TemplateResponse("404.html", context, status_code=404)
 
-@app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)
+@app.get("/googlea84e43178e487f63.html", response_class=PlainTextResponse)
 async def google_verification():
-    content = """<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Google Verification</title>
-</head>
-<body>
-google-site-verification: googlea84e43178e487f63.html
-</body>
-</html>"""
-    return HTMLResponse(content=content, status_code=200)
+    # اكتب النص بدقة كما يطلبه جوجل تماماً
+    return "google-site-verification: googlea84e43178e487f63.html"
 
 @app.get("/sitemap.xml")
 async def sitemap():
