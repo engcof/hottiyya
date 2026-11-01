@@ -205,16 +205,17 @@ async def not_found(request: Request, exc):
 
 @app.get("/googlea84e43178e487f63.html", response_class=HTMLResponse)
 async def google_verification():
-    # جوجل يبحث عن هذا السطر بالتحديد داخل صفحة HTML نظيفة
-    return """<!DOCTYPE html>
+    content = """<!DOCTYPE html>
 <html>
 <head>
+    <meta charset="utf-8">
     <title>Google Verification</title>
 </head>
 <body>
-    google-site-verification: googlea84e43178e487f63.html
+google-site-verification: googlea84e43178e487f63.html
 </body>
 </html>"""
+    return HTMLResponse(content=content, status_code=200)
 
 @app.get("/sitemap.xml")
 async def sitemap():
