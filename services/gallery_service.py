@@ -65,8 +65,8 @@ class GalleryService:
         """جلب الصور مع ترقيم الصفحات وبناء معزول للاستعلامات لحماية محرك الـ SQL"""
         offset = (page - 1) * per_page
         
-        # تحضير الهياكل الأساسية المعزولة
-        base_count = "SELECT COUNT(*) FROM gallery"
+        # الهياكل الأساسية مع استخدام الرمز المستعار g بوضوح
+        base_count = "SELECT COUNT(*) FROM gallery g"
         base_select = """
             SELECT g.*, u.username 
             FROM gallery g
@@ -78,22 +78,19 @@ class GalleryService:
         select_params = []
         
         if category and category != "الكل" and category != "None":
-            where_clause = " WHERE g.category = %s " if "g." in base_select else " WHERE category = %s "
-            # تعديل متوافق مع جملة الـ Count
-            count_where = " WHERE category = %s "
+            where_clause = " WHERE g.category = %s "
             count_params.append(category)
             select_params.append(category)
-        else:
-            count_where = ""
 
         with get_db_context() as conn:
             with conn.cursor() as cur:
-                # 1. جلب إجمالي العدد
-                cur.execute(f"{base_count}{count_where}", tuple(count_params))
+                # 1. جلب إجمالي العدد مع مراعاة الرمز المستعار
+                count_query = f"{base_count}{where_clause}"
+                cur.execute(count_query, tuple(count_params))
                 total_images = cur.fetchone()[0]
 
                 # 2. جلب البيانات بترتيب منظم وآمن
-                full_query = f"{base_select}{where_clause.replace('category', 'g.category') if where_clause else ''} ORDER BY g.created_at DESC LIMIT %s OFFSET %s;"
+                full_query = f"{base_select}{where_clause} ORDER BY g.created_at DESC LIMIT %s OFFSET %s;"
                 select_params.extend([per_page, offset])
                 
                 cur.execute(full_query, tuple(select_params))
