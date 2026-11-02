@@ -90,7 +90,7 @@ async def add_book(
     author_stripped = author.strip() if author else "غير معروف"
     
     # 🚨 1. جدار الحماية للباكيند: فحص الامتداد والحجم قبل استهلاك الموارد
-    file_ext = os.path.splitext(book_file.filename).lower()
+    file_ext = os.path.splitext(book_file.filename)[1].lower()
     if file_ext not in ALLOWED_EXTENSIONS:
         return await return_with_error(request, cxt, "صيغة الملف غير مدعومة! المسموح: PDF, Word, PowerPoint", title_stripped, author_stripped)
         
